@@ -1,0 +1,7 @@
+/bin/
+/db/
+/dbd/
+/doc/
+**/O.*/
+envPaths
+.vscode

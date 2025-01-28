@@ -1,0 +1,2 @@
+device(ai, INST_IO, devPicoscopeAi, "Picoscope")
+device(stringin, INST_IO, devPicoscopeStringin, "Picoscope")

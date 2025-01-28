@@ -1,0 +1,11 @@
+record(ai, "PicoInter:SerialNum"){
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_serial_num")
+	field(SCAN, "10 second")
+}
+record(stringin, "Picoscope:SerialNum:str"){
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_serial_num")
+	field(SCAN, "1 second")
+	field(VAL, "default StrIN")
+}
