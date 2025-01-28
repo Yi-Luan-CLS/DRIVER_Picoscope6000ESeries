@@ -75,6 +75,14 @@ findAioType(enum ioFlag ioFlag, char *param, char **cmdString)
 	return UNKNOWN_IOTYPE;
 }
 
+int
+format_device_support_function(char *string, char *paramName)
+{
+        if (sscanf(string, "L:%s",paramName) != 1)
+                return -1;
+        return 0;
+}
+
 typedef long (*DEVSUPFUN_AI)(struct aiRecord *);
 
 int integerRatio(double value, long *numerator, long *denominator);
@@ -129,10 +137,11 @@ init_record_ai (struct aiRecord *pai)
     pinst = &(pai->inp.value.instio);
     vdp = (struct PicoscopeData *)pai->dpvt;
 
-    if (sscanf(pinst->string, "L:%s", vdp->paramLabel) != 1) 
-	{
-        return -1;
-	}
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+		{
+			printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+		}
 
 	vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
 
@@ -243,10 +252,9 @@ init_record_ao (struct aoRecord *pao)
         pinst = &(pao->out.value.instio);
         vdp = (struct PicoscopeData *)pao->dpvt;
 		printf("%s\n", pinst->string);
-
-        if (sscanf(pinst->string, "L:%s",vdp->paramLabel) != 1)
+        if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
 			{
-				printf("%s\n",vdp->paramLabel);
+				printf("Error when getting function name: %s\n",vdp->paramLabel);
                 return -1;
 			}
 
@@ -377,10 +385,12 @@ init_record_stringin(struct stringinRecord * pstringin)
 
         pinst = &(pstringin->inp.value.instio);
         vdp = (struct PicoscopeData *)pstringin->dpvt;
-        if (sscanf(pinst->string, "L:%s",vdp->paramLabel) != 1) 
-		{
+
+        if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+			{
+				printf("Error when getting function name: %s\n",vdp->paramLabel);
                 return -1;
-		}
+			}
 
         vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
 		if (vdp->ioType == UNKNOWN_IOTYPE)
