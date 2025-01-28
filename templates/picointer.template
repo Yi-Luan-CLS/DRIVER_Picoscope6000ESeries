@@ -1,5 +1,0 @@
-record(ai, "PicoInter:SerialNum"){
-	field(DTYP, "picointer")
-	field(INP, "@L:get_serial_num")
-	field(SCAN, "1 second")
-}

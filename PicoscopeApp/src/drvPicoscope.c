@@ -8,11 +8,10 @@
 #include "PicoStatus.h"
 
 int16_t handle = 0;
-int8_t* serial_num = NULL;
 int MAX_CONNECT_TRIES = 12;
-int
-connect_picoscope(){
-    int16_t status;
+int16_t status;
+
+int16_t connect_picoscope(){
     bool open = false;
     int tries = 0;
     while(!open){
@@ -25,22 +24,35 @@ connect_picoscope(){
     return status;
 }
 
+
+int8_t* serial_num_buffer;
 int16_t
-get_serial_num(int8_t** serial_num_return) {
-    int16_t status;
+get_serial_num(int8_t** serial_num) {
     int16_t required_size;
 
     status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_BATCH_AND_SERIAL);
     if (status != PICO_OK) 
         return status;  
 
-    if(serial_num == NULL)
-        serial_num = malloc(required_size);
-    memset(serial_num, 0, required_size);
+    if (serial_num_buffer == NULL)
+        serial_num_buffer = malloc(required_size);
+    memset(serial_num_buffer, 0, required_size);
 
-    status = ps6000aGetUnitInfo(handle, serial_num, required_size, &required_size, PICO_BATCH_AND_SERIAL);
+    status = ps6000aGetUnitInfo(handle, serial_num_buffer, required_size, &required_size, PICO_BATCH_AND_SERIAL);
 
-    *serial_num_return = serial_num;
+    *serial_num = serial_num_buffer;
 
     return status;  
+}
+
+int16_t 
+set_coupling(int16_t coupling) {
+
+    status = ps6000aSetChannelOn(handle, PICO_CHANNEL_B, coupling, PICO_X1_PROBE_20V, 0.0, PICO_BW_FULL);
+    printf("Coupling: %d\n", coupling);
+    if (status != PICO_OK) {
+        printf("Status: %d\n", status);
+        return status;
+    }
+    return status;
 }

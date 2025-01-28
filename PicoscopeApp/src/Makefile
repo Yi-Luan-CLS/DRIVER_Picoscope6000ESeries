@@ -6,8 +6,9 @@ include $(TOP)/configure/CONFIG
 #=============================
 
 #=============================
+
 # Build the IOC application
-# STATIC_BUILD=YES
+
 PROD_IOC = Picoscope
 # Picoscope.dbd will be created and installed
 DBD += Picoscope.dbd
@@ -44,4 +45,5 @@ include $(TOP)/configure/RULES
 #  ADD RULES AFTER THIS LINE
 SNCSEQ=/opt/picoscope
 USR_CPPFLAGS += -I$(SNCSEQ)/include/libps6000a
+USR_CPPFLAGS += -DUSE_TYPED_RSET 
 USR_LDFLAGS +=  -L$(SNCSEQ)/lib

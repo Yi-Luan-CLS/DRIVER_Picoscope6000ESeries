@@ -12,7 +12,7 @@ dbLoadDatabase "dbd/Picoscope.dbd"
 Picoscope_registerRecordDeviceDriver pdbbase
 
 ## Load record instances
-dbLoadRecords("/home/luany/srv-unix-home/pico/PicoscopeApp/Db/Picoscope.template","user=luany")
+dbLoadRecords("PicoscopeApp/Db/Picoscope.template","IOC_HOST=OPI2027-002")
 
 cd "${TOP}/iocBoot/${IOC}"
 iocInit
