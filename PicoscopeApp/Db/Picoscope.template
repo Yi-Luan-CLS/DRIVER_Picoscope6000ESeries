@@ -1,11 +1,60 @@
-record(ai, "PicoInter:SerialNum"){
-	field(DTYP, "Picoscope")
-	field(INP, "@L:get_serial_num")
-	field(SCAN, "10 second")
-}
-record(stringin, "Picoscope:SerialNum:str"){
+record(stringin, "$(IOC_HOST):serial_num") {
 	field(DTYP, "Picoscope")
 	field(INP, "@L:get_serial_num")
 	field(SCAN, "1 second")
-	field(VAL, "default StrIN")
 }
+
+# record(mbbi, "$(IOC_HOST):channel") {
+# 	field(DESC, "Picoscope channel")
+# 	field(INP, "@L:set_channel_on")
+# 	field(INP,  "input_link")
+# 	field(ZRST, "PICO_CHANNEL_A")       field(ZRVL, "0")
+# 	field(ONST, "PICO_CHANNEL_B")       field(ONVL, "1")
+# 	field(TWST, "PICO_CHANNEL_C")       field(TWVL, "2")
+# 	field(THST, "PICO_CHANNEL_D")       field(THVL, "3")
+# }
+
+# record(mbbi, "$(IOC_HOST):resolution"){
+#     field(DTYP, "Soft Channel")
+#     field(DESC, "Sampling resolution of device.")
+# 	field(VAL, "0")
+# 	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
+# 	field(ONST, "PICO_DR_10BIT")       field(ONVL, "1")
+# 	field(TWST, "PICO_DR_12BIT")       field(TWVL, "2")
+# }
+
+record(mbbo, "$(IOC_HOST):CHB:coupling") {
+	field(DTYP, "Raw Soft Channel")
+    field(DESC, "Impedance and coupling type.")
+	field(ZRST, "PICO_AC")            field(ZRVL, "0")
+	field(ONST, "PICO_DC")            field(ONVL, "1")
+	# field(TWST, "PICO_DC_50OHM")      field(TWVL, "50") # doesn't work for dev model picoscope.. 
+	field(VAL, "0")
+	field(FLNK, "$(IOC_HOST):CHB:coupling:set.PROC")	
+}
+
+record(ao, "$(IOC_HOST):CHB:coupling:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(IOC_HOST):CHB:coupling.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:set_coupling")
+}
+
+# record(mbbi, "$(IOC_HOST):CHB:range") {
+# 	field(DTYP, "Soft Channel")
+#     field(DESC, "Input voltage range.")
+# }
+
+# record(mbbi, "$(IOC_HOST):CHB:bandwidth") {
+#     field(DTYP, "Soft Channel")
+#     field(DESC, "Bandwidth limiter setting.")
+# 	field(ZRST, "PICO_BW_FULL")       	field(ZRVL, "0")
+# 	field(ONST, "PICO_BW_20MHZ")       	field(ONVL, "1")
+# 	field(TWST, "PICO_BW_200MHZ")       field(TWVL, "2")
+# }
+# record(stringout, "$(IOC_HOST):CHB:timeIntervalNs") {
+#     field(DTYP, "Soft Channel")
+#     field(DESC, "Time interval between readings in ns.")
+# }

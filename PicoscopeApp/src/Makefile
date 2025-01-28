@@ -6,8 +6,9 @@ include $(TOP)/configure/CONFIG
 #=============================
 
 #=============================
+
 # Build the IOC application
-# STATIC_BUILD=YES
+
 PROD_IOC = Picoscope
 # Picoscope.dbd will be created and installed
 DBD += Picoscope.dbd
