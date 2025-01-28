@@ -292,144 +292,145 @@ read_stringin (struct stringinRecord *pstringin){
 // 			/* pai->eslo = (pai->eguf - pai->egul) / 65535.0; */
 // 			return 0;
 // }
+
 /****************************************************************************************
- * Waveform - read a data array of values
+  * Waveform - read a data array of values
  ****************************************************************************************/
 
-#include <waveformRecord.h>
+// #include <waveformRecord.h>
 
-typedef long (*DEVSUPFUN_WAVEFORM)(struct waveformRecord *);
-
-
-static long init_record_waveform(struct waveformRecord *);
-static long read_waveform(struct waveformRecord *);
-
-struct
-        {
-        long         number;
-        DEVSUPFUN_WAVEFORM report;
-        DEVSUPFUN_WAVEFORM init;
-        DEVSUPFUN_WAVEFORM init_record;
-        DEVSUPFUN_WAVEFORM get_ioint_info;
-        DEVSUPFUN_WAVEFORM write_lout;
-        } devPicoscopeWaveform =
-                {
-                6,
-                NULL,
-                NULL,
-                init_record_waveform,
-                NULL,
-                read_waveform,
-                };
-
-epicsExportAddress(dset, devPicoscopeWaveform);
+// typedef long (*DEVSUPFUN_WAVEFORM)(struct waveformRecord *);
 
 
-static long init_record_waveform(struct waveformRecord * pwaveform)
-{
-	struct instio  *pinst;
-    struct PicoscopeData *vdp;
+// static long init_record_waveform(struct waveformRecord *);
+// static long read_waveform(struct waveformRecord *);
+
+// struct
+//         {
+//         long         number;
+//         DEVSUPFUN_WAVEFORM report;
+//         DEVSUPFUN_WAVEFORM init;
+//         DEVSUPFUN_WAVEFORM init_record;
+//         DEVSUPFUN_WAVEFORM get_ioint_info;
+//         DEVSUPFUN_WAVEFORM write_lout;
+//         } devPicoscopeWaveform =
+//                 {
+//                 6,
+//                 NULL,
+//                 NULL,
+//                 init_record_waveform,
+//                 NULL,
+//                 read_waveform,
+//                 };
+
+// epicsExportAddress(dset, devPicoscopeWaveform);
 
 
-        if (pwaveform->inp.type != INST_IO)
-                {
-                errlogPrintf("%s: INP field type should be INST_IO\n", pwaveform->name);
-                return(S_db_badField);
-                }
-        pwaveform->dpvt = calloc(sizeof(struct PicoscopeData), 1);
-        if (pwaveform->dpvt == (void *)0)
-                {
-                errlogPrintf("%s: Failed to allocated memory\n", pwaveform->name);
-                return -1;
-                }
+// static long init_record_waveform(struct waveformRecord * pwaveform)
+// {
+// 	struct instio  *pinst;
+//     struct PicoscopeData *vdp;
 
-        pinst = &(pwaveform->inp.value.instio);
-        vdp = (struct PicoscopeData *)pwaveform->dpvt;
 
-        if (convertUSBSpectrometersParam(pinst->string, vdp->paramLabel)  <  0)
-                {
-                errlogPrintf("%s: Invalid format: \"@%s\"\n", pwaveform->name, pinst->string);
-                return(S_db_badField);
-                }
-        vdp->ioType = findAioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
+//         if (pwaveform->inp.type != INST_IO)
+//                 {
+//                 errlogPrintf("%s: INP field type should be INST_IO\n", pwaveform->name);
+//                 return(S_db_badField);
+//                 }
+//         pwaveform->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+//         if (pwaveform->dpvt == (void *)0)
+//                 {
+//                 errlogPrintf("%s: Failed to allocated memory\n", pwaveform->name);
+//                 return -1;
+//                 }
 
-        if (vdp->ioType == UNKNOWN_IOTYPE)
-                {
-                errlogPrintf("%s: Invalid type: \"@%s\"\n", pwaveform->name, vdp->paramLabel);
-                return(S_db_badField);
-                }
-	spectra = (double*)calloc( pwaveform->nelm + 1, sizeof (double));
-	vdp->spectra = spectra;
+//         pinst = &(pwaveform->inp.value.instio);
+//         vdp = (struct PicoscopeData *)pwaveform->dpvt;
 
-	if(isInitialised == 0){
-		initAcquisition(glb_index,glb_channel,glb_integration_usec,glb_averages,glb_boxcar);
-		isInitialised++;
-	}
+//         if (convertUSBSpectrometersParam(pinst->string, vdp->paramLabel)  <  0)
+//                 {
+//                 errlogPrintf("%s: Invalid format: \"@%s\"\n", pwaveform->name, pinst->string);
+//                 return(S_db_badField);
+//                 }
+//         vdp->ioType = findAioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
 
-	switch (vdp->ioType)
-                {
-        case AQUIRE_SPECTRUM:
-		printf("INIT AQUIRE_SPECTRUM Waveform\n");
+//         if (vdp->ioType == UNKNOWN_IOTYPE)
+//                 {
+//                 errlogPrintf("%s: Invalid type: \"@%s\"\n", pwaveform->name, vdp->paramLabel);
+//                 return(S_db_badField);
+//                 }
+// 	spectra = (double*)calloc( pwaveform->nelm + 1, sizeof (double));
+// 	vdp->spectra = spectra;
 
-		break;
-	case GET_AXIS_INFO:
-		printf("INIT GET_AXIS_INFO Waveform\n");
-		getAxisInfo(glb_index, &pwaveform->nelm,spectra);
-		pwaveform->nord = pwaveform->nelm;
+// 	if(isInitialised == 0){
+// 		initAcquisition(glb_index,glb_channel,glb_integration_usec,glb_averages,glb_boxcar);
+// 		isInitialised++;
+// 	}
 
-		memcpy(pwaveform->bptr, spectra, pwaveform->nelm * sizeof (double) );
-                break;
-        default:
-                printf("default, no init done\n");
-                }
+// 	switch (vdp->ioType)
+//                 {
+//         case AQUIRE_SPECTRUM:
+// 		printf("INIT AQUIRE_SPECTRUM Waveform\n");
 
-        pwaveform->udf = FALSE;
-        return 0;
+// 		break;
+// 	case GET_AXIS_INFO:
+// 		printf("INIT GET_AXIS_INFO Waveform\n");
+// 		getAxisInfo(glb_index, &pwaveform->nelm,spectra);
+// 		pwaveform->nord = pwaveform->nelm;
 
-}
+// 		memcpy(pwaveform->bptr, spectra, pwaveform->nelm * sizeof (double) );
+//                 break;
+//         default:
+//                 printf("default, no init done\n");
+//                 }
 
-static long
-read_waveform (struct waveformRecord *pwaveform)
-{
-        int returnState;
+//         pwaveform->udf = FALSE;
+//         return 0;
 
-	double *spectra;
+// }
 
-        struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
+// static long
+// read_waveform (struct waveformRecord *pwaveform)
+// {
+//         int returnState;
 
-	spectra = vdp->spectra;
-        switch (vdp->ioType)
-                {
-        case AQUIRE_SPECTRUM:
+// 	double *spectra;
 
-        	debugprint("Doing Acquisition\n");
-                doAcquisition(glb_index,glb_channel,glb_integration_usec,glb_averages,glb_boxcar,glb_iterations, pwaveform->nelm, spectra);
-		/*for(int x = 0; x<pwaveform->nelm; x++){
-			debugprint("spectra[%d] = %f\n",x,spectra[x]);
-		}*/
-		pwaveform->nord = pwaveform->nelm;
-		returnState = 0;
+//         struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
 
-                break;
-	case GET_AXIS_INFO:
-		getAxisInfo(glb_index, &pwaveform->nelm,spectra);
-		pwaveform->nord = pwaveform->nelm;
-		returnState = 0;
-		break;
-        default:
-		debugprint("default\n");
-                returnState = -1;
-                }
+// 	spectra = vdp->spectra;
+//         switch (vdp->ioType)
+//                 {
+//         case AQUIRE_SPECTRUM:
 
-        if (returnState < 0)
-                {
-                if (recGblSetSevr(pwaveform, READ_ALARM, INVALID_ALARM)  &&  errVerbose
-                    &&  (pwaveform->stat != READ_ALARM  ||  pwaveform->sevr != INVALID_ALARM))
-                        errlogPrintf("%s: Read Error\n", pwaveform->name);
-                return 2;
-                }
+//         	debugprint("Doing Acquisition\n");
+//                 doAcquisition(glb_index,glb_channel,glb_integration_usec,glb_averages,glb_boxcar,glb_iterations, pwaveform->nelm, spectra);
+// 		/*for(int x = 0; x<pwaveform->nelm; x++){
+// 			debugprint("spectra[%d] = %f\n",x,spectra[x]);
+// 		}*/
+// 		pwaveform->nord = pwaveform->nelm;
+// 		returnState = 0;
 
-	memcpy(pwaveform->bptr, spectra, pwaveform->nelm * sizeof (double) );
+//                 break;
+// 	case GET_AXIS_INFO:
+// 		getAxisInfo(glb_index, &pwaveform->nelm,spectra);
+// 		pwaveform->nord = pwaveform->nelm;
+// 		returnState = 0;
+// 		break;
+//         default:
+// 		debugprint("default\n");
+//                 returnState = -1;
+//                 }
 
-        return 0;
-}
+//         if (returnState < 0)
+//                 {
+//                 if (recGblSetSevr(pwaveform, READ_ALARM, INVALID_ALARM)  &&  errVerbose
+//                     &&  (pwaveform->stat != READ_ALARM  ||  pwaveform->sevr != INVALID_ALARM))
+//                         errlogPrintf("%s: Read Error\n", pwaveform->name);
+//                 return 2;
+//                 }
+
+// 	memcpy(pwaveform->bptr, spectra, pwaveform->nelm * sizeof (double) );
+
+//         return 0;
+// }
