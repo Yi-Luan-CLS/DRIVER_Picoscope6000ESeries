@@ -417,9 +417,18 @@ read_stringin (struct stringinRecord *pstringin){
 		return 0;
 	}
 }	
+// 	static long
+// 	special_linconv_ai(struct aiRecord *pai, int after)
+// 	{
+// 			if (!after)
+// 					return 0;
+// 			/* set linear conversion slope*/
+// 			/* pai->eslo = (pai->eguf - pai->egul) / 65535.0; */
+// 			return 0;
+// }
 
 /****************************************************************************************
- * Waveform - read a data array of values
+  * Waveform - read a data array of values
  ****************************************************************************************/
 
 //#include <waveformRecord.h>
