@@ -3,7 +3,13 @@ record(stringin, "$(IOC_HOST):serial_num") {
 	field(INP, "@L:get_serial_num")
 	field(SCAN, "1 second")
 }
-
+record(waveform, "${IOC_HOST}:waveform"){
+    field(DTYP, "Picoscope")
+    field(INP, "@L:get_waveform")
+	field(NELM, "10")
+	field(SCAN, "1 second")
+	field(FTVL, "LONG")
+}
 # record(mbbi, "$(IOC_HOST):channel") {
 # 	field(DESC, "Picoscope channel")
 # 	field(INP, "@L:set_channel_on")

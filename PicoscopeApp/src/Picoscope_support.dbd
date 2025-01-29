@@ -1,4 +1,4 @@
 device(ai, INST_IO, devPicoscopeAi, "Picoscope")
 device(ao, INST_IO, devPicoscopeAo, "Picoscope")
-
+device(waveform, INST_IO, devPicoscopeWaveform, "Picoscope")
 device(stringin, INST_IO, devPicoscopeStringin, "Picoscope")

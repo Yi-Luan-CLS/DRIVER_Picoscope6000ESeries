@@ -17,7 +17,7 @@
 #include <menuConvert.h>
 #include <epicsExport.h>
 
-#include "errlog.h"
+#include <errlog.h>
 
 #include "drvPicoscope.h"
 
@@ -29,6 +29,7 @@ enum ioType
 	UNKNOWN_IOTYPE, // default case, must be 0 
     GET_SERIAL_NUM,
 	SET_COUPLING,
+	GET_WAVEFORM,
 	};
 
 enum ioFlag
@@ -46,6 +47,7 @@ static struct aioType
     {
 	    { "get_serial_num",		isInput,	GET_SERIAL_NUM, "" },
 		{ "set_coupling", 		isOutput, 	SET_COUPLING,   "" },
+		{ "get_waveform", 		isInput, 	GET_WAVEFORM,   "" },
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -82,6 +84,22 @@ format_device_support_function(char *string, char *paramName)
                 return -1;
         return 0;
 }
+
+int16_t
+dev_connect_picoscope(){
+	printf("Picoscope Connecting...\n");
+	pico_status = connect_picoscope();
+	if (pico_status != PICO_OK){
+		printf("Failed to open PicoScope device. Error code: %d\n", pico_status);
+		return 1;
+	}
+	printf("Picoscope Connected\n");
+	return 0;
+}
+
+/****************************************************************************************
+ * AI Record
+ ****************************************************************************************/
 
 typedef long (*DEVSUPFUN_AI)(struct aiRecord *);
 
@@ -128,38 +146,34 @@ init_record_ai (struct aiRecord *pai)
         return(S_db_badField);
     }
     pai->dpvt = calloc(sizeof(struct PicoscopeData), 1);
-    if (pai->dpvt == (void *)0)
-    {
-    // errlogPrintf("%s: Failed to allocated memory\n", pai->name);
+    if (pai->dpvt == (void *)0){
+    	// errlogPrintf("%s: Failed to allocated memory\n", pai->name);
 	   return -1;
     }
 
     pinst = &(pai->inp.value.instio);
     vdp = (struct PicoscopeData *)pai->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
-		{
-			printf("Error when getting function name: %s\n",vdp->paramLabel);
-            return -1;
-		}
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0){
+		printf("Error when getting function name: %s\n",vdp->paramLabel);
+        return -1;
+	}
 
 	vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
 
-	if (vdp->ioType == UNKNOWN_IOTYPE)
-	{
+	if (vdp->ioType == UNKNOWN_IOTYPE){
 		// errlogPrintf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
 		printf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
 		return(S_db_badField);
 	}
 
 	pai->udf = FALSE;
-	printf("Picoscope Connecting...");
-	pico_status = connect_picoscope();
-	if (pico_status != PICO_OK){
-		printf("Failed to open PicoScope device. Error code: %d\n", pico_status);
-		return 1;
+	if(isInitialised == 0){
+		if(dev_connect_picoscope()){
+			return 1;
+		}
+		isInitialised++;
 	}
-	printf("Picoscope Connected");
 	return 0;
 }
 
@@ -266,10 +280,10 @@ init_record_ao (struct aoRecord *pao)
                 return(S_db_badField);
 		}
 
+	pao->udf = FALSE;
+
 	if(isInitialised == 0){
-		pico_status = connect_picoscope();
-		if (pico_status != PICO_OK){
-			printf("Failed to open PicoScope device. Error code: %d\n", pico_status);
+		if(dev_connect_picoscope()){
 			return 1;
 		}
 		isInitialised++;
@@ -286,7 +300,6 @@ init_record_ao (struct aoRecord *pao)
                 return 0;
                 }
 
-	pao->udf = FALSE;
 
 	return 2;
 }
@@ -360,48 +373,43 @@ epicsExportAddress(dset, devPicoscopeStringin);
 static long
 init_record_stringin(struct stringinRecord * pstringin)
 {
+	struct instio  *pinst;
+    struct PicoscopeData *vdp;
+
+	if (pstringin->inp.type != INST_IO)
+	{
+		printf("%s: INP field type should be INST_IO\n", pstringin->name);
+		return(S_db_badField);
+	}
+	pstringin->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+	if (pstringin->dpvt == (void *)0)
+	        {
+	        printf("%s: Failed to allocated memory\n", pstringin->name);
+	        return -1;
+	        }
+	pinst = &(pstringin->inp.value.instio);
+	vdp = (struct PicoscopeData *)pstringin->dpvt;
+
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+		{
+			printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+		}
+    vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
+	if (vdp->ioType == UNKNOWN_IOTYPE){
+		// errlogPrintf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
+		printf("%s: Invalid type: \"@%s\"\n", pstringin->name, vdp->paramLabel);
+		return(S_db_badField);
+	}
+	
+	pstringin->udf = FALSE;
+
 	if(isInitialised == 0){
-		pico_status = connect_picoscope();
-		if (pico_status != PICO_OK){
-			printf("Failed to open PicoScope device. Error code: %d\n", pico_status);
+		if(dev_connect_picoscope()){
 			return 1;
 		}
 		isInitialised++;
 	}
-	struct instio  *pinst;
-    struct PicoscopeData *vdp;
-
-        if (pstringin->inp.type != INST_IO)
-                {
-                printf("%s: INP field type should be INST_IO\n", pstringin->name);
-                return(S_db_badField);
-                }
-        pstringin->dpvt = calloc(sizeof(struct PicoscopeData), 1);
-        if (pstringin->dpvt == (void *)0)
-                {
-                printf("%s: Failed to allocated memory\n", pstringin->name);
-                return -1;
-                }
-
-        pinst = &(pstringin->inp.value.instio);
-        vdp = (struct PicoscopeData *)pstringin->dpvt;
-
-        if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
-			{
-				printf("Error when getting function name: %s\n",vdp->paramLabel);
-                return -1;
-			}
-
-        vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
-		if (vdp->ioType == UNKNOWN_IOTYPE)
-			{
-					// errlogPrintf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
-					printf("%s: Invalid type: \"@%s\"\n", pstringin->name, vdp->paramLabel);
-					return(S_db_badField);
-			}
-		pstringin->udf = FALSE;
-
-		return 0;
 }
 
 static long
@@ -441,141 +449,135 @@ read_stringin (struct stringinRecord *pstringin){
   * Waveform - read a data array of values
  ****************************************************************************************/
 
-//#include <waveformRecord.h>
-//
-//typedef long (*DEVSUPFUN_WAVEFORM)(struct waveformRecord *);
-//
-//
-//static long init_record_waveform(struct waveformRecord *);
-//static long read_waveform(struct waveformRecord *);
-//
-//struct
-//        {
-//        long         number;
-//        DEVSUPFUN_WAVEFORM report;
-//        DEVSUPFUN_WAVEFORM init;
-//        DEVSUPFUN_WAVEFORM init_record;
-//        DEVSUPFUN_WAVEFORM get_ioint_info;
-//        DEVSUPFUN_WAVEFORM write_lout;
-//        } devPicoscopeWaveform =
-//                {
-//                6,
-//                NULL,
-//                NULL,
-//                init_record_waveform,
-//                NULL,
-//                read_waveform,
-//                };
-//
-//epicsExportAddress(dset, devPicoscopeWaveform);
-//
-//
-//static long init_record_waveform(struct waveformRecord * pwaveform)
-//{
-//	struct instio  *pinst;
-//    struct PicoscopeData *vdp;
-//
-//
-//        if (pwaveform->inp.type != INST_IO)
-//                {
-//                errlogPrintf("%s: INP field type should be INST_IO\n", pwaveform->name);
-//                return(S_db_badField);
-//                }
-//        pwaveform->dpvt = calloc(sizeof(struct PicoscopeData), 1);
-//        if (pwaveform->dpvt == (void *)0)
-//                {
-//                errlogPrintf("%s: Failed to allocated memory\n", pwaveform->name);
-//                return -1;
-//                }
-//
-//        pinst = &(pwaveform->inp.value.instio);
-//        vdp = (struct PicoscopeData *)pwaveform->dpvt;
-//
-//        if (convertUSBSpectrometersParam(pinst->string, vdp->paramLabel)  <  0)
-//                {
-//                errlogPrintf("%s: Invalid format: \"@%s\"\n", pwaveform->name, pinst->string);
-//                return(S_db_badField);
-//                }
-//        vdp->ioType = findAioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
-//
-//        if (vdp->ioType == UNKNOWN_IOTYPE)
-//                {
-//                errlogPrintf("%s: Invalid type: \"@%s\"\n", pwaveform->name, vdp->paramLabel);
-//                return(S_db_badField);
-//                }
-//	spectra = (double*)calloc( pwaveform->nelm + 1, sizeof (double));
-//	vdp->spectra = spectra;
-//
-//	if(isInitialised == 0){
-//		initAcquisition(glb_index,glb_channel,glb_integration_usec,glb_averages,glb_boxcar);
-//		isInitialised++;
-//	}
-//
-//	switch (vdp->ioType)
-//                {
-//        case AQUIRE_SPECTRUM:
-//		printf("INIT AQUIRE_SPECTRUM Waveform\n");
-//
-//		break;
-//	case GET_AXIS_INFO:
-//		printf("INIT GET_AXIS_INFO Waveform\n");
-//		getAxisInfo(glb_index, &pwaveform->nelm,spectra);
-//		pwaveform->nord = pwaveform->nelm;
-//
-//		memcpy(pwaveform->bptr, spectra, pwaveform->nelm * sizeof (double) );
-//                break;
-//        default:
-//                printf("default, no init done\n");
-//                }
-//
-//        pwaveform->udf = FALSE;
-//        return 0;
-//
-//}
-//
-//static long
-//read_waveform (struct waveformRecord *pwaveform)
-//{
-//        int returnState;
-//
-//	double *spectra;
-//
-//        struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
-//
-//	spectra = vdp->spectra;
-//        switch (vdp->ioType)
-//                {
-//        case AQUIRE_SPECTRUM:
-//
-//        	debugprint("Doing Acquisition\n");
-//                doAcquisition(glb_index,glb_channel,glb_integration_usec,glb_averages,glb_boxcar,glb_iterations, pwaveform->nelm, spectra);
-//		/*for(int x = 0; x<pwaveform->nelm; x++){
-//			debugprint("spectra[%d] = %f\n",x,spectra[x]);
-//		}*/
-//		pwaveform->nord = pwaveform->nelm;
-//		returnState = 0;
-//
-//                break;
-//	case GET_AXIS_INFO:
-//		getAxisInfo(glb_index, &pwaveform->nelm,spectra);
-//		pwaveform->nord = pwaveform->nelm;
-//		returnState = 0;
-//		break;
-//        default:
-//		debugprint("default\n");
-//                returnState = -1;
-//                }
-//
-//        if (returnState < 0)
-//                {
-//                if (recGblSetSevr(pwaveform, READ_ALARM, INVALID_ALARM)  &&  errVerbose
-//                    &&  (pwaveform->stat != READ_ALARM  ||  pwaveform->sevr != INVALID_ALARM))
-//                        errlogPrintf("%s: Read Error\n", pwaveform->name);
-//                return 2;
-//                }
-//
-//	memcpy(pwaveform->bptr, spectra, pwaveform->nelm * sizeof (double) );
-//
-//        return 0;
-//}
-//
+#include <waveformRecord.h>
+
+typedef long (*DEVSUPFUN_WAVEFORM)(struct waveformRecord *);
+
+
+static long init_record_waveform(struct waveformRecord *);
+static long read_waveform(struct waveformRecord *);
+
+struct{
+    long         number;
+    DEVSUPFUN_WAVEFORM report;
+    DEVSUPFUN_WAVEFORM init;
+    DEVSUPFUN_WAVEFORM init_record;
+    DEVSUPFUN_WAVEFORM get_ioint_info;
+    // DEVSUPFUN_WAVEFORM write_lout;
+    DEVSUPFUN_WAVEFORM read;
+	
+} devPicoscopeWaveform = {
+	6,
+	NULL,
+	NULL,
+	init_record_waveform,
+	NULL,
+	read_waveform,
+};
+
+epicsExportAddress(dset, devPicoscopeWaveform);
+
+
+static long init_record_waveform(struct waveformRecord * pwaveform)
+{
+	struct instio  *pinst;
+	struct PicoscopeData *vdp;
+
+
+    if (pwaveform->inp.type != INST_IO)
+	{
+		errlogPrintf("%s: INP field type should be INST_IO\n", pwaveform->name);
+		return(S_db_badField);
+	}
+    pwaveform->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+    if (pwaveform->dpvt == (void *)0)
+    {
+        errlogPrintf("%s: Failed to allocated memory\n", pwaveform->name);
+        return -1;
+    }
+
+    pinst = &(pwaveform->inp.value.instio);
+    vdp = (struct PicoscopeData *)pwaveform->dpvt;
+
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+    {
+    	errlogPrintf("%s: Invalid format: \"@%s\"\n", pwaveform->name, pinst->string);
+        return(S_db_badField);
+    }
+    vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
+
+    if (vdp->ioType == UNKNOWN_IOTYPE)
+    {
+    	errlogPrintf("%s: Invalid type: \"@%s\"\n", pwaveform->name, vdp->paramLabel);
+        return(S_db_badField);
+    }
+    printf("%s: Invalid type: \"@%s\"\n", pwaveform->name, vdp->paramLabel);
+    
+	pwaveform->udf = FALSE;
+
+	if(isInitialised == 0){
+		if(dev_connect_picoscope()){
+			return 1;
+		}
+		isInitialised++;
+	}
+	printf("waveform init\n");
+
+	// switch (vdp->ioType)
+    //            {
+    //    case AQUIRE_SPECTRUM:
+	// 	printf("INIT AQUIRE_SPECTRUM Waveform\n");
+
+	// 	break;
+	// case GET_AXIS_INFO:
+	// 	printf("INIT GET_AXIS_INFO Waveform\n");
+	// 	getAxisInfo(glb_index, &pwaveform->nelm,spectra);
+	// 	pwaveform->nord = pwaveform->nelm;
+
+	// 	memcpy(pwaveform->bptr, spectra, pwaveform->nelm * sizeof (double) );
+    //            break;
+    //    default:
+    //            printf("default, no init done\n");
+    //            }
+	return 0;
+}
+
+static long
+read_waveform (struct waveformRecord *pwaveform){
+	printf("read_waveform() invoked!\n");
+
+    int returnState;
+
+	struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
+
+	int16_t waveform[10];
+    switch (vdp->ioType)
+    {
+    	case GET_WAVEFORM:
+			printf("get_waveform()");
+			get_waveform(&waveform);
+			pwaveform->nord = pwaveform->nelm;
+			returnState = 0;
+		break;
+		// case GET_AXIS_INFO:
+		// 	getAxisInfo(glb_index, &pwaveform->nelm,spectra);
+		// 	pwaveform->nord = pwaveform->nelm;
+		// 	returnState = 0;
+		// 	break;
+       	default:
+			// debugprint("default\n");
+            returnState = -1;
+    }
+
+	if (returnState < 0){
+        if (recGblSetSevr(pwaveform, READ_ALARM, INVALID_ALARM)  &&  errVerbose
+        	&&  (pwaveform->stat != READ_ALARM  ||  pwaveform->sevr != INVALID_ALARM)){
+	        	errlogPrintf("%s: Read Error\n", pwaveform->name);
+			}
+        return 2;
+	}
+
+	memcpy(pwaveform->bptr, waveform, pwaveform->nelm * sizeof (int16_t) );
+	return 0;
+}
+

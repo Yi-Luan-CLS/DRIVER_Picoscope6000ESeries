@@ -10,8 +10,10 @@
 int16_t handle = 0;
 int MAX_CONNECT_TRIES = 12;
 int16_t status;
+int8_t* serial_num_buffer;
 
-int16_t connect_picoscope(){
+int16_t
+connect_picoscope(){
     bool open = false;
     int tries = 0;
     while(!open){
@@ -24,8 +26,6 @@ int16_t connect_picoscope(){
     return status;
 }
 
-
-int8_t* serial_num_buffer;
 int16_t
 get_serial_num(int8_t** serial_num) {
     int16_t required_size;
@@ -49,10 +49,18 @@ int16_t
 set_coupling(int16_t coupling) {
 
     status = ps6000aSetChannelOn(handle, PICO_CHANNEL_B, coupling, PICO_X1_PROBE_20V, 0.0, PICO_BW_FULL);
-    printf("Coupling: %d\n", coupling);
+    // printf("Coupling: %d\n", coupling);
     if (status != PICO_OK) {
-        printf("Status: %d\n", status);
+        // printf("Status: %d\n", status);
         return status;
     }
     return status;
+}
+
+int16_t
+get_waveform(int16_t** waveform){
+    int16_t* waveform_buffer;
+    waveform_buffer = malloc(sizeof(int16_t)*10);
+    *waveform = waveform_buffer;
+    return 0;
 }
