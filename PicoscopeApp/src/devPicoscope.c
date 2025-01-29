@@ -19,6 +19,7 @@
 
 #include "errlog.h"
 
+#include "picoscopeConfig.h"
 #include "drvPicoscope.h"
 
 
@@ -31,6 +32,7 @@ enum ioType
 	SET_CHANNEL_ON,
 	SET_COUPLING,
 	SET_RANGE, 
+	SET_ANALOGUE_OFFSET,
 	SET_BANDWIDTH
 	};
 
@@ -51,6 +53,7 @@ static struct aioType
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
 		{"set_range", isOutput, SET_RANGE,   "" }, 
+		{"set_analogue_offset", isOutput, SET_ANALOGUE_OFFSET, ""},
 		{"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
 
     };
@@ -193,11 +196,6 @@ read_ai (struct aiRecord *pai){
  * AO Record
  ****************************************************************************************/
 
-int glb_channel = 0; 
-int glb_coupling = 1;
-int glb_voltage = 2; 
-int glb_bandwidth = 3; 
-
 #include <aoRecord.h>
 
 typedef long (*DEVSUPFUN_AO)(struct aoRecord *);
@@ -226,9 +224,15 @@ struct
 
 epicsExportAddress(dset, devPicoscopeAo);
 
+struct channel_configurations* channel_b = NULL;
+
 static long
 init_record_ao (struct aoRecord *pao)
-{
+{	
+	if (channel_b == NULL)
+	{
+		channel_b = malloc(sizeof(struct channel_configurations));
+	} 	
 
     struct instio  *pinst;
 	struct PicoscopeData *vdp;
@@ -272,29 +276,44 @@ init_record_ao (struct aoRecord *pao)
 		}
 		isInitialised++;
 	}
-	
-	switch (vdp->ioType)
+
+
+	switch (vdp->ioType)	
     {
-        // case SET_COUPLING:	
-		// 	printf("Set coupling\n");
-		// 	glb_coupling = (int)pao->val;
-		// 	set_coupling(glb_coupling);
+        case SET_COUPLING:	
+			channel_b->coupling = (int)pao->val;
+			break;
+
+		case SET_RANGE: 
+			channel_b->range = (int)pao->val;
+			break;
+
+		case SET_ANALOGUE_OFFSET: 
+			channel_b->analogue_offset = pao->val;
+			break;
+
+		case SET_BANDWIDTH: 
+			channel_b->bandwidth= (int)pao->val;
+			break;
+
 
 		case SET_CHANNEL_ON:	
-			char* record_name = pao->name; 
-			enum PicoChannel channel = record_name_to_pico_channel(record_name);
-		
+			char* record_name = pao->name;
+			enum enPicoChannel channel_name = record_name_to_pico_channel(record_name);
+		    
+			channel_b->channel = channel_name;
+
 			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
-			int pv_value = (int)pao->val;
+			int pv_value = pao->val;
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
-				pico_status = set_channel_on(channel);
+				pico_status = set_channel_on(channel_b);
 			}
 			else {
-				pico_status = set_channel_off(channel);
+				pico_status = set_channel_off(channel_name);
 			}
-
+			break;
 
         default:
             return 0;
@@ -314,47 +333,59 @@ write_ao (struct aoRecord *pao)
     vdp = (struct PicoscopeData *)pao->dpvt;
 
 	switch (vdp->ioType)
-        {
-        // case SET_COUPLING:	
-		// 	char* record_name = pao->name; 
-		// 	printf("%s\n", record_name);
-		// 	printf("Set coupling\n");
-		// 	glb_coupling = (int)pao->val;
-		// 	set_coupling(glb_coupling);
-		// 	break;
+    {
+        case SET_COUPLING:	
+			channel_b->coupling = (int)pao->val;
+			break;
+
+		case SET_RANGE: 
+			channel_b->range = (int)pao->val;
+			break;
+
+		case SET_ANALOGUE_OFFSET: 
+			channel_b->analogue_offset = pao->val;
+			break;
+
+		case SET_BANDWIDTH: 
+			channel_b->bandwidth= (int)pao->val;
+			break;
+
 		case SET_CHANNEL_ON:	
-			char* record_name = pao->name; 
-			enum PicoChannel channel = record_name_to_pico_channel(record_name);
-		
+			char* record_name = pao->name;
+			enum enPicoChannel channel_name = record_name_to_pico_channel(record_name);
+		    
+			channel_b->channel = channel_name;
+
 			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
-			int pv_value = (int)pao->val;
+			int pv_value = pao->val;
+			printf("PV VALUE: %d\n", pv_value);
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
-				pico_status = set_channel_on(channel);
+				pico_status = set_channel_on(channel_b);
 			}
 			else {
-				pico_status = set_channel_off(channel);
+				pico_status = set_channel_off(channel_name);
 			}
+			break;
 
         default:
-				printf("%d\n", vdp->ioType);
                 returnState = -1;
-        }
+	}
 
 	if (returnState < 0)
-                {
-                if (recGblSetSevr(pao, READ_ALARM, INVALID_ALARM)  &&  errVerbose
-                    &&  (pao->stat != READ_ALARM  ||  pao->sevr != INVALID_ALARM))
-                        //errlogPrintf("%s: Read Error\n", pao->name);
-                return 2;
-                }
+        {
+        if (recGblSetSevr(pao, READ_ALARM, INVALID_ALARM)  &&  errVerbose
+            &&  (pao->stat != READ_ALARM  ||  pao->sevr != INVALID_ALARM))
+                errlogPrintf("%s: Read Error\n", pao->name);
+        return 2;
+        }
 
 	return 0;
 }
 
 /** Get the channel from the PV format OSCXXXX-XX:CH[A-B]:*/
-enum PicoChannel record_name_to_pico_channel(const char* record_name) {
+enum enPicoChannel record_name_to_pico_channel(const char* record_name) {
 	char channel_str[4]; 
 	sscanf(record_name, "%*[^:]:%4[^:]", channel_str); // Strip out CH[A-B] of PV name
 
