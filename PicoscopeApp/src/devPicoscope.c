@@ -148,7 +148,7 @@ init_record_ai (struct aiRecord *pai)
 {
     struct instio  *pinst;
 	struct PicoscopeData *vdp;
-	int pico_status;
+
     if (pai->inp.type != INST_IO)
     {
         // errlogPrintf("%s: INP field type should be INST_IO\n", pai->name);
@@ -271,14 +271,14 @@ init_record_ao (struct aoRecord *pao)
     	return -1;
     }
   
-        pinst = &(pao->out.value.instio);
-        vdp = (struct PicoscopeData *)pao->dpvt;
-		printf("%s\n", pinst->string);
-        if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
-			{
-				printf("Error when getting function name: %s\n",vdp->paramLabel);
-                return -1;
-			}
+    pinst = &(pao->out.value.instio);
+    vdp = (struct PicoscopeData *)pao->dpvt;
+
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+		{
+			printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+		}
 
 	vdp->ioType = findAioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
 
@@ -377,7 +377,6 @@ write_ao (struct aoRecord *pao)
 
 			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
 			int pv_value = pao->val;
-			printf("PV VALUE: %d\n", pv_value);
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
