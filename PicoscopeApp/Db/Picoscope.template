@@ -1,3 +1,22 @@
+#record(bo, "$(IOC_HOST):ON") {
+#	field(DTYP, "Raw Soft Channel")
+#	field(DESC, "Picoscope On")
+#	field(VAL,  "0")
+#	field(ZNAM, "OFF")    	
+#	field(ONAM, "ON") 
+#	field(FLNK,  "$(IOC_HOST):ON:set")
+#}
+#
+#record(ao, "$(IOC_HOST):ON:set") {
+#	field(DTYP, "Picoscope")
+#	field(DOL, "$(IOC_HOST):ON.RVAL")
+#	field(SCAN, "Passive")
+#	field(OIF, "Full")
+#	field(OMSL, "closed_loop")
+#	field(OUT, "@L:set_picoscope_on")
+#}
+
+
 record(stringin, "$(IOC_HOST):serial_num") {
 	field(DTYP, "Picoscope")
 	field(INP, "@L:get_serial_num")
@@ -44,6 +63,7 @@ record(ao, "$(IOC_HOST):CHB:ON:set") {
 	field(DOL, "$(IOC_HOST):CHB:ON.RVAL")
 	field(SCAN, "Passive")
 	field(OIF, "Full")
+	field(VAL,  "0")
 	field(OMSL, "closed_loop")
 	field(OUT, "@L:set_channel_on")
 }
@@ -68,12 +88,12 @@ record(ao, "$(IOC_HOST):CHB:coupling:set") {
 	field(OUT, "@L:set_coupling")
 }
 
-record(mbbi, "$(IOC_HOST):CHB:range") {
+record(mbbo, "$(IOC_HOST):CHB:range") {
 	field(DTYP, "Raw Soft Channel")
     field(DESC, "Input voltage range.")
 
-	field(ZRST, "PICO_X1_PROBE_10MV") field(ZRVL, "0")
-	field(ONST, "PICO_X1_PROBE_20MV") field(ONVL, "1")
+	field(ZRST, "PICO_X1_PROBE_10MV")  field(ZRVL, "0")
+	field(ONST, "PICO_X1_PROBE_20MV")  field(ONVL, "1")
 	field(TWST, "PICO_X1_PROBE_50MV")  field(TWVL, "2")
     field(THST, "PICO_X1_PROBE_100MV") field(THVL, "3")
     field(FRST, "PICO_X1_PROBE_200MV") field(FRVL, "4")
@@ -120,7 +140,17 @@ record(ao, "$(IOC_HOST):CHB:bandwidth:set") {
 	field(SCAN, "Passive")
 	field(OIF, "Full")
 	field(OMSL, "closed_loop")
+	field(VAL, "0")
 	field(OUT, "@L:set_bandwidth")
+}
+
+record(ao, "$(IOC_HOST):CHB:analogueoffset") {
+	field(DTYP, "Picoscope")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(VAL, "0.0")
+	field(OUT, "@L:set_analogue_offset")
 }
 
 # record(stringout, "$(IOC_HOST):CHB:timeIntervalNs") {

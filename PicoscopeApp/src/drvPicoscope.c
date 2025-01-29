@@ -47,21 +47,11 @@ get_serial_num(int8_t** serial_num) {
     return status;  
 }
 
-int16_t 
-set_coupling(int16_t coupling) {
-
-    status = ps6000aSetChannelOn(handle, PICO_CHANNEL_B, coupling, PICO_X1_PROBE_20V, 0.0, PICO_BW_FULL);
-    if (status != PICO_OK) 
-    {
-        printf("Status: %d\n", status);
-        return status;
-    }
-    return status;
-}
-
-int set_channel_on(int channel) {
+int set_channel_on(struct channel_configurations* channel) {
     
-    status = ps6000aSetChannelOn(handle, PICO_CHANNEL_B, PICO_AC, PICO_X1_PROBE_20V, 0.0, PICO_BW_FULL);
+    printf("Set channel on: %d\n", channel->channel);
+
+    status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analogue_offset, channel->bandwidth);
     if (status != PICO_OK) 
     {
         printf("Status: %d\n", status);
@@ -71,6 +61,8 @@ int set_channel_on(int channel) {
 }
 
 int set_channel_off(int channel) {
+
+    printf("Set channel off: %d\n", channel);
 
     status = ps6000aSetChannelOff(handle, channel);
     if (status != PICO_OK)
