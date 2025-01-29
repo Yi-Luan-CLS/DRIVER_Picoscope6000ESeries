@@ -49,8 +49,31 @@ int16_t
 set_coupling(int16_t coupling) {
 
     status = ps6000aSetChannelOn(handle, PICO_CHANNEL_B, coupling, PICO_X1_PROBE_20V, 0.0, PICO_BW_FULL);
-    printf("Coupling: %d\n", coupling);
-    if (status != PICO_OK) {
+
+    if (status != PICO_OK) 
+    {
+        printf("Status: %d\n", status);
+        return status;
+    }
+    return status;
+}
+
+int set_channel_on(int channel) {
+    
+    status = ps6000aSetChannelOn(handle, PICO_CHANNEL_B, PICO_AC, PICO_X1_PROBE_20V, 0.0, PICO_BW_FULL);
+    if (status != PICO_OK) 
+    {
+        printf("Status: %d\n", status);
+        return status;
+    }
+    return status;
+}
+
+int set_channel_off(int channel) {
+
+    status = ps6000aSetChannelOff(handle, channel);
+    if (status != PICO_OK)
+    {
         printf("Status: %d\n", status);
         return status;
     }
