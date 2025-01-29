@@ -392,12 +392,14 @@ write_ao (struct aoRecord *pao)
 	}
 
 	if (returnState < 0)
-        {
+    {
         if (recGblSetSevr(pao, READ_ALARM, INVALID_ALARM)  &&  errVerbose
             &&  (pao->stat != READ_ALARM  ||  pao->sevr != INVALID_ALARM))
+			{
                 errlogPrintf("%s: Read Error\n", pao->name);
-        return 2;
-        }
+			}
+		return 2;
+    }
 
 	return 0;
 }
