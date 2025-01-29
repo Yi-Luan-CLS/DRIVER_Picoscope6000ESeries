@@ -7,6 +7,8 @@
 #include "ps6000aApi.h"
 #include "PicoStatus.h"
 
+#include "picoscopeConfig.h"
+
 int16_t handle = 0;
 int MAX_CONNECT_TRIES = 12;
 int16_t status;
