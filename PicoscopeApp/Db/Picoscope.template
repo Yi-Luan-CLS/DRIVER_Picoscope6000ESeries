@@ -29,9 +29,29 @@ record(waveform, "${IOC_HOST}:waveform"){
 # 	field(TWST, "PICO_DR_12BIT")       field(TWVL, "2")
 # }
 
+# Channel B PVs 
+record(bo, "$(IOC_HOST):CHB:ON") {
+	field(DTYP, "Raw Soft Channel")
+	field(DESC, "Channel On")
+	field(VAL,  "0")
+	field(ZNAM, "OFF")    	
+	field(ONAM, "ON") 
+	field(FLNK,  "$(IOC_HOST):CHB:ON:set")
+}
+
+record(ao, "$(IOC_HOST):CHB:ON:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(IOC_HOST):CHB:ON.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:set_channel_on")
+}
+
 record(mbbo, "$(IOC_HOST):CHB:coupling") {
 	field(DTYP, "Raw Soft Channel")
     field(DESC, "Impedance and coupling type.")
+
 	field(ZRST, "PICO_AC")            field(ZRVL, "0")
 	field(ONST, "PICO_DC")            field(ONVL, "1")
 	# field(TWST, "PICO_DC_50OHM")      field(TWVL, "50") # doesn't work for dev model picoscope.. 
@@ -48,18 +68,61 @@ record(ao, "$(IOC_HOST):CHB:coupling:set") {
 	field(OUT, "@L:set_coupling")
 }
 
-# record(mbbi, "$(IOC_HOST):CHB:range") {
-# 	field(DTYP, "Soft Channel")
-#     field(DESC, "Input voltage range.")
-# }
+record(mbbi, "$(IOC_HOST):CHB:range") {
+	field(DTYP, "Raw Soft Channel")
+    field(DESC, "Input voltage range.")
 
-# record(mbbi, "$(IOC_HOST):CHB:bandwidth") {
-#     field(DTYP, "Soft Channel")
-#     field(DESC, "Bandwidth limiter setting.")
-# 	field(ZRST, "PICO_BW_FULL")       	field(ZRVL, "0")
-# 	field(ONST, "PICO_BW_20MHZ")       	field(ONVL, "1")
-# 	field(TWST, "PICO_BW_200MHZ")       field(TWVL, "2")
-# }
+	field(ZRST, "PICO_X1_PROBE_10MV") field(ZRVL, "0")
+	field(ONST, "PICO_X1_PROBE_20MV") field(ONVL, "1")
+	field(TWST, "PICO_X1_PROBE_50MV")  field(TWVL, "2")
+    field(THST, "PICO_X1_PROBE_100MV") field(THVL, "3")
+    field(FRST, "PICO_X1_PROBE_200MV") field(FRVL, "4")
+    field(FVST, "PICO_X1_PROBE_500MV") field(FVVL, "5")
+    field(SXST, "PICO_X1_PROBE_1V")    field(SXVL, "6")
+    field(SVST, "PICO_X1_PROBE_2V")    field(SVVL, "7")
+    field(EIST, "PICO_X1_PROBE_5V")    field(EIVL, "8")
+    field(NIST, "PICO_X1_PROBE_10V")   field(NIVL, "9")
+    field(TEST, "PICO_X1_PROBE_20V")   field(TEVL, "10")
+    field(ELST, "PICO_X1_PROBE_50V")   field(ELVL, "11")
+    field(TVST, "PICO_X1_PROBE_100V")  field(TVVL, "12")
+    field(TTST, "PICO_X1_PROBE_200V")  field(TTVL, "13")
+    field(FTST, "PICO_X1_PROBE_500V")  field(FTVL, "14")
+    field(FFST, "PICO_X1_PROBE_1KV")   field(FFVL, "15")
+
+	field(VAL, "0")
+	field(FLNK, "$(IOC_HOST):CHB:range:set.PROC")	
+}
+
+record(ao, "$(IOC_HOST):CHB:range:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(IOC_HOST):CHB:range.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:set_range")
+}
+
+record(mbbi, "$(IOC_HOST):CHB:bandwidth") {
+    field(DTYP, "Soft Channel")
+    field(DESC, "Bandwidth limiter setting.")
+
+	field(ZRST, "PICO_BW_FULL")       	field(ZRVL, "0")
+	field(ONST, "PICO_BW_20MHZ")       	field(ONVL, "1")
+	field(TWST, "PICO_BW_200MHZ")       field(TWVL, "2")
+	
+	field(VAL, "0")
+	field(FLNK, "$(IOC_HOST):CHB:bandwidth:set.PROC")	
+}
+
+record(ao, "$(IOC_HOST):CHB:bandwidth:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(IOC_HOST):CHB:range.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:set_bandwidth")
+}
+
 # record(stringout, "$(IOC_HOST):CHB:timeIntervalNs") {
 #     field(DTYP, "Soft Channel")
 #     field(DESC, "Time interval between readings in ns.")

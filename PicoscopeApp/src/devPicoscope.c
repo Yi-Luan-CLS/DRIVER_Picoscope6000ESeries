@@ -27,9 +27,12 @@ int16_t pico_status;
 enum ioType
 	{
 	UNKNOWN_IOTYPE, // default case, must be 0 
-    GET_SERIAL_NUM,
+  GET_SERIAL_NUM,
+	SET_CHANNEL_ON,
 	SET_COUPLING,
 	GET_WAVEFORM,
+	SET_RANGE, 
+	SET_BANDWIDTH
 	};
 
 enum ioFlag
@@ -45,9 +48,12 @@ static struct aioType
 		char *cmdp;
 	} AioType[] =
     {
-	    { "get_serial_num",		isInput,	GET_SERIAL_NUM, "" },
-		{ "set_coupling", 		isOutput, 	SET_COUPLING,   "" },
-		{ "get_waveform", 		isInput, 	GET_WAVEFORM,   "" },
+		{"get_waveform", 		isInput, 	GET_WAVEFORM,   "" },
+	  {"get_serial_num", isInput, GET_SERIAL_NUM, "" },
+		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
+		{"set_coupling", isOutput, SET_COUPLING, "" },
+		{"set_range", isOutput, SET_RANGE,   "" }, 
+		{"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -245,24 +251,22 @@ epicsExportAddress(dset, devPicoscopeAo);
 static long
 init_record_ao (struct aoRecord *pao)
 {
-	printf("init ao\n");
 
     struct instio  *pinst;
 	struct PicoscopeData *vdp;
 
-        if (pao->out.type != INST_IO)
-                {
-                errlogPrintf("%s: INP field type should be INST_IO\n", pao->name);
-                return(S_db_badField);
-                }
-
-        pao->dpvt = calloc(sizeof(struct PicoscopeData), 1);
-        if (pao->dpvt == (void *)0)
-                {
-            	errlogPrintf("%s: Failed to allocated memory\n", pao->name);
-                return -1;
-                }
-
+    if (pao->out.type != INST_IO)
+    {
+        errlogPrintf("%s: INP field type should be INST_IO\n", pao->name);
+        return(S_db_badField);
+    }
+    pao->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+    if (pao->dpvt == (void *)0)
+    {
+    	errlogPrintf("%s: Failed to allocated memory\n", pao->name);
+    	return -1;
+    }
+  
         pinst = &(pao->out.value.instio);
         vdp = (struct PicoscopeData *)pao->dpvt;
 		printf("%s\n", pinst->string);
@@ -275,10 +279,10 @@ init_record_ao (struct aoRecord *pao)
 	vdp->ioType = findAioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
 
 	if (vdp->ioType == UNKNOWN_IOTYPE)
-		{
-                errlogPrintf("%s: Invalid type: \"%s\"\n", pao->name, vdp->paramLabel);
-                return(S_db_badField);
-		}
+	{
+    	errlogPrintf("%s: Invalid type: \"%s\"\n", pao->name, vdp->paramLabel);
+    	return(S_db_badField);
+	}
 
 	pao->udf = FALSE;
 
@@ -288,17 +292,33 @@ init_record_ao (struct aoRecord *pao)
 		}
 		isInitialised++;
 	}
-
+	
 	switch (vdp->ioType)
-                {
-        case SET_COUPLING:	
-			printf("Set coupling\n");
-			glb_coupling = (int)pao->val;
-			set_coupling(glb_coupling);
+    {
+        // case SET_COUPLING:	
+		// 	printf("Set coupling\n");
+		// 	glb_coupling = (int)pao->val;
+		// 	set_coupling(glb_coupling);
+
+		case SET_CHANNEL_ON:	
+			char* record_name = pao->name; 
+			enum PicoChannel channel = record_name_to_pico_channel(record_name);
+		
+			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
+			int pv_value = (int)pao->val;
+
+			// If PV value is 1 (ON) set channel on 
+			if (pv_value == 1) { 
+				pico_status = set_channel_on(channel);
+			}
+			else {
+				pico_status = set_channel_off(channel);
+			}
+
 
         default:
-                return 0;
-                }
+            return 0;
+    }
 
 
 	return 2;
@@ -307,7 +327,6 @@ init_record_ao (struct aoRecord *pao)
 static long
 write_ao (struct aoRecord *pao)
 {	
-	printf("write ao\n");
 	struct PicoscopeData *vdp;
 	int returnState = 0;
 
@@ -315,14 +334,30 @@ write_ao (struct aoRecord *pao)
 
 	switch (vdp->ioType)
         {
-        case SET_COUPLING:	
-			printf("Set coupling\n");
-			glb_coupling = (int)pao->val;
-			set_coupling(glb_coupling);
-			break;
+        // case SET_COUPLING:	
+		// 	char* record_name = pao->name; 
+		// 	printf("%s\n", record_name);
+		// 	printf("Set coupling\n");
+		// 	glb_coupling = (int)pao->val;
+		// 	set_coupling(glb_coupling);
+		// 	break;
+		case SET_CHANNEL_ON:	
+			char* record_name = pao->name; 
+			enum PicoChannel channel = record_name_to_pico_channel(record_name);
+		
+			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
+			int pv_value = (int)pao->val;
+
+			// If PV value is 1 (ON) set channel on 
+			if (pv_value == 1) { 
+				pico_status = set_channel_on(channel);
+			}
+			else {
+				pico_status = set_channel_off(channel);
+			}
 
         default:
-				printf("%d", vdp->ioType);
+				printf("%d\n", vdp->ioType);
                 returnState = -1;
         }
 
@@ -336,6 +371,28 @@ write_ao (struct aoRecord *pao)
 
 	return 0;
 }
+
+/** Get the channel from the PV format OSCXXXX-XX:CH[A-B]:*/
+enum PicoChannel record_name_to_pico_channel(const char* record_name) {
+	char channel_str[4]; 
+	sscanf(record_name, "%*[^:]:%4[^:]", channel_str); // Strip out CH[A-B] of PV name
+
+    if (strcmp(channel_str, "CHA") == 0) {
+        return PICO_CHANNEL_A;
+    }
+    else if (strcmp(channel_str, "CHB") == 0) {
+        return PICO_CHANNEL_B;
+    }
+    else if (strcmp(channel_str, "CHC") == 0) {
+        return PICO_CHANNEL_C;
+    }
+    else if (strcmp(channel_str, "CHD") == 0) {
+        return PICO_CHANNEL_D;
+    }
+    
+    return -1;  
+}
+
 
 /****************************************************************************************
  * Stringin - read a data array of values
