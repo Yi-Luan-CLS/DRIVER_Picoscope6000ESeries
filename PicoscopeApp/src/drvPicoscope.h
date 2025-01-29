@@ -14,4 +14,5 @@ int16_t set_channel_on(int16_t channel);
 int set_channel_off(int channel);
 
 
+int16_t get_waveform(int16_t** waveform);
 #endif
