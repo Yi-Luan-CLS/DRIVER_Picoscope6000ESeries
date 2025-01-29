@@ -12,8 +12,10 @@
 int16_t handle = 0;
 int MAX_CONNECT_TRIES = 12;
 int16_t status;
+int8_t* serial_num_buffer;
 
-int16_t connect_picoscope(){
+int16_t
+connect_picoscope(){
     bool open = false;
     int tries = 0;
     while(!open){
@@ -26,8 +28,6 @@ int16_t connect_picoscope(){
     return status;
 }
 
-
-int8_t* serial_num_buffer;
 int16_t
 get_serial_num(int8_t** serial_num) {
     int16_t required_size;
@@ -67,4 +67,12 @@ int set_channel_off(int channel) {
         return status;
     }
     return status;
+}
+
+int16_t
+get_waveform(int16_t** waveform){
+    int16_t* waveform_buffer;
+    waveform_buffer = malloc(sizeof(int16_t)*10);
+    *waveform = waveform_buffer;
+    return 0;
 }

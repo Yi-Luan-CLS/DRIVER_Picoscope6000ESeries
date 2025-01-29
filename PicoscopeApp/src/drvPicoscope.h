@@ -12,4 +12,5 @@ int16_t set_channel_on(struct channel_configurations* channel);
 int set_channel_off(int channel);
 
 
+int16_t get_waveform(int16_t** waveform);
 #endif
