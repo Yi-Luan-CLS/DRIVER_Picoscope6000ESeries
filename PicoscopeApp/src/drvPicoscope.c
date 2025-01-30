@@ -14,19 +14,43 @@ int MAX_CONNECT_TRIES = 12;
 int16_t status;
 int8_t* serial_num_buffer;
 
-int16_t
-connect_picoscope(){
-    bool open = false;
-    int tries = 0;
-    while(!open){
-        status = ps6000aOpenUnit(&handle, NULL, PICO_DR_12BIT);
-        tries ++;
-        if (status != PICO_OK && tries <= MAX_CONNECT_TRIES) {
-            sleep(5);
-        }else{  open = true;    }
+int16_t close_picoscope(){ 
+    printf("CLOSE UNIT\n");
+
+    status = ps6000aCloseUnit(handle);
+    handle = 0;
+    if (status != PICO_OK) 
+    { 
+        printf("Status: %d\n", status);
+        return status;  
     }
+    printf("HANDLE: %d\n", handle);
+
     return status;
 }
+
+
+int16_t open_picoscope(int16_t resolution){
+    printf("Open unit with resolution: %d\n", resolution);
+
+    // If no picoscope is open, open it. Otherwise close picoscope and 
+    // reopen with new configs.
+    if (handle == 0) {
+        status = ps6000aOpenUnit(&handle, NULL, resolution);
+    } else {
+        status = close_picoscope(); 
+        status = ps6000aOpenUnit(&handle, NULL, resolution);
+    }
+
+    if (status != PICO_OK) 
+    { 
+        printf("Status: %d\n", status);
+        return status;  
+    }
+
+    return status;
+}
+
 
 int16_t
 get_serial_num(int8_t** serial_num) {
