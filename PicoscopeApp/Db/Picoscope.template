@@ -1,21 +1,41 @@
-#record(bo, "$(IOC_HOST):ON") {
-#	field(DTYP, "Raw Soft Channel")
-#	field(DESC, "Picoscope On")
-#	field(VAL,  "0")
-#	field(ZNAM, "OFF")    	
-#	field(ONAM, "ON") 
-#	field(FLNK,  "$(IOC_HOST):ON:set")
-#}
-#
-#record(ao, "$(IOC_HOST):ON:set") {
-#	field(DTYP, "Picoscope")
-#	field(DOL, "$(IOC_HOST):ON.RVAL")
-#	field(SCAN, "Passive")
-#	field(OIF, "Full")
-#	field(OMSL, "closed_loop")
-#	field(OUT, "@L:set_picoscope_on")
-#}
+record(bo, "$(IOC_HOST):ON") {
+	field(DTYP, "Raw Soft Channel")
+	field(DESC, "Picoscope On")
+	field(ZNAM, "OFF")    	
+	field(ONAM, "ON") 
 
+	field(FLNK,  "$(IOC_HOST):ON:set")
+}
+
+record(ao, "$(IOC_HOST):ON:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(IOC_HOST):ON.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(VAL,  "1")
+	field(OUT, "@L:open_picoscope")
+}
+
+record(mbbo, "$(IOC_HOST):resolution"){
+    field(DTYP, "Raw Soft Channel")
+    field(DESC, "Sampling resolution of device.")
+
+	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
+	field(ONST, "PICO_DR_10BIT")       field(ONVL, "10")
+	field(TWST, "PICO_DR_12BIT")       field(TWVL, "1")
+	field(FLNK, "$(IOC_HOST):resolution:set.PROC")
+}
+
+record(ao, "$(IOC_HOST):resolution:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(IOC_HOST):resolution.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(VAL,  "0")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:set_resolution")
+}
 
 record(stringin, "$(IOC_HOST):serial_num") {
 	field(DTYP, "Picoscope")
@@ -29,6 +49,7 @@ record(waveform, "${IOC_HOST}:waveform"){
 	field(SCAN, "1 second")
 	field(FTVL, "LONG")
 }
+
 # record(mbbi, "$(IOC_HOST):channel") {
 # 	field(DESC, "Picoscope channel")
 # 	field(INP, "@L:set_channel_on")
@@ -39,14 +60,6 @@ record(waveform, "${IOC_HOST}:waveform"){
 # 	field(THST, "PICO_CHANNEL_D")       field(THVL, "3")
 # }
 
-# record(mbbi, "$(IOC_HOST):resolution"){
-#     field(DTYP, "Soft Channel")
-#     field(DESC, "Sampling resolution of device.")
-# 	field(VAL, "0")
-# 	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
-# 	field(ONST, "PICO_DR_10BIT")       field(ONVL, "1")
-# 	field(TWST, "PICO_DR_12BIT")       field(TWVL, "2")
-# }
 
 # Channel B PVs 
 record(bo, "$(IOC_HOST):CHB:ON") {
