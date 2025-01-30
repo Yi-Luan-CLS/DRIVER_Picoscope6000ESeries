@@ -16,12 +16,11 @@
 #include <stringinRecord.h>
 #include <menuConvert.h>
 #include <epicsExport.h>
-
 #include <errlog.h>
 
 #include "picoscopeConfig.h"
 #include "drvPicoscope.h"
-
+#include "picoscopeConfig.h"
 
 int16_t pico_status;
 
@@ -30,11 +29,11 @@ enum ioType
 	UNKNOWN_IOTYPE, // default case, must be 0 
 	OPEN_PICOSCOPE,
 	SET_RESOLUTION,
-  	GET_SERIAL_NUM,
+  GET_SERIAL_NUM,
 	SET_CHANNEL_ON,
 	SET_COUPLING,
-	GET_WAVEFORM,
 	SET_RANGE, 
+	RETRIEVE_WAVEFORM
 	SET_ANALOGUE_OFFSET,
 	SET_BANDWIDTH
 	};
@@ -54,10 +53,10 @@ static struct aioType
     {
 		{"open_picoscope", isOutput, OPEN_PICOSCOPE, ""},
 		{"set_resolution", isOutput, SET_RESOLUTION, ""},
-		{"get_waveform", 		isInput, 	GET_WAVEFORM,   "" },
-	  	{"get_serial_num", isInput, GET_SERIAL_NUM, "" },
+	  {"get_serial_num", isInput, GET_SERIAL_NUM, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
+		{"retrieve_waveform", isInput, RETRIEVE_WAVEFORM, "" },
 		{"set_range", isOutput, SET_RANGE,   "" }, 
 		{"set_analogue_offset", isOutput, SET_ANALOGUE_OFFSET, ""},
 		{"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
@@ -311,11 +310,11 @@ init_record_ao (struct aoRecord *pao)
 			break;
 
 		case SET_CHANNEL_ON:	
+
 			char* record_name = pao->name;
 			enum enPicoChannel channel_name = record_name_to_pico_channel(record_name);
 		    
 			channel_b->channel = channel_name;
-
 			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
 			pv_value = pao->val;
 
@@ -326,7 +325,6 @@ init_record_ao (struct aoRecord *pao)
 				pico_status = set_channel_off(channel_b->channel);
 			}
 			break;
-
         default:
             return 0;
     }
@@ -376,6 +374,7 @@ write_ao (struct aoRecord *pao)
 			break;
 
 		case SET_CHANNEL_ON:	
+
 			char* record_name = pao->name;
 			enum enPicoChannel channel_name = record_name_to_pico_channel(record_name);
 		    
@@ -518,7 +517,7 @@ read_stringin (struct stringinRecord *pstringin){
 				return 1;
 			} else memcpy(pstringin->val, serial_num, strlen((char *)serial_num) + 1);
 		
-
+			break;
 		default:
 			return 2;
 
@@ -612,22 +611,6 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 	// }
 	// printf("waveform init\n");
 
-	// switch (vdp->ioType)
-    //            {
-    //    case AQUIRE_SPECTRUM:
-	// 	printf("INIT AQUIRE_SPECTRUM Waveform\n");
-
-	// 	break;
-	// case GET_AXIS_INFO:
-	// 	printf("INIT GET_AXIS_INFO Waveform\n");
-	// 	getAxisInfo(glb_index, &pwaveform->nelm,spectra);
-	// 	pwaveform->nord = pwaveform->nelm;
-
-	// 	memcpy(pwaveform->bptr, spectra, pwaveform->nelm * sizeof (double) );
-    //            break;
-    //    default:
-    //            printf("default, no init done\n");
-    //            }
 	return 0;
 }
 
@@ -639,20 +622,23 @@ read_waveform (struct waveformRecord *pwaveform){
 
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
 
-	int16_t waveform[10];
+	int16_t* waveform = NULL;
     switch (vdp->ioType)
     {
-    	case GET_WAVEFORM:
-			// printf("get_waveform()");
-			get_waveform(&waveform);
+		case RETRIEVE_WAVEFORM:	
+			char* record_name = pwaveform->name; 
+			enum enPicoChannel channel = record_name_to_pico_channel(record_name);
+			struct ChannelConfigs config = {
+				.channel = 1,
+				.coupling = 1,
+				.range = 10,
+				.analogue_offset = 0.0,
+				.bandwidth = 0
+			};
 			pwaveform->nord = pwaveform->nelm;
-			returnState = 0;
-		break;
-		// case GET_AXIS_INFO:
-		// 	getAxisInfo(glb_index, &pwaveform->nelm,spectra);
-		// 	pwaveform->nord = pwaveform->nelm;
-		// 	returnState = 0;
-		// 	break;
+			retrieve_waveform(&config, &waveform);
+    		returnState = 0;
+			break;
        	default:
 			// debugprint("default\n");
             returnState = -1;
@@ -665,7 +651,7 @@ read_waveform (struct waveformRecord *pwaveform){
 			}
         return 2;
 	}
-
+	
 	memcpy(pwaveform->bptr, waveform, pwaveform->nelm * sizeof (int16_t) );
 	return 0;
 }

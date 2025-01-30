@@ -42,13 +42,6 @@ record(stringin, "$(IOC_HOST):serial_num") {
 	field(INP, "@L:get_serial_num")
 	field(SCAN, "1 second")
 }
-record(waveform, "${IOC_HOST}:waveform"){
-    field(DTYP, "Picoscope")
-    field(INP, "@L:get_waveform")
-	field(NELM, "10")
-	field(SCAN, "1 second")
-	field(FTVL, "LONG")
-}
 
 # record(mbbi, "$(IOC_HOST):channel") {
 # 	field(DESC, "Picoscope channel")
@@ -101,7 +94,31 @@ record(ao, "$(IOC_HOST):CHB:coupling:set") {
 	field(OUT, "@L:set_coupling")
 }
 
-record(mbbo, "$(IOC_HOST):CHB:range") {
+record(bo, "$(IOC_HOST):CHB:waveform:aquire") {
+	field(DTYP, "Raw Soft Channel")
+	field(VAL,  "0")
+	field(ZNAM, "OFF")    	
+	field(ONAM, "ON")
+	field(FLNK, "$(IOC_HOST):waveform.PROC")	
+}
+
+record(waveform, "${IOC_HOST}:waveform"){
+    field(DTYP, "Picoscope")
+	field(NELM, "10000")
+	field(SCAN, "Passive")
+	field(FTVL, "SHORT")
+    field(INP, "@L:retrieve_waveform")
+#	field(FLNK, "$(IOC_HOST):reset_acquire.PROC")
+}
+
+#record(calc, "$(IOC_HOST):reset_acquire") {
+#    field(SCAN, "Passive")
+#    field(CALC, "0")
+#    field(OUT, "$(IOC_HOST):CHB:waveform:aquire NPP")
+#}
+
+record(mbbi, "$(IOC_HOST):CHB:range") {
+
 	field(DTYP, "Raw Soft Channel")
     field(DESC, "Input voltage range.")
 
