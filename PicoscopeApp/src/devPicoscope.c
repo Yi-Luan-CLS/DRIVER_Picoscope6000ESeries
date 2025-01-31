@@ -29,11 +29,11 @@ enum ioType
 	UNKNOWN_IOTYPE, // default case, must be 0 
 	OPEN_PICOSCOPE,
 	SET_RESOLUTION,
-  GET_SERIAL_NUM,
+  	GET_SERIAL_NUM,
 	SET_CHANNEL_ON,
 	SET_COUPLING,
 	SET_RANGE, 
-	RETRIEVE_WAVEFORM
+	RETRIEVE_WAVEFORM,
 	SET_ANALOGUE_OFFSET,
 	SET_BANDWIDTH
 	};
@@ -53,7 +53,7 @@ static struct aioType
     {
 		{"open_picoscope", isOutput, OPEN_PICOSCOPE, ""},
 		{"set_resolution", isOutput, SET_RESOLUTION, ""},
-	  {"get_serial_num", isInput, GET_SERIAL_NUM, "" },
+	 	{"get_serial_num", isInput, GET_SERIAL_NUM, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
 		{"retrieve_waveform", isInput, RETRIEVE_WAVEFORM, "" },
@@ -231,7 +231,7 @@ struct
 
 epicsExportAddress(dset, devPicoscopeAo);
 
-struct channel_configurations* channel_b = NULL;
+struct ChannelConfigs* channel_b = NULL;
 
 int16_t resolution = 0;
 
@@ -240,7 +240,7 @@ init_record_ao (struct aoRecord *pao)
 {	
 	if (channel_b == NULL)
 	{
-		channel_b = malloc(sizeof(struct channel_configurations));
+		channel_b = malloc(sizeof(struct ChannelConfigs));
 	} 	
 
     struct instio  *pinst;

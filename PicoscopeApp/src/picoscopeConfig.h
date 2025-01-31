@@ -9,7 +9,7 @@
 enum enPicoChannel record_name_to_pico_channel(const char* channel_str);
 
 /** Structure for channel configurations  */
-struct channel_configurations{
+struct ChannelConfigs{
     enum enPicoChannel channel;
     int16_t coupling; 
     int16_t range; 
