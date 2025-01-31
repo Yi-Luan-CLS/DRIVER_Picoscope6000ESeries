@@ -10,11 +10,10 @@ int16_t open_picoscope(int16_t resolution);
 
 int16_t close_picoscope();
 
-int16_t set_channel_on(struct channel_configurations* channel);
+int16_t set_channel_on(struct ChannelConfigs* channel);
+
+int16_t set_channel_off(int channel);
 
 int16_t retrieve_waveform(struct ChannelConfigs* channel_configuration, int16_t** waveform);
 
-int set_channel_on(int channel);
-
-int set_channel_off(int channel);
 #endif

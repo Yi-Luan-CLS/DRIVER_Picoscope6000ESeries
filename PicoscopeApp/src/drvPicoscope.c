@@ -73,7 +73,7 @@ get_serial_num(int8_t** serial_num) {
     return status;  
 }
 
-int set_channel_on(struct channel_configurations* channel) {
+int set_channel_on(struct ChannelConfigs* channel) {
     
     printf("Set channel on: %d\n", channel->channel);
 
