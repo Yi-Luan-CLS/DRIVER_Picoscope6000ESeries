@@ -18,6 +18,7 @@
 #include <epicsExport.h>
 #include <errlog.h>
 
+#include "picoscopeConfig.h"
 #include "drvPicoscope.h"
 #include "picoscopeConfig.h"
 
@@ -26,12 +27,15 @@ int16_t pico_status;
 enum ioType
 	{
 	UNKNOWN_IOTYPE, // default case, must be 0 
-  	GET_SERIAL_NUM,
+	OPEN_PICOSCOPE,
+	SET_RESOLUTION,
+  GET_SERIAL_NUM,
 	SET_CHANNEL_ON,
 	SET_COUPLING,
 	SET_RANGE, 
-	SET_BANDWIDTH,
 	RETRIEVE_WAVEFORM
+	SET_ANALOGUE_OFFSET,
+	SET_BANDWIDTH
 	};
 
 enum ioFlag
@@ -47,11 +51,14 @@ static struct aioType
 		char *cmdp;
 	} AioType[] =
     {
-	  	{"get_serial_num", isInput, GET_SERIAL_NUM, "" },
+		{"open_picoscope", isOutput, OPEN_PICOSCOPE, ""},
+		{"set_resolution", isOutput, SET_RESOLUTION, ""},
+	  {"get_serial_num", isInput, GET_SERIAL_NUM, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
 		{"retrieve_waveform", isInput, RETRIEVE_WAVEFORM, "" },
 		{"set_range", isOutput, SET_RANGE,   "" }, 
+		{"set_analogue_offset", isOutput, SET_ANALOGUE_OFFSET, ""},
 		{"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
     };
 
@@ -90,17 +97,6 @@ format_device_support_function(char *string, char *paramName)
         return 0;
 }
 
-int16_t
-dev_connect_picoscope(){
-	printf("Picoscope Connecting...\n");
-	pico_status = connect_picoscope();
-	if (pico_status != PICO_OK){
-		printf("Failed to open PicoScope device. Error code: %d\n", pico_status);
-		return 1;
-	}
-	printf("Picoscope Connected\n");
-	return 0;
-}
 
 /****************************************************************************************
  * AI Record
@@ -144,7 +140,7 @@ init_record_ai (struct aiRecord *pai)
 {
     struct instio  *pinst;
 	struct PicoscopeData *vdp;
-	int pico_status;
+
     if (pai->inp.type != INST_IO)
     {
         // errlogPrintf("%s: INP field type should be INST_IO\n", pai->name);
@@ -172,13 +168,6 @@ init_record_ai (struct aiRecord *pai)
 		return(S_db_badField);
 	}
 
-	pai->udf = FALSE;
-	if(isInitialised == 0){
-		if(dev_connect_picoscope()){
-			return 1;
-		}
-		isInitialised++;
-	}
 	return 0;
 }
 
@@ -214,11 +203,6 @@ read_ai (struct aiRecord *pai){
  * AO Record
  ****************************************************************************************/
 
-int glb_channel = 0; 
-int glb_coupling = 1;
-int glb_voltage = 2; 
-int glb_bandwidth = 3; 
-
 #include <aoRecord.h>
 
 typedef long (*DEVSUPFUN_AO)(struct aoRecord *);
@@ -247,9 +231,17 @@ struct
 
 epicsExportAddress(dset, devPicoscopeAo);
 
+struct channel_configurations* channel_b = NULL;
+
+int16_t resolution = 0;
+
 static long
 init_record_ao (struct aoRecord *pao)
-{
+{	
+	if (channel_b == NULL)
+	{
+		channel_b = malloc(sizeof(struct channel_configurations));
+	} 	
 
     struct instio  *pinst;
 	struct PicoscopeData *vdp;
@@ -266,14 +258,14 @@ init_record_ao (struct aoRecord *pao)
     	return -1;
     }
   
-        pinst = &(pao->out.value.instio);
-        vdp = (struct PicoscopeData *)pao->dpvt;
-		printf("%s\n", pinst->string);
-        if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
-			{
-				printf("Error when getting function name: %s\n",vdp->paramLabel);
-                return -1;
-			}
+    pinst = &(pao->out.value.instio);
+    vdp = (struct PicoscopeData *)pao->dpvt;
+
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+		{
+			printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+		}
 
 	vdp->ioType = findAioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
 
@@ -285,33 +277,52 @@ init_record_ao (struct aoRecord *pao)
 
 	pao->udf = FALSE;
 
-	if(isInitialised == 0){
-		if(dev_connect_picoscope()){
-			return 1;
-		}
-		isInitialised++;
-	}
-	
-	switch (vdp->ioType)
-    {
-        // case SET_COUPLING:	
-		// 	printf("Set coupling\n");
-		// 	glb_coupling = (int)pao->val;
-		// 	set_coupling(glb_coupling);
+	switch (vdp->ioType)	
+    {	
+		case SET_RESOLUTION: 
+			resolution = (int)pao->val; 
+			break;
+
+		case OPEN_PICOSCOPE: 
+			int pv_value = (int)pao->val; 
+
+			if (pv_value == 1){
+				pico_status = open_picoscope(resolution);
+			} else {
+				pico_status = close_picoscope(); 
+			}
+			break;
+
+        case SET_COUPLING:	
+			channel_b->coupling = (int)pao->val;
+			break;
+
+		case SET_RANGE: 
+			channel_b->range = (int)pao->val;
+			break;
+
+		case SET_ANALOGUE_OFFSET: 
+			channel_b->analogue_offset = pao->val;
+			break;
+
+		case SET_BANDWIDTH: 
+			channel_b->bandwidth= (int)pao->val;
+			break;
 
 		case SET_CHANNEL_ON:	
-			char* record_name = pao->name; 
-			enum enPicoChannel channel = record_name_to_pico_channel(record_name);
-		
+
+			char* record_name = pao->name;
+			enum enPicoChannel channel_name = record_name_to_pico_channel(record_name);
+		    
+			channel_b->channel = channel_name;
 			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
-			int pv_value = (int)pao->val;
+			pv_value = pao->val;
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
-				pico_status = set_channel_on(channel);
-			}
-			else {
-				pico_status = set_channel_off(channel);
+				pico_status = set_channel_on(channel_b);
+			} else {
+				pico_status = set_channel_off(channel_b->channel);
 			}
 			break;
         default:
@@ -331,42 +342,69 @@ write_ao (struct aoRecord *pao)
     vdp = (struct PicoscopeData *)pao->dpvt;
 
 	switch (vdp->ioType)
-        {
-        // case SET_COUPLING:	
-		// 	char* record_name = pao->name; 
-		// 	printf("%s\n", record_name);
-		// 	printf("Set coupling\n");
-		// 	glb_coupling = (int)pao->val;
-		// 	set_coupling(glb_coupling);
-		// 	break;
+    {	
+		case SET_RESOLUTION: 
+			resolution = (int)pao->val; 
+			break;
+
+		case OPEN_PICOSCOPE: 
+			int pv_value = (int)pao->val; 
+
+			if (pv_value == 1){
+				pico_status = open_picoscope(resolution);
+			} else {
+				pico_status = close_picoscope(); 
+			}
+			break;
+
+        case SET_COUPLING:	
+			channel_b->coupling = (int)pao->val;
+			break;
+
+		case SET_RANGE: 
+			channel_b->range = (int)pao->val;
+			break;
+
+		case SET_ANALOGUE_OFFSET: 
+			channel_b->analogue_offset = pao->val;
+			break;
+
+		case SET_BANDWIDTH: 
+			channel_b->bandwidth= (int)pao->val;
+			break;
+
 		case SET_CHANNEL_ON:	
-			char* record_name = pao->name; 
-			enum enPicoChannel channel = record_name_to_pico_channel(record_name);
-		
+
+			char* record_name = pao->name;
+			enum enPicoChannel channel_name = record_name_to_pico_channel(record_name);
+		    
+			channel_b->channel = channel_name;
+
 			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
-			int pv_value = (int)pao->val;
+			pv_value = pao->val;
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
-				pico_status = set_channel_on(channel);
+				pico_status = set_channel_on(channel_b);
 			}
 			else {
-				pico_status = set_channel_off(channel);
+				pico_status = set_channel_off(channel_b->channel);
 			}
 			break;
 
         default:
-				printf("%d\n", vdp->ioType);
                 returnState = -1;
-        }
+	}
 
 	if (returnState < 0)
-                {
-                if (recGblSetSevr(pao, READ_ALARM, INVALID_ALARM)  &&  errVerbose
-                    &&  (pao->stat != READ_ALARM  ||  pao->sevr != INVALID_ALARM))
-                        //errlogPrintf("%s: Read Error\n", pao->name);
-                return 2;
-                }
+    {
+        if (recGblSetSevr(pao, READ_ALARM, INVALID_ALARM)  &&  errVerbose
+            &&  (pao->stat != READ_ALARM  ||  pao->sevr != INVALID_ALARM))
+			{
+                errlogPrintf("%s: Read Error\n", pao->name);
+			}
+		return 2;
+    }
 
 	return 0;
 }
@@ -460,12 +498,7 @@ init_record_stringin(struct stringinRecord * pstringin)
 	
 	pstringin->udf = FALSE;
 
-	if(isInitialised == 0){
-		if(dev_connect_picoscope()){
-			return 1;
-		}
-		isInitialised++;
-	}
+	return 0;
 }
 
 static long
@@ -480,7 +513,7 @@ read_stringin (struct stringinRecord *pstringin){
 			pico_status = get_serial_num(&serial_num);
 
 			if (pico_status != PICO_OK || serial_num == NULL){
-				printf("Failed to require serial_num. Error code: %d\n", pico_status);
+				// printf("Failed to require serial_num. Error code: %d\n", pico_status);
 				return 1;
 			} else memcpy(pstringin->val, serial_num, strlen((char *)serial_num) + 1);
 		
@@ -570,20 +603,20 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
     
 	pwaveform->udf = FALSE;
 
-	if(isInitialised == 0){
-		if(dev_connect_picoscope()){
-			return 1;
-		}
-		isInitialised++;
-	}
-	printf("waveform init\n");
+	// if(isInitialised == 0){
+	// 	if(dev_connect_picoscope()){
+	// 		return 1;
+	// 	}
+	// 	isInitialised++;
+	// }
+	// printf("waveform init\n");
 
 	return 0;
 }
 
 static long
 read_waveform (struct waveformRecord *pwaveform){
-	printf("read_waveform() invoked!\n");
+	// printf("read_waveform() invoked!\n");
 
     int returnState;
 
