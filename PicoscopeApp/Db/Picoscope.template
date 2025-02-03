@@ -47,7 +47,7 @@ record(ao, "$(IOC_HOST):num_samples"){
 
 record(mbbo, "$(IOC_HOST):down_sample_ratio_mode") {
     field(DTYP, "Soft Channel")
-    field(DESC, "Method of dat reduction/downsampling.")
+    field(DESC, "Method of data reduction/downsampling.")
 
 	
     field(ZRST, "AGGREGATE")                field(ZRVL, "1")
@@ -215,9 +215,6 @@ record(ao, "$(IOC_HOST):CHB:bandwidth:set") {
 
 record(ao, "$(IOC_HOST):CHB:analogueoffset") {
 	field(DTYP, "Picoscope")
-	field(SCAN, "Passive")
-	field(OIF, "Full")
-	field(OMSL, "closed_loop")
 	field(VAL, "0.0")
 	field(OUT, "@L:set_analogue_offset")
 }
