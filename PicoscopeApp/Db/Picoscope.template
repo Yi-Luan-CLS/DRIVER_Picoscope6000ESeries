@@ -1,5 +1,5 @@
 record(bo, "$(IOC_HOST):ON") {
-	field(DTYP, "Raw Soft Channel")
+	field(DTYP, "Soft Channel")
 	field(DESC, "Picoscope On")
 	field(ZNAM, "OFF")    	
 	field(ONAM, "ON") 
@@ -18,7 +18,7 @@ record(ao, "$(IOC_HOST):ON:set") {
 }
 
 record(mbbo, "$(IOC_HOST):resolution"){
-    field(DTYP, "Raw Soft Channel")
+    field(DTYP, "Soft Channel")
     field(DESC, "Sampling resolution of device.")
 
 	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
@@ -37,26 +37,69 @@ record(ao, "$(IOC_HOST):resolution:set") {
 	field(OUT, "@L:set_resolution")
 }
 
+
+record(ao, "$(IOC_HOST):num_samples"){
+    field(DESC, "Number of samples required.")
+    field(DTYP, "Picoscope")
+    field(VAL, "1000")
+    field(OUT, "@L:set_num_samples")
+}
+
+record(ao, "$(IOC_HOST):down_sample_ratio"){
+    field(DESC, "Down sampling factor to be applied to the raw data.")
+    field(DTYP, "Picoscope")
+    field(VAL, "0")
+    field(OUT, "@L:set_down_sampling_ratio")
+}
+
+record(mbbo, "$(IOC_HOST):down_sample_ratio_mode") {
+    field(DTYP, "Soft Channel")
+    field(DESC, "Method of data reduction/downsampling.")
+
+    field(ZRST, "AGGREGATE")                field(ZRVL, "1")
+    field(ONST, "DECIMATE")                 field(ONVL, "2")
+    field(TWST, "AVERAGE")                  field(TWVL, "4")
+    field(THST, "DISTRIBUTION")             field(THVL, "8")
+    field(FRST, "TRIG_DATA_FOR_TIME_CALC")  field(FRVL, "0x10000000")
+    field(FVST, "TRIGGER")                  field(FVVL, "0x40000000")
+    field(SXST, "RAW")                      field(SXVL, "0x80000000")
+
+    field(VAL, "8")
+    field(FLNK,  "$(IOC_HOST):down_sample_ratio_mode:set")
+}
+
+record(ao, "$(IOC_HOST):down_sample_ratio_mode:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(IOC_HOST):down_sample_ratio_mode.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:set_down_sampling_ratio_mode")
+}
+
+record(ao, "$(IOC_HOST):pre_trigger_samples") {
+    field(DESC, "Number of pre trigger samples required.")
+    field(DTYP, "Picoscope")
+    field(VAL, "0")
+    field(OUT, "@L:set_pre_trigger_samples")
+}
+
+record(ao, "$(IOC_HOST):post_trigger_samples") {
+    field(DESC, "Number of post trigger samples required.")
+    field(DTYP, "Picoscope")
+    field(VAL, "1000")
+    field(OUT, "@L:set_post_trigger_samples")
+}
+
 record(stringin, "$(IOC_HOST):serial_num") {
 	field(DTYP, "Picoscope")
 	field(INP, "@L:get_serial_num")
 	field(SCAN, "1 second")
 }
 
-# record(mbbi, "$(IOC_HOST):channel") {
-# 	field(DESC, "Picoscope channel")
-# 	field(INP, "@L:set_channel_on")
-# 	field(INP,  "input_link")
-# 	field(ZRST, "PICO_CHANNEL_A")       field(ZRVL, "0")
-# 	field(ONST, "PICO_CHANNEL_B")       field(ONVL, "1")
-# 	field(TWST, "PICO_CHANNEL_C")       field(TWVL, "2")
-# 	field(THST, "PICO_CHANNEL_D")       field(THVL, "3")
-# }
-
-
 # Channel B PVs 
 record(bo, "$(IOC_HOST):CHB:ON") {
-	field(DTYP, "Raw Soft Channel")
+	field(DTYP, "Soft Channel")
 	field(DESC, "Channel On")
 	field(VAL,  "0")
 	field(ZNAM, "OFF")    	
@@ -74,28 +117,8 @@ record(ao, "$(IOC_HOST):CHB:ON:set") {
 	field(OUT, "@L:set_channel_on")
 }
 
-record(mbbo, "$(IOC_HOST):CHB:coupling") {
-	field(DTYP, "Raw Soft Channel")
-    field(DESC, "Impedance and coupling type.")
-
-	field(ZRST, "PICO_AC")            field(ZRVL, "0")
-	field(ONST, "PICO_DC")            field(ONVL, "1")
-	# field(TWST, "PICO_DC_50OHM")      field(TWVL, "50") # doesn't work for dev model picoscope.. 
-	field(VAL, "0")
-	field(FLNK, "$(IOC_HOST):CHB:coupling:set.PROC")	
-}
-
-record(ao, "$(IOC_HOST):CHB:coupling:set") {
-	field(DTYP, "Picoscope")
-	field(DOL, "$(IOC_HOST):CHB:coupling.RVAL")
-	field(SCAN, "Passive")
-	field(OIF, "Full")
-	field(OMSL, "closed_loop")
-	field(OUT, "@L:set_coupling")
-}
-
 record(bo, "$(IOC_HOST):CHB:waveform:aquire") {
-	field(DTYP, "Raw Soft Channel")
+	field(DTYP, "Soft Channel")
 	field(VAL,  "0")
 	field(ZNAM, "OFF")    	
 	field(ONAM, "ON")
@@ -117,9 +140,29 @@ record(waveform, "${IOC_HOST}:waveform"){
 #    field(OUT, "$(IOC_HOST):CHB:waveform:aquire NPP")
 #}
 
-record(mbbi, "$(IOC_HOST):CHB:range") {
+record(mbbo, "$(IOC_HOST):CHB:coupling") {
+    field(DTYP, "Soft Channel")
+    field(DESC, "Impedance and coupling type.")
 
-	field(DTYP, "Raw Soft Channel")
+    field(ZRST, "PICO_AC")            field(ZRVL, "0")
+    field(ONST, "PICO_DC")            field(ONVL, "1")
+    # field(TWST, "PICO_DC_50OHM")      field(TWVL, "50") # doesn't work for dev model picoscope.. 
+    field(VAL, "0")
+    field(FLNK, "$(IOC_HOST):CHB:coupling:set.PROC")	
+}
+
+record(ao, "$(IOC_HOST):CHB:coupling:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(IOC_HOST):CHB:coupling.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:set_coupling")
+}
+
+record(mbbo, "$(IOC_HOST):CHB:range") {
+
+	field(DTYP, "Soft Channel")
     field(DESC, "Input voltage range.")
 
 	field(ZRST, "PICO_X1_PROBE_10MV")  field(ZRVL, "0")
@@ -152,7 +195,7 @@ record(ao, "$(IOC_HOST):CHB:range:set") {
 	field(OUT, "@L:set_range")
 }
 
-record(mbbi, "$(IOC_HOST):CHB:bandwidth") {
+record(mbbo, "$(IOC_HOST):CHB:bandwidth") {
     field(DTYP, "Soft Channel")
     field(DESC, "Bandwidth limiter setting.")
 
@@ -176,9 +219,6 @@ record(ao, "$(IOC_HOST):CHB:bandwidth:set") {
 
 record(ao, "$(IOC_HOST):CHB:analogueoffset") {
 	field(DTYP, "Picoscope")
-	field(SCAN, "Passive")
-	field(OIF, "Full")
-	field(OMSL, "closed_loop")
 	field(VAL, "0.0")
 	field(OUT, "@L:set_analogue_offset")
 }
