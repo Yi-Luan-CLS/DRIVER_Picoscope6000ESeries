@@ -1,5 +1,5 @@
 record(bo, "$(IOC_HOST):ON") {
-	field(DTYP, "Raw Soft Channel")
+	field(DTYP, "Soft Channel")
 	field(DESC, "Picoscope On")
 	field(ZNAM, "OFF")    	
 	field(ONAM, "ON") 
@@ -18,7 +18,7 @@ record(ao, "$(IOC_HOST):ON:set") {
 }
 
 record(mbbo, "$(IOC_HOST):resolution"){
-    field(DTYP, "Raw Soft Channel")
+    field(DTYP, "Soft Channel")
     field(DESC, "Sampling resolution of device.")
 
 	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
@@ -46,19 +46,19 @@ record(ao, "$(IOC_HOST):num_samples"){
 }
 
 record(mbbo, "$(IOC_HOST):down_sample_ratio_mode") {
-    field(DTYP, "Raw Soft Channel")
+    field(DTYP, "Soft Channel")
     field(DESC, "Method of dat reduction/downsampling.")
 
 	
-    field(ZRST, "PICO_RATIO_MODE_AGGREGATE")                            field(ZRVL, "1")
-    field(ONST, "PICO_RATIO_MODE_DECIMATE")                             field(ONVL, "2")
-    field(TWST, "PICO_RATIO_MODE_AVERAGE")                              field(TWVL, "4")
-    # field(THST, "PICO_RATIO_MODE_DISTRIBUTION")                         field(THVL, "8")
-    field(FRST, "PICO_RATIO_MODE_SUM")                                  field(FRVL, "16")
-    # field(FVST, "PICO_RATIO_MODE_TRIGGER_DATA_FOR_TIME_CALCULATION")    field(FVVL, "0x10000000")
-    # field(SXST, "PICO_RATIO_MODE_SEGMENT_HEADER")                       field(SXVL, "0x20000000")
-    # field(SVST, "PICO_RATIO_MODE_TRIGGER")                              field(SVVL, "0x40000000")
-    field(EIST, "PICO_RATIO_MODE_RAW")                                  field(EIVL, "0")
+    field(ZRST, "AGGREGATE")                field(ZRVL, "1")
+    field(ONST, "DECIMATE")                 field(ONVL, "2")
+    field(TWST, "AVERAGE")                  field(TWVL, "4")
+    field(THST, "DISTRIBUTION")             field(THVL, "8")
+    field(FRST, "SUM")                      field(FRVL, "16")
+    field(FVST, "TRIG_DATA_FOR_TIME_CALC")  field(FVVL, "0x10000000")
+    field(SXST, "SEGMENT_HEADER")           field(SXVL, "0x20000000")
+    field(SVST, "TRIGGER")                  field(SVVL, "0x40000000")
+    field(EIST, "RAW")                      field(EIVL, "0x80000000")
 
     field(VAL, "8")
     field(FLNK,  "$(IOC_HOST):down_sample_ratio_mode:set")
@@ -93,10 +93,9 @@ record(stringin, "$(IOC_HOST):serial_num") {
 	field(SCAN, "1 second")
 }
 
-
 # Channel B PVs 
 record(bo, "$(IOC_HOST):CHB:ON") {
-	field(DTYP, "Raw Soft Channel")
+	field(DTYP, "Soft Channel")
 	field(DESC, "Channel On")
 	field(VAL,  "0")
 	field(ZNAM, "OFF")    	
@@ -115,7 +114,7 @@ record(ao, "$(IOC_HOST):CHB:ON:set") {
 }
 
 record(bo, "$(IOC_HOST):CHB:waveform:aquire") {
-	field(DTYP, "Raw Soft Channel")
+	field(DTYP, "Soft Channel")
 	field(VAL,  "0")
 	field(ZNAM, "OFF")    	
 	field(ONAM, "ON")
@@ -138,7 +137,7 @@ record(waveform, "${IOC_HOST}:waveform"){
 #}
 
 record(mbbo, "$(IOC_HOST):CHB:coupling") {
-    field(DTYP, "Raw Soft Channel")
+    field(DTYP, "Soft Channel")
     field(DESC, "Impedance and coupling type.")
 
     field(ZRST, "PICO_AC")            field(ZRVL, "0")
@@ -159,7 +158,7 @@ record(ao, "$(IOC_HOST):CHB:coupling:set") {
 
 record(mbbo, "$(IOC_HOST):CHB:range") {
 
-	field(DTYP, "Raw Soft Channel")
+	field(DTYP, "Soft Channel")
     field(DESC, "Input voltage range.")
 
 	field(ZRST, "PICO_X1_PROBE_10MV")  field(ZRVL, "0")
