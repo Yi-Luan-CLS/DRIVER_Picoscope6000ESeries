@@ -45,20 +45,24 @@ record(ao, "$(IOC_HOST):num_samples"){
     field(OUT, "@L:set_num_samples")
 }
 
+record(ao, "$(IOC_HOST):down_sample_ratio"){
+    field(DESC, "Down sampling factor to be applied to the raw data.")
+    field(DTYP, "Picoscope")
+    field(VAL, "0")
+    field(OUT, "@L:set_down_sampling_ratio")
+}
+
 record(mbbo, "$(IOC_HOST):down_sample_ratio_mode") {
     field(DTYP, "Soft Channel")
     field(DESC, "Method of data reduction/downsampling.")
 
-	
     field(ZRST, "AGGREGATE")                field(ZRVL, "1")
     field(ONST, "DECIMATE")                 field(ONVL, "2")
     field(TWST, "AVERAGE")                  field(TWVL, "4")
     field(THST, "DISTRIBUTION")             field(THVL, "8")
-    field(FRST, "SUM")                      field(FRVL, "16")
-    field(FVST, "TRIG_DATA_FOR_TIME_CALC")  field(FVVL, "0x10000000")
-    field(SXST, "SEGMENT_HEADER")           field(SXVL, "0x20000000")
-    field(SVST, "TRIGGER")                  field(SVVL, "0x40000000")
-    field(EIST, "RAW")                      field(EIVL, "0x80000000")
+    field(FRST, "TRIG_DATA_FOR_TIME_CALC")  field(FRVL, "0x10000000")
+    field(FVST, "TRIGGER")                  field(FVVL, "0x40000000")
+    field(SXST, "RAW")                      field(SXVL, "0x80000000")
 
     field(VAL, "8")
     field(FLNK,  "$(IOC_HOST):down_sample_ratio_mode:set")
