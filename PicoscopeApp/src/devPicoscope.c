@@ -29,6 +29,10 @@ enum ioType
 	UNKNOWN_IOTYPE, // default case, must be 0 
 	OPEN_PICOSCOPE,
 	SET_RESOLUTION,
+	SET_NUM_SAMPLES,
+	SET_DOWN_SAMPLE_RATIO_MODE,
+	SET_PRE_TRIGGER_SAMPLES,
+	SET_POST_TRIGGER_SAMPLES,
   	GET_SERIAL_NUM,
 	SET_CHANNEL_ON,
 	SET_COUPLING,
@@ -53,6 +57,10 @@ static struct aioType
     {
 		{"open_picoscope", isOutput, OPEN_PICOSCOPE, ""},
 		{"set_resolution", isOutput, SET_RESOLUTION, ""},
+		{"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
+		{"set_down_sampling_ratio_mode", isOutput, SET_DOWN_SAMPLE_RATIO_MODE, ""},
+		{"set_pre_trigger_samples", isOutput, SET_PRE_TRIGGER_SAMPLES, "" },
+		{"set_post_trigger_samples", isOutput, SET_POST_TRIGGER_SAMPLES, "" },
 	 	{"get_serial_num", isInput, GET_SERIAL_NUM, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
@@ -233,6 +241,8 @@ epicsExportAddress(dset, devPicoscopeAo);
 
 struct ChannelConfigs* channel_b = NULL;
 
+struct SampleConfigs* sample_configurations = NULL;
+
 int16_t resolution = 0;
 
 static long
@@ -241,6 +251,10 @@ init_record_ao (struct aoRecord *pao)
 	if (channel_b == NULL)
 	{
 		channel_b = malloc(sizeof(struct ChannelConfigs));
+	} 	
+	if (sample_configurations == NULL)
+	{
+		sample_configurations = malloc(sizeof(struct SampleConfigs));
 	} 	
 
     struct instio  *pinst;
@@ -282,6 +296,26 @@ init_record_ao (struct aoRecord *pao)
 		case SET_RESOLUTION: 
 			resolution = (int)pao->val; 
 			break;
+
+		case SET_NUM_SAMPLES: 
+			sample_configurations->num_samples = (int)pao->val; 
+			printf("num samples: %ld\n", sample_configurations->num_samples);
+			break; 
+		
+		case SET_DOWN_SAMPLE_RATIO_MODE: 
+			sample_configurations->down_sample_ratio_mode = (int)pao->val; 
+			printf("down sample ratio mode: %d\n", sample_configurations->down_sample_ratio_mode); 
+			break; 
+		
+		case SET_PRE_TRIGGER_SAMPLES: 
+			sample_configurations->pre_trigger_samples = (int)pao->val;
+			printf("Pre trigger samples: %ld\n", sample_configurations->pre_trigger_samples);
+			break;
+		
+		case SET_POST_TRIGGER_SAMPLES: 
+			sample_configurations->post_trigger_samples = (int)pao->val;
+			printf("Post trigger samples: %ld\n", sample_configurations->post_trigger_samples);
+			break;  
 
 		case OPEN_PICOSCOPE: 
 			int pv_value = (int)pao->val; 
@@ -347,6 +381,26 @@ write_ao (struct aoRecord *pao)
 			resolution = (int)pao->val; 
 			break;
 
+		case SET_NUM_SAMPLES: 
+			sample_configurations->num_samples = (int)pao->val; 
+			printf("num samples: %ld\n", sample_configurations->num_samples);
+			break; 
+		
+		case SET_DOWN_SAMPLE_RATIO_MODE: 
+			sample_configurations->down_sample_ratio_mode = (int)pao->val; 
+			printf("down sample ratio mode: %d\n", sample_configurations->down_sample_ratio_mode); 
+			break; 
+		
+		case SET_PRE_TRIGGER_SAMPLES: 
+			sample_configurations->pre_trigger_samples = (int)pao->val;
+			printf("Pre trigger samples: %ld\n", sample_configurations->pre_trigger_samples);
+			break;
+		
+		case SET_POST_TRIGGER_SAMPLES: 
+			sample_configurations->post_trigger_samples = (int)pao->val;
+			printf("Post trigger samples: %ld\n", sample_configurations->post_trigger_samples);
+			break;  
+			
 		case OPEN_PICOSCOPE: 
 			int pv_value = (int)pao->val; 
 

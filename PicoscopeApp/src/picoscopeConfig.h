@@ -16,4 +16,12 @@ struct ChannelConfigs{
     double analogue_offset; 
     int16_t bandwidth;
 };
+
+struct SampleConfigs{ 
+    u_int64_t num_samples; 
+    u_int64_t pre_trigger_samples; 
+    u_int64_t post_trigger_samples; 
+    enum enPicoTimeUnits time_units; 
+    enum enPicoRatioMode down_sample_ratio_mode; 
+};
 #endif
