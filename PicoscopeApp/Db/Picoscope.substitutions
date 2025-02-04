@@ -1,0 +1,9 @@
+file PicoscopeApp/Db/Picoscope.template
+{
+    pattern
+    { channel }
+    {    A    }
+    {    B    }
+    {    C    }
+    {    D    }
+}
