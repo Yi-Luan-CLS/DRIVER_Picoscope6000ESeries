@@ -141,28 +141,30 @@ record(ao, "$(OSC):CH$(channel):ON:set") {
 	field(OUT, "@L:set_channel_on")
 }
 
-record(bo, "$(OSC):CH$(channel):waveform:aquire") {
-	field(DTYP, "Soft Channel")
+record(bo, "$(OSC):CH$(channel):waveform:acquire") {
+	field(DTYP, "Raw Soft Channel")
 	field(VAL,  "0")
 	field(ZNAM, "OFF")    	
 	field(ONAM, "ON")
-	field(FLNK, "$(OSC):CH$(channel):waveform.PROC")	
+	field(HIGH, "1")
+	field(FLNK, "$(OSC):CH$(channel):waveform:acquire:calcout.PROC")	
+}
+
+record(calcout, "$(OSC):CH$(channel):waveform:acquire:calcout") {
+    field(SCAN, "Passive")
+    field(CALC, "A")
+	field(INPA, "$(OSC):CH$(channel):waveform:acquire")
+	field(OOPT, "Transition To Non-zero")
+	field(OUT, "$(OSC):CH$(channel):waveform.PROC PP")
 }
 
 record(waveform, "$(OSC):CH$(channel):waveform"){
     field(DTYP, "Picoscope")
-	field(NELM, "10000")
+	field(NELM, "1073741696")
 	field(SCAN, "Passive")
 	field(FTVL, "SHORT")
     field(INP, "@L:retrieve_waveform")
-#	field(FLNK, "$(OSC):reset_acquire.PROC")
 }
-
-#record(calc, "$(OSC):reset_acquire") {
-#    field(SCAN, "Passive")
-#    field(CALC, "0")
-#    field(OUT, "$(OSC):CHB:waveform:aquire NPP")
-#}
 
 record(mbbo, "$(OSC):CH$(channel):coupling") {
     field(DTYP, "Soft Channel")

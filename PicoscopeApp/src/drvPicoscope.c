@@ -13,7 +13,6 @@ int16_t handle = 0;
 int MAX_CONNECT_TRIES = 12;
 int16_t status;
 int8_t* serial_num_buffer;
-int16_t* waveform_buffer;
 
 
 int16_t close_picoscope(){ 
@@ -104,10 +103,10 @@ int set_channel_off(int channel) {
     return status;
 }
 
-#define NUM_SAMPLES 10000
-
 int16_t
-retrieve_waveform(struct ChannelConfigs* channel_configuration, int16_t** waveform){
+retrieve_waveform(struct ChannelConfigs* channel_configuration, int16_t** waveform, int sample_size){
+    int16_t* waveform_buffer = NULL;
+    // MAX_BUFFER_SIZE: 1073741696
     status = ps6000aSetChannelOn(
         handle,
         channel_configuration->channel,
@@ -115,20 +114,23 @@ retrieve_waveform(struct ChannelConfigs* channel_configuration, int16_t** wavefo
         channel_configuration->range,
         channel_configuration->analogue_offset,
         channel_configuration->bandwidth
-        );
-    printf("channel %d",channel_configuration->channel);
+        );    
     status = ps6000aSetChannelOn(handle, PICO_CHANNEL_B, PICO_DC, PICO_X1_PROBE_20V, 0.0, PICO_BW_FULL);
     double timeIntervalNs = 0.0;
-    uint64_t *maxSamples = 0;
+    uint64_t maxSamples = 0;
     double timeIndisposedMs = 0;
-    uint32_t timebase = 156254;
+    uint32_t timebase = 1 ;
     int16_t triggerStatus = 0;
-    int16_t *waveform_buffer = (int16_t *)malloc(sizeof(int16_t) * NUM_SAMPLES);  // Allocate memory for the captured data
-    status = ps6000aRunBlock(handle, 0, NUM_SAMPLES, timebase, &timeIndisposedMs, 0, NULL, NULL);
-    int i = 0;
+    waveform_buffer = (int16_t *)malloc(sizeof(int16_t) * sample_size);  // Allocate memory for the captured data
+    memset(waveform_buffer, 0, sizeof(int16_t) * sample_size);
+
+    status = ps6000aRunBlock(handle, 0, sample_size, timebase, &timeIndisposedMs, 0, NULL, NULL);
+    if(status!=PICO_OK){
+        printf("ps6000aRunBlock Error Code: %d.\n",status);
+    }
+
     while (1) {
             status = ps6000aIsReady(handle, &triggerStatus);
-            printf("%d\n",i);
             if(status!=PICO_OK){
                 printf("ps6000aIsReady Error Code: %d.\n",status);
                 break;
@@ -137,22 +139,30 @@ retrieve_waveform(struct ChannelConfigs* channel_configuration, int16_t** wavefo
                 printf("Capture finished.\n");
                 break;
             }
-            i++;
             usleep(10000);  
         }
 
-    // Set data buffer
-    status = ps6000aSetDataBuffer(handle, PICO_CHANNEL_B, waveform_buffer, NUM_SAMPLES, PICO_INT16_T, 0, PICO_RATIO_MODE_RAW, PICO_ADD);
-
-    // Transfer block of data from oscilloscope
+    status = ps6000aSetDataBuffer(handle, PICO_CHANNEL_B, waveform_buffer, sample_size, PICO_INT16_T, 0, PICO_RATIO_MODE_RAW, PICO_ADD);
+    if(status!=PICO_OK){
+        printf("ps6000aSetDataBuffer Error Code: %d.\n",status);
+        return status;
+    }
+    
     uint64_t startIndex = 0;
-    uint64_t noOfSamples = NUM_SAMPLES;
-    uint64_t downSampleRatio = 1;  // No downsampling
-    PICO_RATIO_MODE downSampleRatioMode = PICO_RATIO_MODE_RAW;  // No downsampling mode
-    uint64_t segmentIndex = 0;  // No segmentation
+    uint64_t noOfSamples = sample_size;
+    uint64_t downSampleRatio = 1;
+    PICO_RATIO_MODE downSampleRatioMode = PICO_RATIO_MODE_RAW;
+    uint64_t segmentIndex = 0;
     int16_t overflow = 0;
+    
     status = ps6000aGetValues(handle, startIndex, &noOfSamples, downSampleRatio, downSampleRatioMode, segmentIndex, &overflow);
+    if(status!=PICO_OK){
+        printf("ps6000aGetValues Error Code: %d.\n",status);
+        return status;
+    }
+    
     *waveform = waveform_buffer;
+    printf("%d \n", waveform_buffer[1]);
     return status;
  
 }
