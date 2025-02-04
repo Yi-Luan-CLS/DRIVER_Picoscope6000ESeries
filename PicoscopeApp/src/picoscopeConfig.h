@@ -16,6 +16,7 @@ struct ChannelConfigs{
 };
 
 struct SampleConfigs{ 
+    u_int32_t timebase; 
     u_int64_t num_samples; 
     u_int64_t pre_trigger_samples; 
     u_int64_t post_trigger_samples; 

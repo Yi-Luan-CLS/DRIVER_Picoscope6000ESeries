@@ -31,6 +31,7 @@ enum ioType
 	OPEN_PICOSCOPE,
 	SET_RESOLUTION,
 	SET_NUM_SAMPLES,
+	SET_TIMEBASE,
 	SET_DOWN_SAMPLE_RATIO,
 	SET_DOWN_SAMPLE_RATIO_MODE,
 	SET_PRE_TRIGGER_SAMPLES,
@@ -60,6 +61,7 @@ static struct aioType
 		{"open_picoscope", isOutput, OPEN_PICOSCOPE, ""},
 		{"set_resolution", isOutput, SET_RESOLUTION, ""},
 		{"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
+		{"set_timebase", isOutput, SET_TIMEBASE, ""},
 		{"set_down_sampling_ratio", isOutput, SET_DOWN_SAMPLE_RATIO, ""},
 		{"set_down_sampling_ratio_mode", isOutput, SET_DOWN_SAMPLE_RATIO_MODE, ""},
 		{"set_pre_trigger_samples", isOutput, SET_PRE_TRIGGER_SAMPLES, "" },
@@ -314,6 +316,10 @@ init_record_ao (struct aoRecord *pao)
 			sample_configurations->num_samples = (int)pao->val; 
 			break; 
 
+		case SET_TIMEBASE: 
+			sample_configurations->timebase = (int)pao->val;
+			break; 
+
 		case SET_DOWN_SAMPLE_RATIO: 
 			sample_configurations->down_sample_ratio = (int)pao->val; 
 			break; 
@@ -412,6 +418,10 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->num_samples = (int)pao->val; 
 			break; 
 
+		case SET_TIMEBASE: 
+			sample_configurations->timebase = (int)pao->val;
+			break; 
+			
 		case SET_DOWN_SAMPLE_RATIO: 
 			sample_configurations->down_sample_ratio = (int)pao->val; 
 			break; 
