@@ -19,18 +19,18 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:ON
 - **Type**: `bo`
-- **Description**: Picoscope connection.
+- **Description**: Turns picoscope on/off.
 - **Fields**:
-  - `VAL`: The resolution mode and corresponding levels.  
+  - `VAL`: Status of the picoscope.  
     | VAL   | Enum          | Description               |  
     |-------|---------------|---------------------------|  
     | 0     | OFF           | Disconnect the Picoscope. |  
     | 1     | ON            | Connect the Picoscope.    |  
 - **Example**:
   ```bash
-    # Connect the Picoscope
+    # Connect the Picoscope by number
     $ caput OSC1234-01:ON 1
-    # Disconnect the Picoscope 
+    # Disconnect the Picoscope by string 
     $ caput OSC1234-01:ON OFF
 
     # Get connection status
@@ -39,39 +39,37 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:resolution
 - **Type**: `mbbo`
-- **Description**: The resolution of the sampling hardware in the Picoscope, providing varying levels of signal precision. Apply to all channels.
+- **Description**: The resolution of the sampling hardware in the Picoscope, providing varying levels of signal precision. Applied to all channels.
 - **Fields**:
   - `VAL`: The resolution mode and corresponding levels.  
     | VAL   | Enum          | Description                          |  
     |-------|---------------|--------------------------------------|  
     | 0     | PICO_DR_8BIT  | 8-bit resolution (256 levels).        |  
-    | 10    | PICO_DR_10BIT | 10-bit resolution (1024 levels).      |  
-    | 1     | PICO_DR_12BIT | 12-bit resolution (4096 levels).      |
+    | 1     | PICO_DR_10BIT | 10-bit resolution (1024 levels).      |  
+    | 2     | PICO_DR_12BIT | 12-bit resolution (4096 levels).      |
 - **Example**:
   ```bash
     # Set resolution to PICO_DR_10BIT by number 
-    $ caput OSC1234-01:resolution 10
+    $ caput OSC1234-01:resolution 1
     # Set resolution to PICO_DR_8BIT by enum 
     $ caput OSC1234-01:resolution PICO_DR_8BIT
 
     # Get resolution
     $ caget OSC1234-01:resolution
   ```
-
 ### OSCNAME:down_sample_ratio_mode
 - **Type**: `mbbo`
-- **Description**: Various methods of data reduction, or downsampling, are possible with the PicoScope 6000E Series oscilloscopes.
+- **Description**: The methods of data reduction, or downsampling.
 - **Fields**:
-  - `VAL`: Method of dat reduction/downsampling.  
+  - `VAL`: Method of data reduction/downsampling.  
     | VAL  | Enum                   | Description                          |  
     |------|------------------------|--------------------------------------|  
     | 0    | AGGREGATE              |  Reduces every block of n values to just two values: a minimum and a maximum. The minimum and maximum values are returned in two separate buffers.                     |  
     | 1    | DECIMATE               |  Reduces every block of n values to a single value representing the average (arithmetic mean) of all the values.                   |  
     | 2    | AVERAGE                |  Reduces every block of n values to just the first value in the block, discarding all the other values                   |
-    | 3    | DISTRIBUTION           |  Not implemented.
-    | 4    | TRIG_DATA_FOR_TIME_CALC|  In overlapped mode only, causes trigger data to be retrieved from the scope to calculate the trigger time without requiring a user buffer to be set for this data.
-    | 5    | TRIGGER                |  Gets 20 samples either side of the trigger point. When using trigger delay, this is the original event causing the trigger and not the delayed point. This data is available even when the original trigger point falls outside the main preTrigger + postTrigger data. Trigger data must be retrieved before attempting to get the trigger time.
-    | 6    | RAW                    |  No downsampling. Returns raw data values|
+    | 3    | TRIG_DATA_FOR_TIME_CALC|  In overlapped mode only, causes trigger data to be retrieved from the scope to calculate the trigger time without requiring a user buffer to be set for this data.
+    | 4    | TRIGGER                |  Gets 20 samples either side of the trigger point. When using trigger delay, this is the original event causing the trigger and not the delayed point. This data is available even when the original trigger point falls outside the main preTrigger + postTrigger data. Trigger data must be retrieved before attempting to get the trigger time.
+    | 5    | RAW                    |  No downsampling. Returns raw data values|
 - **Example**:
   ```bash
     # Set down sample mode to AGGREGATE by number
@@ -82,9 +80,24 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get current down sampling mode
     $ caget OSC1234-01:down_sample_ratio_mode
   ```
+
+### OSCNAME:down_sample_ratio
+- **Type**: `ao`
+- **Description**: The downsampling factor that will be applied to the raw data. 
+- **Fields**:
+  - `VAL`: The downsampling factor that will be applied to the raw data. Must be greater than zero.  
+  
+- **Example**:
+  ```bash
+    # Set down sample ratio to 1
+    $ caput OSC1234-01:down_sample_ratio 1
+  
+    # Get current down sampling ratio
+    $ caget OSC1234-01:down_sample_ratio
+  ```
 ### OSCNAME:num_samples
 - **Type**: `ao`
-- **Description**: The number of samples will be collected. Apply to all channels.
+- **Description**: The number of samples will be collected. Applies to all channels.
 - **Fields**:
   - `VAL`: The number of samples in integer.
 - **Example**:
@@ -100,7 +113,7 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:pre_trigger_samples
 - **Type**: `ao`
-- **Description**: Number of samples before the trigger event happened.
+- **Description**: Number of samples to return before the trigger event happened.
 - **Fields**:
   - `VAL`: Number of pre-trigger samples required.
 - **Example**:
@@ -114,7 +127,7 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:post_trigger_samples
 - **Type**: `ao`
-- **Description**: Number of samples after the trigger event happened.
+- **Description**: Number of samples to return after the trigger event happened.
 - **Fields**:
   - `VAL`: Number of post-trigger samples required.
 - **Example**:
@@ -124,6 +137,40 @@ This document provides detailed information about the EPICS driver for the Picos
 
     # Get post-trigger sample size 
     $ caget OSC1234-01:post_trigger_samples
+  ```
+
+  ### OSCNAME:timebase
+- **Type**: `ao`
+- **Description**: The time scale to determine time per division
+- **Fields**:
+  - `VAL`: Timebase
+- **Example**:
+  ```bash
+    # Set timebase to 5
+    $ caput OSC1234-01:timebase 5
+
+    # Get timebase
+    $ caget OSC1234-01:timebase
+  ```
+### OSCNAME:time_interval_ns
+- **Type**: `ai`
+- **Description**: Time interval between samples collected in ns. A read-only value.
+- **Fields**:
+  - `VAL`: Time interval between samples collected in ns.
+- **Example**:
+  ```bash
+    # Get time interval
+    $ caget OSC1234-01:time_intervals_ns
+  ```
+### OSCNAME:max_samples
+- **Type**: `ai`
+- **Description**: Maximum number of samples available based on number of segments, channels enabled, and timebase. A read-only value.
+- **Fields**:
+  - `VAL`: Maximum number of samples available.
+- **Example**:
+  ```bash
+    # Get maximum number of samples. 
+    $ caget OSC1234-01:max_samples
   ```
 ---
 **_Channel configuration:_**
@@ -138,10 +185,10 @@ This document provides detailed information about the EPICS driver for the Picos
     | 1     | The channel is switched on   |
 - **Example**:
   ```bash
-    # Switch on Channel A:
+    # Switch on Channel A by number 
     $ caput OSC1234-01:CHA:ON 1
-    # Switch off Channel A:
-    $ caput OSC1234-01:CHA:ON 0
+    # Switch off Channel A by string
+    $ caput OSC1234-01:CHA:ON OFF
 
     # Get state of Channel A:
     $ caget OSC1234-01:CHA:ON
@@ -199,7 +246,7 @@ This document provides detailed information about the EPICS driver for the Picos
     # Set voltage range to 500 mV MHZ by enum
     $ caput OSC1234-01:CHA:range PICO_X1_PROBE_500MV
 
-    # 
+    # Get voltage range
     $ caget OSC1234-01:CHA:range
   ```
 
@@ -225,7 +272,7 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:CHA:bandwith
   ```
 
-### OSCNAME:CH[A-D]:analogueoffset
+### OSCNAME:CH[A-D]:analogue_offset
 - **Type**: `ao`
 - **Description**: A voltage to add to the input channel before digitization.
 - **Fields**:
@@ -241,21 +288,6 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caput OSC1234-01:CHA:analogueoffset
   ```
 
-### OSCNAME:CH[A-D]:timeIntervalNs
-- **Type**: `stringout`
-- **Description**: Time interval between samples collected in ns.
-- **Fields**:
-  - `VAL`: Time interval between samples collected in ns.
-- **Example**:
-  ```bash
-    # Set time interval to 1 ns
-    $ caput OSC1234-01:CHA:timeIntervalNs 1
-    # Set time interval to 1 ms
-    $ caput OSC1234-01:CHA:timeIntervalNs 1000000
-
-    # Get time interval
-    $ caput OSC1234-01:CHA:analogueoffset
-  ```
 
 ### OSCNAME:CH[A-D]:waveform:acquire
 - **Type**: `bo`
