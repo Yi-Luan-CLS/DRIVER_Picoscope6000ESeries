@@ -49,7 +49,7 @@ record(ao, "$(OSC):ON:set") {
 record(stringin, "$(OSC):serial_num") {
 	field(DTYP, "Picoscope")
 	field(INP, "@L:get_serial_num")
-	field(SCAN, "1 second")
+    field(scan, "30 seconds")
 }
 
 ################################################################
