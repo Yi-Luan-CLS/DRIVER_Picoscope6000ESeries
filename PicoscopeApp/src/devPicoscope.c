@@ -23,6 +23,7 @@
 #include "picoscopeConfig.h"
 
 int16_t pico_status;
+#define MAX_SAMPLE_SIZE 1073741696
 
 enum ioType
 	{
@@ -616,14 +617,17 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 
 static long
 read_waveform (struct waveformRecord *pwaveform){
-	// printf("read_waveform() invoked!\n");
-
     int returnState;
 
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
-
+	int sample_size = 1073741696;
 	int16_t* waveform = NULL;
-    switch (vdp->ioType)
+    if(sample_size > pwaveform->nelm){
+		sample_size = pwaveform->nelm;
+    	printf("Sample size exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n", 
+		 MAX_SAMPLE_SIZE);
+	}
+	switch (vdp->ioType)
     {
 		case RETRIEVE_WAVEFORM:	
 			char* record_name = pwaveform->name; 
@@ -635,12 +639,11 @@ read_waveform (struct waveformRecord *pwaveform){
 				.analogue_offset = 0.0,
 				.bandwidth = 0
 			};
-			pwaveform->nord = pwaveform->nelm;
-			retrieve_waveform(&config, &waveform);
+			pwaveform->nord = sample_size;
+			retrieve_waveform(&config, &waveform, sample_size);
     		returnState = 0;
 			break;
        	default:
-			// debugprint("default\n");
             returnState = -1;
     }
 
@@ -651,8 +654,13 @@ read_waveform (struct waveformRecord *pwaveform){
 			}
         return 2;
 	}
-	
-	memcpy(pwaveform->bptr, waveform, pwaveform->nelm * sizeof (int16_t) );
+	if(waveform==NULL){
+		printf("\nwaveform is NULL\n");
+		return 0;
+	}
+	memcpy(pwaveform->bptr, waveform, sample_size * sizeof(int16_t) );
+	free(waveform);
+
 	return 0;
 }
 

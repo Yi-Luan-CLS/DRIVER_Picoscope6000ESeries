@@ -113,7 +113,7 @@ record(calcout, "$(IOC_HOST):CHB:waveform:acquire:calcout") {
 
 record(waveform, "${IOC_HOST}:CHB:waveform"){
     field(DTYP, "Picoscope")
-	field(NELM, "10000")
+	field(NELM, "1073741696")
 	field(SCAN, "Passive")
 	field(FTVL, "SHORT")
     field(INP, "@L:retrieve_waveform")
