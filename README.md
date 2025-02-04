@@ -139,11 +139,19 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:post_trigger_samples
   ```
 
-  ### OSCNAME:timebase
+### OSCNAME:timebase
 - **Type**: `ao`
 - **Description**: The time scale to determine time per division
 - **Fields**:
   - `VAL`: Timebase
+  
+  _Minimum Timebase:_
+  |                   | 8 BIT      | 10 BIT     |  
+  |-------------------|------------|------------|  
+  | One Channel       | 0 (200 ps) | 2 (800 ps) |  
+  | Two Channels      | 0 (200 ps) | 2 (800 ps) |  
+  | Three Channels    | 1 (400 ps) | N/A        |  
+  | Four Channels     | 1 (400 ps) | N/A        | 
 - **Example**:
   ```bash
     # Set timebase to 5
@@ -152,6 +160,7 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get timebase
     $ caget OSC1234-01:timebase
   ```
+  
 ### OSCNAME:time_interval_ns
 - **Type**: `ai`
 - **Description**: Time interval between samples collected in ns. A read-only value.
