@@ -23,6 +23,8 @@
 
 #define MAX_SAMPLE_SIZE 1073741696
 
+int16_t result; 
+
 enum ioType
 	{
 	UNKNOWN_IOTYPE, // default case, must be 0 
@@ -78,7 +80,6 @@ static struct aioType
 struct PicoscopeData
 	{
 		enum ioType ioType;
-	    char serial_num[100];
 		char *cmdPrefix;
 		char paramLabel[32];
 		int paramValid;
@@ -200,15 +201,6 @@ read_ai (struct aiRecord *pai){
 		return 0;
 	}
 }	
-	// static long
-	// special_linconv_ai(struct aiRecord *pai, int after)
-	// {
-	// 		if (!after)
-	// 				return 0;
-	// 		/* set linear conversion slope*/
-	// 		/* pai->eslo = (pai->eguf - pai->egul) / 65535.0; */
-	// 		return 0;
-	// }
 
 /****************************************************************************************
  * AO Record
@@ -338,9 +330,15 @@ init_record_ao (struct aoRecord *pao)
 			int pv_value = (int)pao->val; 
 
 			if (pv_value == 1){
-				open_picoscope(resolution);
+				result = open_picoscope(resolution);
+				if (result != 0) {
+					printf("Error opening picoscope.\n");
+				}
 			} else {
-				close_picoscope(); 
+				result = close_picoscope(); 
+				if (result != 0) {
+					printf("Error closing picoscope.\n");
+				}
 			}
 			break;
 
@@ -383,10 +381,16 @@ init_record_ao (struct aoRecord *pao)
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
-				set_channel_on(channels[channel_index]);
+				result = set_channel_on(channels[channel_index]);
+				if (result != 0) {
+					printf("Error setting channel %s on.\n", record_name);
+				}
 			}
 			else {
 				set_channel_off((int)channels[channel_index]->channel);
+				if (result != 0) {
+					printf("Error setting channel %s off.\n", record_name);
+				}
 			}
 			break;
 
@@ -410,6 +414,10 @@ write_ao (struct aoRecord *pao)
     {	
 		case SET_RESOLUTION: 
 			resolution = (int)pao->val; 
+			result = set_device_resolution(resolution); 
+			if (result !=0) {
+				printf("Error setting picoscope resolution.\n");
+			}
 			break;
 
 		case SET_NUM_SAMPLES: 
@@ -439,11 +447,20 @@ write_ao (struct aoRecord *pao)
 		case OPEN_PICOSCOPE: 
 			int pv_value = (int)pao->val; 
 			
+			
+
+
 
 			if (pv_value == 1){
-				open_picoscope(resolution);
+				result = open_picoscope(resolution);
+				if (result != 0) {
+					printf("Error opening picoscope.\n");
+				}
 			} else {
-				close_picoscope(); 
+				result = close_picoscope(); 
+				if (result != 0) {
+					printf("Error closing picoscope.\n");
+				}
 			}
 			break;
 
@@ -486,14 +503,18 @@ write_ao (struct aoRecord *pao)
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
-				set_channel_on(channels[channel_index]);
-			}
+				result = set_channel_on(channels[channel_index]);
+				if (result != 0) {
+					printf("Error setting channel %s on.\n", record_name);
+				}
+			} 
 			else {
 				set_channel_off((int)channels[channel_index]->channel);
-			}
+				if (result != 0) {
+					printf("Error setting channel %s off.\n", record_name);
+				}
+			}	
 			break;
-
-
 
         default:
                 returnState = -1;
@@ -619,29 +640,21 @@ read_stringin (struct stringinRecord *pstringin){
 	{
 		case GET_SERIAL_NUM:
 			int8_t* serial_num = NULL;
-			get_serial_num(&serial_num);
+			result = get_serial_num(&serial_num);
 
-			if (serial_num == NULL){
-				// printf("Failed to require serial_num.);
-				return 1;
-			} else memcpy(pstringin->val, serial_num, strlen((char *)serial_num) + 1);
-		
+			if (result != 0){
+				printf("Error getting device serial number.\n");
+			} else {
+				memcpy(pstringin->val, serial_num, strlen((char *)serial_num) + 1);
+			}
 			break;
+			
 		default:
 			return 2;
 
 		return 0;
 	}
 }	
-// 	static long
-// 	special_linconv_ai(struct aiRecord *pai, int after)
-// 	{
-// 			if (!after)
-// 					return 0;
-// 			/* set linear conversion slope*/
-// 			/* pai->eslo = (pai->eguf - pai->egul) / 65535.0; */
-// 			return 0;
-// }
 
 /****************************************************************************************
   * Waveform - read a data array of values

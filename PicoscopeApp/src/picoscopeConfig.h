@@ -11,15 +11,6 @@ enum Channel{
     CHANNEL_E = 4,
 };
 
-enum TimeUnits {
-    FS = 0,
-    PS = 1,
-    NS = 2,
-    US = 3,
-    MS = 4,
-    S = 5,
-};
-
 enum RatioMode {
     RATIO_MODE_AGGREGATE = 1,
     RATIO_MODE_DECIMATE = 2,
@@ -28,7 +19,6 @@ enum RatioMode {
     RATIO_MODE_TRIGGER = 0x40000000, 
     RATIO_MODE_RAW = 0x80000000
 };
-
 
 /** Structure for channel configurations  */
 struct ChannelConfigs{
@@ -44,7 +34,6 @@ struct SampleConfigs{
     u_int64_t num_samples; 
     u_int64_t pre_trigger_samples; 
     u_int64_t post_trigger_samples; 
-    enum TimeUnits time_units; 
     u_int64_t down_sample_ratio;
     enum RatioMode down_sample_ratio_mode; 
 };
