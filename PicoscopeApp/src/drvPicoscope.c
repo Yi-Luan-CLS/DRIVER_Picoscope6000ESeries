@@ -77,7 +77,6 @@ int set_channel_on(struct ChannelConfigs* channel) {
     
     printf("Set channel %d on.\n", channel->channel);
 
-    // TODO: remove 
     printf("Coupling: %d\n", channel->coupling); 
     printf("Range: %d\n", channel->range); 
     printf("Analogue offset: %f\n", channel->analogue_offset);     
@@ -94,7 +93,7 @@ int set_channel_on(struct ChannelConfigs* channel) {
 
 int set_channel_off(int channel) {
 
-    printf("Set channel off: %d\n", channel);
+    printf("Set channel %d off.\n", channel);
 
     status = ps6000aSetChannelOff(handle, channel);
     if (status != PICO_OK)

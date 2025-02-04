@@ -311,27 +311,22 @@ init_record_ao (struct aoRecord *pao)
 
 		case SET_NUM_SAMPLES: 
 			sample_configurations->num_samples = (int)pao->val; 
-			printf("num samples: %ld\n", sample_configurations->num_samples);
 			break; 
 
 		case SET_DOWN_SAMPLE_RATIO: 
 			sample_configurations->down_sample_ratio = (int)pao->val; 
-			printf("down sample ratio: %ld\n", sample_configurations->down_sample_ratio); 
 			break; 
 		
 		case SET_DOWN_SAMPLE_RATIO_MODE: 
 			sample_configurations->down_sample_ratio_mode = (int)pao->val; 
-			printf("down sample ratio mode: %d\n", sample_configurations->down_sample_ratio_mode); 
 			break; 
 		
 		case SET_PRE_TRIGGER_SAMPLES: 
 			sample_configurations->pre_trigger_samples = (int)pao->val;
-			printf("Pre trigger samples: %ld\n", sample_configurations->pre_trigger_samples);
 			break;
 		
 		case SET_POST_TRIGGER_SAMPLES: 
 			sample_configurations->post_trigger_samples = (int)pao->val;
-			printf("Post trigger samples: %ld\n", sample_configurations->post_trigger_samples);
 			break;  
 
 		case OPEN_PICOSCOPE: 
@@ -414,27 +409,22 @@ write_ao (struct aoRecord *pao)
 
 		case SET_NUM_SAMPLES: 
 			sample_configurations->num_samples = (int)pao->val; 
-			printf("num samples: %ld\n", sample_configurations->num_samples);
 			break; 
 
 		case SET_DOWN_SAMPLE_RATIO: 
 			sample_configurations->down_sample_ratio = (int)pao->val; 
-			printf("down sample ratio: %ld\n", sample_configurations->down_sample_ratio); 
 			break; 
 		
 		case SET_DOWN_SAMPLE_RATIO_MODE: 
 			sample_configurations->down_sample_ratio_mode = (int)pao->val; 
-			printf("down sample ratio mode: %d\n", sample_configurations->down_sample_ratio_mode); 
 			break; 
 		
 		case SET_PRE_TRIGGER_SAMPLES: 
 			sample_configurations->pre_trigger_samples = (int)pao->val;
-			printf("Pre trigger samples: %ld\n", sample_configurations->pre_trigger_samples);
 			break;
 		
 		case SET_POST_TRIGGER_SAMPLES: 
 			sample_configurations->post_trigger_samples = (int)pao->val;
-			printf("Post trigger samples: %ld\n", sample_configurations->post_trigger_samples);
 			break;  
 			
 		case OPEN_PICOSCOPE: 
@@ -456,7 +446,7 @@ write_ao (struct aoRecord *pao)
 			channels[channel_index]->coupling = (int)pao->val;
 			break;
 
-		case SET_RANGE: 
+		case SET_RANGE:
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 			
