@@ -100,6 +100,14 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Description**: The number of samples will be collected. Applies to all channels.
 - **Fields**:
   - `VAL`: The number of samples in integer.
+  
+    Maximum sample size
+    |                   | 8 BIT      | 10 BIT     |  
+    |-------------------|------------|------------|  
+    | ONE Channel       | 4294966784 | 2147483392 |  
+    | TWO Channels      | 2147483392 | 1073741696 |  
+    | THREE Channels    | 1073741696 | N/A        |  
+    | FOUR Channels     | 1073741696 | N/A        |
 - **Example**:
   ```bash
     # Collect 100000000 samples 
@@ -145,13 +153,13 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Fields**:
   - `VAL`: Timebase
   
-  _Minimum Timebase:_
-  |                   | 8 BIT      | 10 BIT     |  
-  |-------------------|------------|------------|  
-  | One Channel       | 0 (200 ps) | 2 (800 ps) |  
-  | Two Channels      | 0 (200 ps) | 2 (800 ps) |  
-  | Three Channels    | 1 (400 ps) | N/A        |  
-  | Four Channels     | 1 (400 ps) | N/A        | 
+    _Minimum Timebase:_
+    |                   | 8 BIT      | 10 BIT     |  
+    |-------------------|------------|------------|  
+    | One Channel       | 0 (200 ps) | 2 (800 ps) |  
+    | Two Channels      | 0 (200 ps) | 2 (800 ps) |  
+    | Three Channels    | 1 (400 ps) | N/A        |  
+    | Four Channels     | 1 (400 ps) | N/A        | 
 - **Example**:
   ```bash
     # Set timebase to 5
