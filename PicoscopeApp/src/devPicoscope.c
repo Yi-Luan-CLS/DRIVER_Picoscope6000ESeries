@@ -20,9 +20,7 @@
 
 #include "picoscopeConfig.h"
 #include "drvPicoscope.h"
-#include "picoscopeConfig.h"
 
-int16_t pico_status;
 #define MAX_SAMPLE_SIZE 1073741696
 
 enum ioType
@@ -263,10 +261,10 @@ init_record_ao (struct aoRecord *pao)
 			channels[i] = (struct ChannelConfigs*)malloc(sizeof(struct ChannelConfigs));
 		}
 	}
-	channels[0]->channel = PICO_CHANNEL_A;
-	channels[1]->channel = PICO_CHANNEL_B;
-	channels[2]->channel = PICO_CHANNEL_C;
-	channels[3]->channel = PICO_CHANNEL_D;
+	channels[0]->channel = CHANNEL_A;
+	channels[1]->channel = CHANNEL_B;
+	channels[2]->channel = CHANNEL_C;
+	channels[3]->channel = CHANNEL_D;
 
     if (sample_configurations == NULL) {
         sample_configurations = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
@@ -340,9 +338,9 @@ init_record_ao (struct aoRecord *pao)
 			int pv_value = (int)pao->val; 
 
 			if (pv_value == 1){
-				pico_status = open_picoscope(resolution);
+				open_picoscope(resolution);
 			} else {
-				pico_status = close_picoscope(); 
+				close_picoscope(); 
 			}
 			break;
 
@@ -385,10 +383,10 @@ init_record_ao (struct aoRecord *pao)
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
-				pico_status = set_channel_on(channels[channel_index]);
+				set_channel_on(channels[channel_index]);
 			}
 			else {
-				pico_status = set_channel_off((int)channels[channel_index]->channel);
+				set_channel_off((int)channels[channel_index]->channel);
 			}
 			break;
 
@@ -443,9 +441,9 @@ write_ao (struct aoRecord *pao)
 			
 
 			if (pv_value == 1){
-				pico_status = open_picoscope(resolution);
+				open_picoscope(resolution);
 			} else {
-				pico_status = close_picoscope(); 
+				close_picoscope(); 
 			}
 			break;
 
@@ -488,10 +486,10 @@ write_ao (struct aoRecord *pao)
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
-				pico_status = set_channel_on(channels[channel_index]);
+				set_channel_on(channels[channel_index]);
 			}
 			else {
-				pico_status = set_channel_off((int)channels[channel_index]->channel);
+				set_channel_off((int)channels[channel_index]->channel);
 			}
 			break;
 
@@ -519,15 +517,15 @@ int find_channel_index_from_record(const char* record_name, struct ChannelConfig
     char channel_str[4];
     sscanf(record_name, "%*[^:]:%4[^:]", channel_str);  // Extract the channel part, e.g., "CHA", "CHB", etc.
 
-    enum enPicoChannel channel;
+    enum Channel channel;
     if (strcmp(channel_str, "CHA") == 0) {
-        channel = PICO_CHANNEL_A;
+        channel = CHANNEL_A;
     } else if (strcmp(channel_str, "CHB") == 0) {
-        channel = PICO_CHANNEL_B;
+        channel = CHANNEL_B;
     } else if (strcmp(channel_str, "CHC") == 0) {
-        channel = PICO_CHANNEL_C;
+        channel = CHANNEL_C;
     } else if (strcmp(channel_str, "CHD") == 0) {
-        channel = PICO_CHANNEL_D;
+        channel = CHANNEL_D;
     } else {
         return -1;  // Invalid channel
     }
@@ -621,10 +619,10 @@ read_stringin (struct stringinRecord *pstringin){
 	{
 		case GET_SERIAL_NUM:
 			int8_t* serial_num = NULL;
-			pico_status = get_serial_num(&serial_num);
+			get_serial_num(&serial_num);
 
-			if (pico_status != PICO_OK || serial_num == NULL){
-				// printf("Failed to require serial_num. Error code: %d\n", pico_status);
+			if (serial_num == NULL){
+				// printf("Failed to require serial_num.);
 				return 1;
 			} else memcpy(pstringin->val, serial_num, strlen((char *)serial_num) + 1);
 		
@@ -741,7 +739,6 @@ read_waveform (struct waveformRecord *pwaveform){
     {
 		case RETRIEVE_WAVEFORM:	
 			char* record_name = pwaveform->name; 
-			// enum enPicoChannel channel = record_name_to_pico_channel(record_name);
 			struct ChannelConfigs config = {
 				.channel = 1,
 				.coupling = 1,

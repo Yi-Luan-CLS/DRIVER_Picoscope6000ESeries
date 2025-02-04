@@ -1,4 +1,4 @@
-#include "PicoStatus.h"
+#include "picoscopeConfig.h"
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
 
