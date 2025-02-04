@@ -1,1 +1,285 @@
 # DRIVER_Picoscope6000ESeries
+## Overview
+This document provides detailed information about the EPICS driver for the Picoscope 6000E Series oscilloscope. The driver allows control and monitoring of the oscilloscope through EPICS Process Variables (PVs).
+
+---
+
+## PVs
+**_Global configuration:_**
+### OSCNAME:serial_num
+- **Type**: `stringin`
+- **Description**: Retrieves the serial number of the oscilloscope device. This is a read-only PV that provides the unique identifier for the connected oscilloscope.
+- **Fields**:
+  - **VAL**: The serial number of the device (string).
+- **Example**:
+  ```bash
+  # To read the serial number:
+  $ caget OSC1234-01:serial_num
+  ```
+
+### OSCNAME:ON
+- **Type**: `bo`
+- **Description**: Picoscope connection.
+- **Fields**:
+  - `VAL`: The resolution mode and corresponding levels.  
+    | VAL   | Enum          | Description               |  
+    |-------|---------------|---------------------------|  
+    | 0     | OFF           | Disconnect the Picoscope. |  
+    | 1     | ON            | Connect the Picoscope.    |  
+- **Example**:
+  ```bash
+    # Connect the Picoscope
+    $ caput OSC1234-01:ON 1
+    # Disconnect the Picoscope 
+    $ caput OSC1234-01:ON OFF
+
+    # Get connection status
+    $ caget OSC1234-01:ON
+  ```
+
+### OSCNAME:resolution
+- **Type**: `mbbo`
+- **Description**: The resolution of the sampling hardware in the Picoscope, providing varying levels of signal precision. Apply to all channels.
+- **Fields**:
+  - `VAL`: The resolution mode and corresponding levels.  
+    | VAL   | Enum          | Description                          |  
+    |-------|---------------|--------------------------------------|  
+    | 0     | PICO_DR_8BIT  | 8-bit resolution (256 levels).        |  
+    | 10    | PICO_DR_10BIT | 10-bit resolution (1024 levels).      |  
+    | 1     | PICO_DR_12BIT | 12-bit resolution (4096 levels).      |
+- **Example**:
+  ```bash
+    # Set resolution to PICO_DR_10BIT by number 
+    $ caput OSC1234-01:resolution 10
+    # Set resolution to PICO_DR_8BIT by enum 
+    $ caput OSC1234-01:resolution PICO_DR_8BIT
+
+    # Get resolution
+    $ caget OSC1234-01:resolution
+  ```
+
+### OSCNAME:down_sample_ratio_mode
+- **Type**: `mbbo`
+- **Description**: Various methods of data reduction, or downsampling, are possible with the PicoScope 6000E Series oscilloscopes.
+- **Fields**:
+  - `VAL`: Method of dat reduction/downsampling.  
+    | VAL  | Enum                   | Description                          |  
+    |------|------------------------|--------------------------------------|  
+    | 0    | AGGREGATE              |  Reduces every block of n values to just two values: a minimum and a maximum. The minimum and maximum values are returned in two separate buffers.                     |  
+    | 1    | DECIMATE               |  Reduces every block of n values to a single value representing the average (arithmetic mean) of all the values.                   |  
+    | 2    | AVERAGE                |  Reduces every block of n values to just the first value in the block, discarding all the other values                   |
+    | 3    | DISTRIBUTION           |  Not implemented.
+    | 4    | TRIG_DATA_FOR_TIME_CALC|  In overlapped mode only, causes trigger data to be retrieved from the scope to calculate the trigger time without requiring a user buffer to be set for this data.
+    | 5    | TRIGGER                |  Gets 20 samples either side of the trigger point. When using trigger delay, this is the original event causing the trigger and not the delayed point. This data is available even when the original trigger point falls outside the main preTrigger + postTrigger data. Trigger data must be retrieved before attempting to get the trigger time.
+    | 6    | RAW                    |  No downsampling. Returns raw data values|
+- **Example**:
+  ```bash
+    # Set down sample mode to AGGREGATE by number
+    $ caput OSC1234-01:down_sample_ratio_mode 0
+    # Set down sample mode to RAW by enum 
+    $ caput OSC1234-01:down_sample_ratio_mode RAW
+
+    # Get current down sampling mode
+    $ caget OSC1234-01:down_sample_ratio_mode
+  ```
+### OSCNAME:num_samples
+- **Type**: `ao`
+- **Description**: The number of samples will be collected. Apply to all channels.
+- **Fields**:
+  - `VAL`: The number of samples in integer.
+- **Example**:
+  ```bash
+    # Collect 100000000 samples 
+    $ caput OSC1234-01:num_samples 100000000
+    # Collect 1000 samples 
+    $ caput OSC1234-01:num_samples 1000
+
+    # Get sample size
+    $ caget OSC1234-01:num_samples
+  ```
+
+### OSCNAME:pre_trigger_samples
+- **Type**: `ao`
+- **Description**: Number of samples before the trigger event happened.
+- **Fields**:
+  - `VAL`: Number of pre-trigger samples required.
+- **Example**:
+  ```bash
+    # Set pre-trigger sample size to 50000 
+    $ caput OSC1234-01:pre_trigger_samples 50000
+
+    # Get pre-trigger sample size 
+    $ caget OSC1234-01:pre_trigger_samples
+  ```
+
+### OSCNAME:post_trigger_samples
+- **Type**: `ao`
+- **Description**: Number of samples after the trigger event happened.
+- **Fields**:
+  - `VAL`: Number of post-trigger samples required.
+- **Example**:
+  ```bash
+    # Set post-trigger sample size to 50000 
+    $ caput OSC1234-01:post_trigger_samples 50000
+
+    # Get post-trigger sample size 
+    $ caget OSC1234-01:post_trigger_samples
+  ```
+---
+**_Channel configuration:_**
+### OSCNAME:CH[A-D]:ON
+- **Type**: `bo`
+- **Description**: Switches a specific Picoscope channel on and off
+- **Fields**:
+  - **VAL**: The state of the channel (ON/OFF). 
+    | VAL   | Description                   |
+    |-------|-------------------------------|
+    | 0     | The channel is switched off  |
+    | 1     | The channel is switched on   |
+- **Example**:
+  ```bash
+    # Switch on Channel A:
+    $ caput OSC1234-01:CHA:ON 1
+    # Switch off Channel A:
+    $ caput OSC1234-01:CHA:ON 0
+
+    # Get state of Channel A:
+    $ caget OSC1234-01:CHA:ON
+  ```
+
+
+### OSCNAME:CH[A-D]:coupling
+- **Type**: `mbbo`
+- **Description**: 
+- **Fields**:
+  - `VAL`: The impedance and coupling type.
+    | VAL   | Enum      | Description                   |
+    |-------|-----------|-------------------------------|
+    | 0     | PICO_AC   | 1 mΩ impedance, AC coupling.  |
+    | 1     | PICO_DC   | 1 mΩ impedance, DC coupling.  |
+- **Example**:
+  ```bash
+    # Set coupling type to PICO_AC by number 
+    $ caput OSC1234-01:CHA:coupling 0
+    # Set coupling type to PICO_DC by enum 
+    $ caput OSC1234-01:CHA:coupling PICO_DC
+
+    # Get coupling type
+    $ caget OSC1234-01:CHA:coupling
+  ```
+
+
+### OSCNAME:CH[A-D]:range
+- **Type**: `mbbo`
+- **Description**:  
+- **Fields**:
+  - `VAL`: The value of the voltage range.
+    | VAL   | Enum                 | Description                         |
+    |-------|----------------------|-----------------------------------|
+    | 0     | PICO_X1_PROBE_10MV   | Voltage range from -10 mV to 10 mV  |
+    | 1     | PICO_X1_PROBE_20MV   | Voltage range from -20 mV to 20 mV  |
+    | 2     | PICO_X1_PROBE_50MV   | Voltage range from -50 mV to 50 mV  |
+    | 3     | PICO_X1_PROBE_100MV  | Voltage range from -100 mV to 100 mV |
+    | 4     | PICO_X1_PROBE_200MV  | Voltage range from -200 mV to 200 mV |
+    | 5     | PICO_X1_PROBE_500MV  | Voltage range from -500 mV to 500 mV |
+    | 6     | PICO_X1_PROBE_1V     | Voltage range from -1 V to 1 V       |
+    | 7     | PICO_X1_PROBE_2V     | Voltage range from -2 V to 2 V       |
+    | 8     | PICO_X1_PROBE_5V     | Voltage range from -5 V to 5 V       |
+    | 9     | PICO_X1_PROBE_10V    | Voltage range from -10 V to 10 V     |
+    | 10    | PICO_X1_PROBE_20V    | Voltage range from -20 V to 20 V     |
+    | 11    | PICO_X1_PROBE_50V    | Voltage range from -50 V to 50 V     |
+    | 12    | PICO_X1_PROBE_100V   | Voltage range from -100 V to 100 V   |
+    | 13    | PICO_X1_PROBE_200V   | Voltage range from -200 V to 200 V   |
+    | 14    | PICO_X1_PROBE_500V   | Voltage range from -500 V to 500 V   |
+    | 15    | PICO_X1_PROBE_1KV    | Voltage range from -1000 V to 1000 V |
+- **Example**:
+  ```bash
+    # Set voltage range to -/+20V by number 
+    $ caput OSC1234-01:CHA:range 10
+    # Set voltage range to 500 mV MHZ by enum
+    $ caput OSC1234-01:CHA:range PICO_X1_PROBE_500MV
+
+    # 
+    $ caget OSC1234-01:CHA:range
+  ```
+
+
+### OSCNAME:CH[A-D]:bandwidth
+- **Type**: `mbbo`
+- **Description**: The bandwith Oscilloscope start acquiring PV with current configuration(set by other PVs).
+- **Fields**:
+  - `VAL`: Trigger to start getting the waveform.
+    | VAL   | Enum             | Description              |
+    |-------|------------------|--------------------------|
+    | 0     | PICO_BW_FULL     | Full bandwith (defualt)  |
+    | 1     | PICO_BW_20MHZ    | Bandwith of 20 MHZ       |
+    | 2     | PICO_BW_200MHZ   | Bandwith of 200 MHZ      |
+- **Example**:
+  ```bash
+    # Set bandwith to full bandwith by number
+    $ caput OSC1234-01:CHA:bandwith 0
+    # Set bandwith to 20 MHZ bandwith by enum
+    $ caput OSC1234-01:CHA:bandwith PICO_BW_20MHZ
+
+    # Get bandwith
+    $ caget OSC1234-01:CHA:bandwith
+  ```
+
+### OSCNAME:CH[A-D]:analogueoffset
+- **Type**: `ao`
+- **Description**: A voltage to add to the input channel before digitization.
+- **Fields**:
+  - `VAL`: The value of the voltage offset.
+- **Example**:
+  ```bash
+    # Set offset to 1V
+    $ caput OSC1234-01:CHA:analogueoffset 1
+    # Set offset to 10V
+    $ caput OSC1234-01:CHA:analogueoffset 10
+
+    # Get offset
+    $ caput OSC1234-01:CHA:analogueoffset
+  ```
+
+### OSCNAME:CH[A-D]:timeIntervalNs
+- **Type**: `stringout`
+- **Description**: Time interval between samples collected in ns.
+- **Fields**:
+  - `VAL`: Time interval between samples collected in ns.
+- **Example**:
+  ```bash
+    # Set time interval to 1 ns
+    $ caput OSC1234-01:CHA:timeIntervalNs 1
+    # Set time interval to 1 ms
+    $ caput OSC1234-01:CHA:timeIntervalNs 1000000
+
+    # Get time interval
+    $ caput OSC1234-01:CHA:analogueoffset
+  ```
+
+### OSCNAME:CH[A-D]:waveform:acquire
+- **Type**: `bo`
+- **Description**: The PV to ask Oscilloscope start acquiring PV with current configuration(set by other PVs).
+- **Fields**:
+  - `VAL`: Start getting the waveform.
+    | VAL   | Description      |
+    |-------|------------------|
+    | 1     | Start acquiring waveform   |
+- **Example**:
+  ```bash
+    # Start acquiring waveform
+    $ caput OSC1234-01:CHA:waveform:acquire 1
+  ```
+
+### OSCNAME:CH[A-D]:waveform
+- **Type**: `waveform`
+- **Description**: Waveform will be available after `OSCNAME:CH[A-D]:waveform:acquire` PV is invoked.
+- **Fields**:
+  - `VAL`: Waveform result acquired
+- **Example**:
+  ```bash
+    # Get waveform result
+    $ caget OSC1234-01:CHA:waveform
+  ```
+
+  
