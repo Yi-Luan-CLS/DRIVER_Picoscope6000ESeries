@@ -109,6 +109,13 @@ record(ao, "$(OSC):post_trigger_samples") {
     field(OUT, "@L:set_post_trigger_samples")
 }
 
+record(ao, "$(OSC):timebase") {
+    field(DESC, "Timebase")
+    field(DTYP, "Picoscope")
+    field(VAL, "1")
+    field(OUT, "@L:set_timebase")
+}
+
 # TODO: return values from ps6000aGetTimebase 
 # record(ao, "$(OSC):time_interval_ns") {
 #     field(DTYP, "Picoscope")
