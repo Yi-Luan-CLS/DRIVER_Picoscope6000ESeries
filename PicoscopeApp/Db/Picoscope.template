@@ -1,58 +1,75 @@
-record(bo, "$(IOC_HOST):ON") {
-	field(DTYP, "Soft Channel")
-	field(DESC, "Picoscope On")
-	field(ZNAM, "OFF")    	
-	field(ONAM, "ON") 
+################################################################
+#### Oscilloscope  PVs 
+################################################################
 
-	field(FLNK,  "$(IOC_HOST):ON:set")
-}
-
-record(ao, "$(IOC_HOST):ON:set") {
-	field(DTYP, "Picoscope")
-	field(DOL, "$(IOC_HOST):ON.RVAL")
-	field(SCAN, "Passive")
-	field(OIF, "Full")
-	field(OMSL, "closed_loop")
-	field(VAL,  "1")
-	field(OUT, "@L:open_picoscope")
-}
-
-record(mbbo, "$(IOC_HOST):resolution"){
+record(mbbo, "$(OSC):resolution"){
     field(DTYP, "Soft Channel")
     field(DESC, "Sampling resolution of device.")
 
 	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
 	field(ONST, "PICO_DR_10BIT")       field(ONVL, "10")
 	field(TWST, "PICO_DR_12BIT")       field(TWVL, "1")
-	field(FLNK, "$(IOC_HOST):resolution:set.PROC")
+    
+    field(VAL,  "1")
+	field(FLNK, "$(OSC):resolution:set.PROC")
 }
 
-record(ao, "$(IOC_HOST):resolution:set") {
+record(ao, "$(OSC):resolution:set") {
 	field(DTYP, "Picoscope")
-	field(DOL, "$(IOC_HOST):resolution.RVAL")
+	field(DOL, "$(OSC):resolution.RVAL")
 	field(SCAN, "Passive")
 	field(OIF, "Full")
-	field(VAL,  "0")
 	field(OMSL, "closed_loop")
+
+    field(VAL,  "1")
 	field(OUT, "@L:set_resolution")
 }
 
+record(bo, "$(OSC):ON") {
+	field(DTYP, "Soft Channel")
+	field(DESC, "Picoscope On")
+	field(ZNAM, "OFF")    	
+	field(ONAM, "ON") 
 
-record(ao, "$(IOC_HOST):num_samples"){
+    field(VAL,  "1")
+	field(FLNK,  "$(OSC):ON:set")
+}
+
+record(ao, "$(OSC):ON:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):ON.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+    field(VAL,  "1")
+
+	field(OUT, "@L:open_picoscope")
+}
+
+record(stringin, "$(OSC):serial_num") {
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_serial_num")
+	field(SCAN, "1 second")
+}
+
+################################################################
+#### PVs used to configure data capture
+################################################################
+record(ao, "$(OSC):num_samples"){
     field(DESC, "Number of samples required.")
     field(DTYP, "Picoscope")
     field(VAL, "1000")
     field(OUT, "@L:set_num_samples")
 }
 
-record(ao, "$(IOC_HOST):down_sample_ratio"){
-    field(DESC, "Down sampling factor to be applied to the raw data.")
+record(ao, "$(OSC):down_sample_ratio"){
+    field(DESC, "Down sampling factor to apply to data.")
     field(DTYP, "Picoscope")
     field(VAL, "0")
     field(OUT, "@L:set_down_sampling_ratio")
 }
 
-record(mbbo, "$(IOC_HOST):down_sample_ratio_mode") {
+record(mbbo, "$(OSC):down_sample_ratio_mode") {
     field(DTYP, "Soft Channel")
     field(DESC, "Method of data reduction/downsampling.")
 
@@ -64,103 +81,110 @@ record(mbbo, "$(IOC_HOST):down_sample_ratio_mode") {
     field(FVST, "TRIGGER")                  field(FVVL, "0x40000000")
     field(SXST, "RAW")                      field(SXVL, "0x80000000")
 
-    field(VAL, "8")
-    field(FLNK,  "$(IOC_HOST):down_sample_ratio_mode:set")
+    field(VAL, "6")
+    field(FLNK,  "$(OSC):down_sample_ratio_mode:set")
 }
 
-record(ao, "$(IOC_HOST):down_sample_ratio_mode:set") {
+record(ao, "$(OSC):down_sample_ratio_mode:set") {
 	field(DTYP, "Picoscope")
-	field(DOL, "$(IOC_HOST):down_sample_ratio_mode.RVAL")
+	field(DOL, "$(OSC):down_sample_ratio_mode.RVAL")
 	field(SCAN, "Passive")
 	field(OIF, "Full")
 	field(OMSL, "closed_loop")
+    field(VAL, "6")
 	field(OUT, "@L:set_down_sampling_ratio_mode")
 }
 
-record(ao, "$(IOC_HOST):pre_trigger_samples") {
+record(ao, "$(OSC):pre_trigger_samples") {
     field(DESC, "Number of pre trigger samples required.")
     field(DTYP, "Picoscope")
     field(VAL, "0")
     field(OUT, "@L:set_pre_trigger_samples")
 }
 
-record(ao, "$(IOC_HOST):post_trigger_samples") {
+record(ao, "$(OSC):post_trigger_samples") {
     field(DESC, "Number of post trigger samples required.")
     field(DTYP, "Picoscope")
     field(VAL, "1000")
     field(OUT, "@L:set_post_trigger_samples")
 }
 
-record(stringin, "$(IOC_HOST):serial_num") {
-	field(DTYP, "Picoscope")
-	field(INP, "@L:get_serial_num")
-	field(SCAN, "1 second")
-}
+# TODO: return values from ps6000aGetTimebase 
+# record(ao, "$(OSC):time_interval_ns") {
+#     field(DTYP, "Picoscope")
+#     field(DESC, "Time interval between readings in ns.") 
+#}
+# record(ao, "$(OSC):max_samples ") {
+#     field(DTYP, "Picoscope")
+#     field(DESC, "Maximum number of samples available.") 
+#
+# }
 
-# Channel B PVs 
-record(bo, "$(IOC_HOST):CHB:ON") {
+################################################################
+#### PVs used to configure channels 
+################################################################
+record(bo, "$(OSC):CH$(channel):ON") {
 	field(DTYP, "Soft Channel")
-	field(DESC, "Channel On")
+	field(DESC, "Set channel $(channel) on/off")
 	field(VAL,  "0")
 	field(ZNAM, "OFF")    	
 	field(ONAM, "ON") 
-	field(FLNK,  "$(IOC_HOST):CHB:ON:set")
+	field(FLNK,  "$(OSC):CH$(channel):ON:set")
 }
 
-record(ao, "$(IOC_HOST):CHB:ON:set") {
+record(ao, "$(OSC):CH$(channel):ON:set") {
 	field(DTYP, "Picoscope")
-	field(DOL, "$(IOC_HOST):CHB:ON.RVAL")
+	field(DOL, "$(OSC):CH$(channel):ON.RVAL")
 	field(SCAN, "Passive")
 	field(OIF, "Full")
-	field(VAL,  "0")
 	field(OMSL, "closed_loop")
 	field(OUT, "@L:set_channel_on")
 }
 
-record(bo, "$(IOC_HOST):CHB:waveform:aquire") {
+record(bo, "$(OSC):CH$(channel):waveform:aquire") {
 	field(DTYP, "Soft Channel")
 	field(VAL,  "0")
 	field(ZNAM, "OFF")    	
 	field(ONAM, "ON")
-	field(FLNK, "$(IOC_HOST):waveform.PROC")	
+	field(FLNK, "$(OSC):CH$(channel):waveform.PROC")	
 }
 
-record(waveform, "${IOC_HOST}:waveform"){
+record(waveform, "$(OSC):CH$(channel):waveform"){
     field(DTYP, "Picoscope")
 	field(NELM, "10000")
 	field(SCAN, "Passive")
 	field(FTVL, "SHORT")
     field(INP, "@L:retrieve_waveform")
-#	field(FLNK, "$(IOC_HOST):reset_acquire.PROC")
+#	field(FLNK, "$(OSC):reset_acquire.PROC")
 }
 
-#record(calc, "$(IOC_HOST):reset_acquire") {
+#record(calc, "$(OSC):reset_acquire") {
 #    field(SCAN, "Passive")
 #    field(CALC, "0")
-#    field(OUT, "$(IOC_HOST):CHB:waveform:aquire NPP")
+#    field(OUT, "$(OSC):CHB:waveform:aquire NPP")
 #}
 
-record(mbbo, "$(IOC_HOST):CHB:coupling") {
+record(mbbo, "$(OSC):CH$(channel):coupling") {
     field(DTYP, "Soft Channel")
     field(DESC, "Impedance and coupling type.")
 
     field(ZRST, "PICO_AC")            field(ZRVL, "0")
     field(ONST, "PICO_DC")            field(ONVL, "1")
-    # field(TWST, "PICO_DC_50OHM")      field(TWVL, "50") # doesn't work for dev model picoscope.. 
+    
     field(VAL, "0")
-    field(FLNK, "$(IOC_HOST):CHB:coupling:set.PROC")	
+    field(FLNK, "$(OSC):CH$(channel):coupling:set.PROC")	
 }
 
-record(ao, "$(IOC_HOST):CHB:coupling:set") {
+record(ao, "$(OSC):CH$(channel):coupling:set") {
 	field(DTYP, "Picoscope")
-	field(DOL, "$(IOC_HOST):CHB:coupling.RVAL")
+	field(DOL, "$(OSC):CH$(channel):coupling.RVAL")
 	field(SCAN, "Passive")
 	field(OIF, "Full")
 	field(OMSL, "closed_loop")
 	field(OUT, "@L:set_coupling")
 }
 
-record(mbbo, "$(IOC_HOST):CHB:range") {
+record(mbbo, "$(OSC):CH$(channel):range") {
 
 	field(DTYP, "Soft Channel")
     field(DESC, "Input voltage range.")
@@ -183,19 +207,19 @@ record(mbbo, "$(IOC_HOST):CHB:range") {
     field(FFST, "PICO_X1_PROBE_1KV")   field(FFVL, "15")
 
 	field(VAL, "0")
-	field(FLNK, "$(IOC_HOST):CHB:range:set.PROC")	
+	field(FLNK, "$(OSC):CH$(channel):range:set.PROC")	
 }
 
-record(ao, "$(IOC_HOST):CHB:range:set") {
+record(ao, "$(OSC):CH$(channel):range:set") {
 	field(DTYP, "Picoscope")
-	field(DOL, "$(IOC_HOST):CHB:range.RVAL")
+	field(DOL, "$(OSC):CH$(channel):range.RVAL")
 	field(SCAN, "Passive")
 	field(OIF, "Full")
 	field(OMSL, "closed_loop")
 	field(OUT, "@L:set_range")
 }
 
-record(mbbo, "$(IOC_HOST):CHB:bandwidth") {
+record(mbbo, "$(OSC):CH$(channel):bandwidth") {
     field(DTYP, "Soft Channel")
     field(DESC, "Bandwidth limiter setting.")
 
@@ -204,12 +228,12 @@ record(mbbo, "$(IOC_HOST):CHB:bandwidth") {
 	field(TWST, "PICO_BW_200MHZ")       field(TWVL, "2")
 	
 	field(VAL, "0")
-	field(FLNK, "$(IOC_HOST):CHB:bandwidth:set.PROC")	
+	field(FLNK, "$(OSC):CH$(channel):bandwidth:set.PROC")	
 }
 
-record(ao, "$(IOC_HOST):CHB:bandwidth:set") {
+record(ao, "$(OSC):CH$(channel):bandwidth:set") {
 	field(DTYP, "Picoscope")
-	field(DOL, "$(IOC_HOST):CHB:range.RVAL")
+	field(DOL, "$(OSC):CH$(channel):range.RVAL")
 	field(SCAN, "Passive")
 	field(OIF, "Full")
 	field(OMSL, "closed_loop")
@@ -217,13 +241,8 @@ record(ao, "$(IOC_HOST):CHB:bandwidth:set") {
 	field(OUT, "@L:set_bandwidth")
 }
 
-record(ao, "$(IOC_HOST):CHB:analogueoffset") {
+record(ao, "$(OSC):CH$(channel):analogueoffset") {
 	field(DTYP, "Picoscope")
 	field(VAL, "0.0")
 	field(OUT, "@L:set_analogue_offset")
 }
-
-# record(stringout, "$(IOC_HOST):CHB:timeIntervalNs") {
-#     field(DTYP, "Soft Channel")
-#     field(DESC, "Time interval between readings in ns.")
-# }

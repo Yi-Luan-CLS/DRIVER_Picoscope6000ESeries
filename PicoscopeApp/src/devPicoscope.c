@@ -246,7 +246,7 @@ struct ChannelConfigs* channels[4] = {NULL};
 
 struct SampleConfigs* sample_configurations = NULL;
 
-int16_t resolution = 0;
+int16_t resolution;
 char* record_name; 
 int channel_index; 
 
@@ -316,7 +316,7 @@ init_record_ao (struct aoRecord *pao)
 
 		case SET_DOWN_SAMPLE_RATIO: 
 			sample_configurations->down_sample_ratio = (int)pao->val; 
-			printf("down sample ratio mode: %d\n", sample_configurations->down_sample_ratio); 
+			printf("down sample ratio: %ld\n", sample_configurations->down_sample_ratio); 
 			break; 
 		
 		case SET_DOWN_SAMPLE_RATIO_MODE: 
@@ -419,7 +419,7 @@ write_ao (struct aoRecord *pao)
 
 		case SET_DOWN_SAMPLE_RATIO: 
 			sample_configurations->down_sample_ratio = (int)pao->val; 
-			printf("down sample ratio mode: %d\n", sample_configurations->down_sample_ratio); 
+			printf("down sample ratio: %ld\n", sample_configurations->down_sample_ratio); 
 			break; 
 		
 		case SET_DOWN_SAMPLE_RATIO_MODE: 
@@ -439,6 +439,7 @@ write_ao (struct aoRecord *pao)
 			
 		case OPEN_PICOSCOPE: 
 			int pv_value = (int)pao->val; 
+			
 
 			if (pv_value == 1){
 				pico_status = open_picoscope(resolution);
