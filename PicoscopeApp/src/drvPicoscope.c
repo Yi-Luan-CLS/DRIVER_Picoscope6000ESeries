@@ -74,7 +74,12 @@ get_serial_num(int8_t** serial_num) {
 
 int set_channel_on(struct ChannelConfigs* channel) {
     
-    printf("Set channel on: %d\n", channel->channel);
+    printf("Set channel %d on.\n", channel->channel);
+
+    printf("Coupling: %d\n", channel->coupling); 
+    printf("Range: %d\n", channel->range); 
+    printf("Analogue offset: %f\n", channel->analogue_offset);     
+    printf("Bandwidth: %d\n", channel->bandwidth); 
 
     status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analogue_offset, channel->bandwidth);
     if (status != PICO_OK) 
@@ -87,7 +92,7 @@ int set_channel_on(struct ChannelConfigs* channel) {
 
 int set_channel_off(int channel) {
 
-    printf("Set channel off: %d\n", channel);
+    printf("Set channel %d off.\n", channel);
 
     status = ps6000aSetChannelOff(handle, channel);
     if (status != PICO_OK)

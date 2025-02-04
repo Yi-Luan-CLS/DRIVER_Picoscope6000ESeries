@@ -30,6 +30,11 @@ enum ioType
 	UNKNOWN_IOTYPE, // default case, must be 0 
 	OPEN_PICOSCOPE,
 	SET_RESOLUTION,
+	SET_NUM_SAMPLES,
+	SET_DOWN_SAMPLE_RATIO,
+	SET_DOWN_SAMPLE_RATIO_MODE,
+	SET_PRE_TRIGGER_SAMPLES,
+	SET_POST_TRIGGER_SAMPLES,
   	GET_SERIAL_NUM,
 	SET_CHANNEL_ON,
 	SET_COUPLING,
@@ -54,6 +59,11 @@ static struct aioType
     {
 		{"open_picoscope", isOutput, OPEN_PICOSCOPE, ""},
 		{"set_resolution", isOutput, SET_RESOLUTION, ""},
+		{"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
+		{"set_down_sampling_ratio", isOutput, SET_DOWN_SAMPLE_RATIO, ""},
+		{"set_down_sampling_ratio_mode", isOutput, SET_DOWN_SAMPLE_RATIO_MODE, ""},
+		{"set_pre_trigger_samples", isOutput, SET_PRE_TRIGGER_SAMPLES, "" },
+		{"set_post_trigger_samples", isOutput, SET_POST_TRIGGER_SAMPLES, "" },
 	 	{"get_serial_num", isInput, GET_SERIAL_NUM, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
@@ -233,16 +243,32 @@ struct
 epicsExportAddress(dset, devPicoscopeAo);
 
 struct ChannelConfigs* channel_b = NULL;
+struct ChannelConfigs* channels[4] = {NULL}; 
 
-int16_t resolution = 0;
+struct SampleConfigs* sample_configurations = NULL;
+
+int16_t resolution;
+char* record_name; 
+int channel_index; 
 
 static long
 init_record_ao (struct aoRecord *pao)
 {	
-	if (channel_b == NULL)
-	{
-		channel_b = malloc(sizeof(struct ChannelConfigs));
-	} 	
+	
+	// Allocate memory for each channel
+	for (int i = 0; i < 4; i++) {
+		if (channels[i] == NULL) {
+			channels[i] = (struct ChannelConfigs*)malloc(sizeof(struct ChannelConfigs));
+		}
+	}
+	channels[0]->channel = PICO_CHANNEL_A;
+	channels[1]->channel = PICO_CHANNEL_B;
+	channels[2]->channel = PICO_CHANNEL_C;
+	channels[3]->channel = PICO_CHANNEL_D;
+
+    if (sample_configurations == NULL) {
+        sample_configurations = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
+    }	
 
     struct instio  *pinst;
 	struct PicoscopeData *vdp;
@@ -284,6 +310,26 @@ init_record_ao (struct aoRecord *pao)
 			resolution = (int)pao->val; 
 			break;
 
+		case SET_NUM_SAMPLES: 
+			sample_configurations->num_samples = (int)pao->val; 
+			break; 
+
+		case SET_DOWN_SAMPLE_RATIO: 
+			sample_configurations->down_sample_ratio = (int)pao->val; 
+			break; 
+		
+		case SET_DOWN_SAMPLE_RATIO_MODE: 
+			sample_configurations->down_sample_ratio_mode = (int)pao->val; 
+			break; 
+		
+		case SET_PRE_TRIGGER_SAMPLES: 
+			sample_configurations->pre_trigger_samples = (int)pao->val;
+			break;
+		
+		case SET_POST_TRIGGER_SAMPLES: 
+			sample_configurations->post_trigger_samples = (int)pao->val;
+			break;  
+
 		case OPEN_PICOSCOPE: 
 			int pv_value = (int)pao->val; 
 
@@ -294,38 +340,52 @@ init_record_ao (struct aoRecord *pao)
 			}
 			break;
 
+		// Following cases are specific to a channel
         case SET_COUPLING:	
-			channel_b->coupling = (int)pao->val;
+			record_name = pao->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+			
+			channels[channel_index]->coupling = (int)pao->val;
 			break;
 
 		case SET_RANGE: 
-			channel_b->range = (int)pao->val;
+		 	record_name = pao->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+			
+			channels[channel_index]->range = (int)pao->val;
 			break;
 
 		case SET_ANALOGUE_OFFSET: 
-			channel_b->analogue_offset = pao->val;
+			record_name = pao->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+			
+			channels[channel_index]->analogue_offset = pao->val;
 			break;
 
 		case SET_BANDWIDTH: 
-			channel_b->bandwidth= (int)pao->val;
+			record_name = pao->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+
+			channels[channel_index]->bandwidth= (int)pao->val;
 			break;
 
 		case SET_CHANNEL_ON:	
 
-			char* record_name = pao->name;
-			enum enPicoChannel channel_name = record_name_to_pico_channel(record_name);
+			record_name = pao->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 
 		    
-			channel_b->channel = channel_name;
 			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
 			pv_value = pao->val;
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
-				pico_status = set_channel_on(channel_b);
-			} else {
-				pico_status = set_channel_off(channel_b->channel);
+				pico_status = set_channel_on(channels[channel_index]);
+			}
+			else {
+				pico_status = set_channel_off((int)channels[channel_index]->channel);
 			}
 			break;
+
         default:
             return 0;
     }
@@ -348,8 +408,29 @@ write_ao (struct aoRecord *pao)
 			resolution = (int)pao->val; 
 			break;
 
+		case SET_NUM_SAMPLES: 
+			sample_configurations->num_samples = (int)pao->val; 
+			break; 
+
+		case SET_DOWN_SAMPLE_RATIO: 
+			sample_configurations->down_sample_ratio = (int)pao->val; 
+			break; 
+		
+		case SET_DOWN_SAMPLE_RATIO_MODE: 
+			sample_configurations->down_sample_ratio_mode = (int)pao->val; 
+			break; 
+		
+		case SET_PRE_TRIGGER_SAMPLES: 
+			sample_configurations->pre_trigger_samples = (int)pao->val;
+			break;
+		
+		case SET_POST_TRIGGER_SAMPLES: 
+			sample_configurations->post_trigger_samples = (int)pao->val;
+			break;  
+			
 		case OPEN_PICOSCOPE: 
 			int pv_value = (int)pao->val; 
+			
 
 			if (pv_value == 1){
 				pico_status = open_picoscope(resolution);
@@ -358,40 +439,53 @@ write_ao (struct aoRecord *pao)
 			}
 			break;
 
+       	// Following cases are specific to a channel
         case SET_COUPLING:	
-			channel_b->coupling = (int)pao->val;
+			record_name = pao->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+			
+			channels[channel_index]->coupling = (int)pao->val;
 			break;
 
-		case SET_RANGE: 
-			channel_b->range = (int)pao->val;
+		case SET_RANGE:
+			record_name = pao->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+			
+			channels[channel_index]->range = (int)pao->val;
 			break;
 
 		case SET_ANALOGUE_OFFSET: 
-			channel_b->analogue_offset = pao->val;
+			record_name = pao->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+			
+			channels[channel_index]->analogue_offset = pao->val;
 			break;
 
 		case SET_BANDWIDTH: 
-			channel_b->bandwidth= (int)pao->val;
+			record_name = pao->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+			
+			channels[channel_index]->bandwidth= (int)pao->val;
 			break;
 
 		case SET_CHANNEL_ON:	
 
-			char* record_name = pao->name;
-			enum enPicoChannel channel_name = record_name_to_pico_channel(record_name);
+			record_name = pao->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 
 		    
-			channel_b->channel = channel_name;
-
 			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
 			pv_value = pao->val;
 
 			// If PV value is 1 (ON) set channel on 
 			if (pv_value == 1) { 
-				pico_status = set_channel_on(channel_b);
+				pico_status = set_channel_on(channels[channel_index]);
 			}
 			else {
-				pico_status = set_channel_off(channel_b->channel);
+				pico_status = set_channel_off((int)channels[channel_index]->channel);
 			}
 			break;
+
+
 
         default:
                 returnState = -1;
@@ -410,27 +504,33 @@ write_ao (struct aoRecord *pao)
 	return 0;
 }
 
-/** Get the channel from the PV format OSCXXXX-XX:CH[A-B]:*/
-enum enPicoChannel record_name_to_pico_channel(const char* record_name) {
-	char channel_str[4]; 
-	sscanf(record_name, "%*[^:]:%4[^:]", channel_str); // Strip out CH[A-B] of PV name
+/** Get the channel from the record formatted "OSCXXXX-XX:CH[A-B]:" and return index in channels array */
+int find_channel_index_from_record(const char* record_name, struct ChannelConfigs* channels[]) {
+    char channel_str[4];
+    sscanf(record_name, "%*[^:]:%4[^:]", channel_str);  // Extract the channel part, e.g., "CHA", "CHB", etc.
 
+    enum enPicoChannel channel;
     if (strcmp(channel_str, "CHA") == 0) {
-        return PICO_CHANNEL_A;
+        channel = PICO_CHANNEL_A;
+    } else if (strcmp(channel_str, "CHB") == 0) {
+        channel = PICO_CHANNEL_B;
+    } else if (strcmp(channel_str, "CHC") == 0) {
+        channel = PICO_CHANNEL_C;
+    } else if (strcmp(channel_str, "CHD") == 0) {
+        channel = PICO_CHANNEL_D;
+    } else {
+        return -1;  // Invalid channel
     }
-    else if (strcmp(channel_str, "CHB") == 0) {
-        return PICO_CHANNEL_B;
-    }
-    else if (strcmp(channel_str, "CHC") == 0) {
-        return PICO_CHANNEL_C;
-    }
-    else if (strcmp(channel_str, "CHD") == 0) {
-        return PICO_CHANNEL_D;
-    }
-    
-    return -1;  
-}
 
+    // Find the index of the channel in the list
+    for (int i = 0; i < 4; i++) {
+        if (channels[i]->channel == channel) {
+            return i;  // Return index if channel matches
+        }
+    }
+
+    return -1;  // Channel not found
+}
 
 /****************************************************************************************
  * Stringin - read a data array of values
@@ -631,7 +731,7 @@ read_waveform (struct waveformRecord *pwaveform){
     {
 		case RETRIEVE_WAVEFORM:	
 			char* record_name = pwaveform->name; 
-			enum enPicoChannel channel = record_name_to_pico_channel(record_name);
+			// enum enPicoChannel channel = record_name_to_pico_channel(record_name);
 			struct ChannelConfigs config = {
 				.channel = 1,
 				.coupling = 1,
