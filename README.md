@@ -83,6 +83,8 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:resolution
   ```
 
+---
+
 **_Data capture configurations:_**
 ### OSCNAME:down_sample_ratio_mode
 - **Type**: `mbbo`
