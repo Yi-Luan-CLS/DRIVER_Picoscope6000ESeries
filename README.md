@@ -3,9 +3,34 @@
 This document provides detailed information about the EPICS driver for the Picoscope 6000E Series oscilloscope. The driver allows control and monitoring of the oscilloscope through EPICS Process Variables (PVs).
 
 ---
+## Usage
+- It is expected that a picoscope is connected at application start-up. If a picoscope is connected after the application is started, setting `$(OSC):ON` to ON will open the scope.  
+- The PVs used to configure a channel, `$(OSC):CH$(channel):coupling`, `$(OSC):CH$(channel):range`, `$(OSC):CH$(channel):bandwidth`, and `$(OSC):CH$(channel):analogue_offset`, are NOT applied to the channel until `$(OSC):CH$(channel):ON` is set to ON, even if the channel is already ON. 
+  - The following shows a successful application of a change to a channels configuration. 
+  ```bash 
+    $ caget OSC1021-01:CHA:ON
+      OSC1021-01:CHA:ON              ON
+    $ caput OSC1021-01:CHA:range PICO_X1_PROBE_10MV
+      Old : OSC1021-01:CHA:range           PICO_X1_PROBE_50MV
+      New : OSC1021-01:CHA:range           PICO_X1_PROBE_10MV
+    $ caput OSC1021-01:CHA:ON ON
+      Old : OSC1021-01:CHA:ON              ON
+      New : OSC1021-01:CHA:ON              ON
+  ```
+- To acquire a waveform:
+    ```bash 
+      $ caput OSC1021-01:CHA:waveform:acquire 1 
+        Old : OSC1021-01:CHA:waveform:acquire DONE
+        New : OSC1021-01:CHA:waveform:acquire ACQUIRING
+    ```
+  - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
+  - To acquire a waveform for a specific channel, the PV `$(OSC):CH$(channel):ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:acquire` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
+  - The waveform data will be returned in the PV `$(OSC):CH$(channel):waveform`. 
+
+---
 
 ## PVs
-**_Global configuration:_**
+**_Oscilloscope configurations:_**
 ### OSCNAME:serial_num
 - **Type**: `stringin`
 - **Description**: Retrieves the serial number of the oscilloscope device. This is a read-only PV that provides the unique identifier for the connected oscilloscope.
@@ -57,6 +82,8 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get resolution
     $ caget OSC1234-01:resolution
   ```
+
+**_Data capture configurations:_**
 ### OSCNAME:down_sample_ratio_mode
 - **Type**: `mbbo`
 - **Description**: The methods of data reduction, or downsampling.
@@ -190,7 +217,7 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:max_samples
   ```
 ---
-**_Channel configuration:_**
+**_Channel configurations:_**
 ### OSCNAME:CH[A-D]:ON
 - **Type**: `bo`
 - **Description**: Switches a specific Picoscope channel on and off
