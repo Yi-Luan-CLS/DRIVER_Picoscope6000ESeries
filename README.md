@@ -45,8 +45,8 @@ This document provides detailed information about the EPICS driver for the Picos
   - **VAL**: The model and serial number of the device (string).
 - **Example**:
   ```bash
-  # To read the serial number:
-  $ caget OSC1234-01:serial_num
+  # To read the device information:
+  $ caget OSC1234-01:device_info
   ```
 
 ### OSCNAME:ON
