@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <stdint.h>
 
 #ifndef PICOSCOPE_CONFIG
 #define PICOSCOPE_CONFIG
@@ -30,12 +31,12 @@ struct ChannelConfigs{
 };
 
 struct SampleConfigs{ 
-    u_int32_t timebase; 
-    u_int64_t num_samples; 
-    u_int64_t pre_trigger_samples; 
-    u_int64_t post_trigger_samples; 
-    u_int64_t down_sample_ratio;
-    enum RatioMode down_sample_ratio_mode; 
+    uint32_t timebase;
+    uint64_t num_samples; 
+    uint64_t pre_trigger_samples; 
+    uint64_t post_trigger_samples; 
+    uint64_t down_sample_ratio;
+    enum enPicoRatioMode down_sample_ratio_mode; 
 };
 
 /** Get the channel from the record formatted "OSCXXXX-XX:CH[A-B]:" and return index in channels array */

@@ -234,7 +234,6 @@ struct
 
 epicsExportAddress(dset, devPicoscopeAo);
 
-struct ChannelConfigs* channel_b = NULL;
 struct ChannelConfigs* channels[4] = {NULL}; 
 
 struct SampleConfigs* sample_configurations = NULL;
@@ -315,7 +314,7 @@ init_record_ao (struct aoRecord *pao)
 			break; 
 		
 		case SET_DOWN_SAMPLE_RATIO_MODE: 
-			sample_configurations->down_sample_ratio_mode = (int)pao->val; 
+			sample_configurations->down_sample_ratio_mode = pao->val; 
 			break; 
 		
 		case SET_PRE_TRIGGER_SAMPLES: 
@@ -433,7 +432,7 @@ write_ao (struct aoRecord *pao)
 			break; 
 		
 		case SET_DOWN_SAMPLE_RATIO_MODE: 
-			sample_configurations->down_sample_ratio_mode = (int)pao->val; 
+			sample_configurations->down_sample_ratio_mode = pao->val; 
 			break; 
 		
 		case SET_PRE_TRIGGER_SAMPLES: 
@@ -736,50 +735,63 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 	return 0;
 }
 
+pthread_mutex_t waveform_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static long
 read_waveform (struct waveformRecord *pwaveform){
-    int returnState;
+    int16_t status;
 
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
-	int sample_size = 1073741696;
 	int16_t* waveform = NULL;
-    if(sample_size > pwaveform->nelm){
-		sample_size = pwaveform->nelm;
+    if(sample_configurations->num_samples > pwaveform->nelm){
+		sample_configurations->num_samples = pwaveform->nelm;
     	printf("Sample size exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n", 
 		 MAX_SAMPLE_SIZE);
 	}
 	switch (vdp->ioType)
     {
 		case RETRIEVE_WAVEFORM:	
-			char* record_name = pwaveform->name; 
-			struct ChannelConfigs config = {
-				.channel = 1,
-				.coupling = 1,
-				.range = 10,
-				.analogue_offset = 0.0,
-				.bandwidth = 0
-			};
-			pwaveform->nord = sample_size;
-			retrieve_waveform(&config, &waveform, sample_size);
-    		returnState = 0;
+			// enum enPicoChannel channel = record_name_to_pico_channel(record_name);
+			pthread_mutex_lock(&waveform_mutex);
+			record_name = pwaveform->name; 
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+			struct ChannelConfigs* channel_configurations = channels[channel_index];
+			channel_configurations->channel = 1;
+			channel_configurations->coupling = 1;
+			channel_configurations->range = 10;
+			channel_configurations->analogue_offset = 0.0;
+			channel_configurations->bandwidth = 0;
+			// int sample_size = 1000000;
+			// Two caput can happened at the same time cause racing condition
+			status = retrieve_waveform(channel_configurations, sample_configurations, &waveform);
+			if(status != 0){
+				printf("retrieve_waveform Error with code: %d \n", status);
+				free(waveform);
+				pthread_mutex_unlock(&waveform_mutex);
+				return -1;
+			}
+			if(waveform==NULL){
+				printf("\nwaveform is NULL\n");
+				free(waveform);
+				pthread_mutex_unlock(&waveform_mutex);
+				return -1;
+			}
+			pwaveform->nord = sample_configurations->num_samples;
+			// pwaveform->nord = sample_size;
+
+			memcpy(pwaveform->bptr, waveform, pwaveform->nord * sizeof(int16_t) );
+			free(waveform);
+			pthread_mutex_unlock(&waveform_mutex);
 			break;
        	default:
-            returnState = -1;
+			if (recGblSetSevr(pwaveform, READ_ALARM, INVALID_ALARM)  &&  errVerbose
+				&&  (pwaveform->stat != READ_ALARM  ||  pwaveform->sevr != INVALID_ALARM)){
+					errlogPrintf("%s: Read Error\n", pwaveform->name);
+				}
+			return -1;
     }
 
-	if (returnState < 0){
-        if (recGblSetSevr(pwaveform, READ_ALARM, INVALID_ALARM)  &&  errVerbose
-        	&&  (pwaveform->stat != READ_ALARM  ||  pwaveform->sevr != INVALID_ALARM)){
-	        	errlogPrintf("%s: Read Error\n", pwaveform->name);
-			}
-        return 2;
-	}
-	if(waveform==NULL){
-		printf("\nwaveform is NULL\n");
-		return 0;
-	}
-	memcpy(pwaveform->bptr, waveform, sample_size * sizeof(int16_t) );
-	free(waveform);
+
 
 	return 0;
 }

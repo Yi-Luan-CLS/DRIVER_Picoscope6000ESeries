@@ -96,7 +96,7 @@ record(ao, "$(OSC):down_sample_ratio_mode:set") {
 	field(SCAN, "Passive")
 	field(OIF, "Full")
 	field(OMSL, "closed_loop")
-    field(VAL, "0x80000000")
+	field(VAL, "0x80000000")
 	field(OUT, "@L:set_down_sampling_ratio_mode")
 }
 
@@ -156,8 +156,8 @@ record(ao, "$(OSC):CH$(channel):ON:set") {
 record(bo, "$(OSC):CH$(channel):waveform:acquire") {
 	field(DTYP, "Raw Soft Channel")
 	field(VAL,  "0")
-	field(ZNAM, "OFF")    	
-	field(ONAM, "ON")
+	field(ZNAM, "DONE")    	
+	field(ONAM, "ACQUIRING")
 	field(HIGH, "1")
 	field(FLNK, "$(OSC):CH$(channel):waveform:acquire:calcout.PROC")	
 }
@@ -173,6 +173,7 @@ record(calcout, "$(OSC):CH$(channel):waveform:acquire:calcout") {
 record(waveform, "$(OSC):CH$(channel):waveform"){
     field(DTYP, "Picoscope")
 	field(NELM, "1073741696")
+#	field(NELM, "1000000")
 	field(SCAN, "Passive")
 	field(FTVL, "SHORT")
     field(INP, "@L:retrieve_waveform")
