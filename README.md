@@ -3,9 +3,41 @@
 This document provides detailed information about the EPICS driver for the Picoscope 6000E Series oscilloscope. The driver allows control and monitoring of the oscilloscope through EPICS Process Variables (PVs).
 
 ---
+## Usage
+- It is expected that a PicoScope is connected at application start-up. If a PicoScope is connected after the application has started, setting `<OSCNAME>:ON` to `1` will open the scope.  
+
+- The following Process Variables (PVs) are used to configure a channel:  
+  - `<OSCNAME>:CH[A-D]:coupling`  
+  - `<OSCNAME>:CH[A-D]:range`  
+  - `<OSCNAME>:CH[A-D]:bandwidth`  
+  - `<OSCNAME>:CH[A-D]:analogue_offset`  
+
+- **Important Note**: Changes to these PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `ON`, even if the channel is already `ON`.
+- The following shows a successful application of a change to a channels configuration. 
+    ```bash 
+      $ caget OSC1021-01:CHA:ON
+        OSC1021-01:CHA:ON              ON
+      $ caput OSC1021-01:CHA:range PICO_X1_PROBE_10MV
+        Old : OSC1021-01:CHA:range           PICO_X1_PROBE_50MV
+        New : OSC1021-01:CHA:range           PICO_X1_PROBE_10MV
+      $ caput OSC1021-01:CHA:ON ON
+        Old : OSC1021-01:CHA:ON              ON
+        New : OSC1021-01:CHA:ON              ON
+    ```
+- To acquire a waveform:
+    ```bash 
+      $ caput OSC1021-01:CHA:waveform:acquire 1 
+        Old : OSC1021-01:CHA:waveform:acquire DONE
+        New : OSC1021-01:CHA:waveform:acquire ACQUIRING
+    ```
+  - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
+  - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:acquire` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
+  - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
+
+---
 
 ## PVs
-**_Global configuration:_**
+**_Oscilloscope configurations:_**
 ### OSCNAME:serial_num
 - **Type**: `stringin`
 - **Description**: Retrieves the serial number of the oscilloscope device. This is a read-only PV that provides the unique identifier for the connected oscilloscope.
@@ -57,6 +89,10 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get resolution
     $ caget OSC1234-01:resolution
   ```
+
+---
+
+**_Data capture configurations:_**
 ### OSCNAME:down_sample_ratio_mode
 - **Type**: `mbbo`
 - **Description**: The methods of data reduction, or downsampling.
@@ -152,7 +188,8 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Description**: The time scale to determine time per division
 - **Fields**:
   - `VAL`: Timebase
-  
+  ![image](https://github.lightsource.ca/cid/DRIVER_Picoscope6000ESeries/assets/209/a348ee4f-d014-44ec-a948-070051ce5d46)
+
     _Minimum Timebase:_
     |                   | 8 BIT      | 10 BIT     |  
     |-------------------|------------|------------|  
@@ -190,7 +227,7 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:max_samples
   ```
 ---
-**_Channel configuration:_**
+**_Channel configurations:_**
 ### OSCNAME:CH[A-D]:ON
 - **Type**: `bo`
 - **Description**: Switches a specific Picoscope channel on and off
@@ -330,5 +367,19 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get waveform result
     $ caget OSC1234-01:CHA:waveform
   ```
+- **Note**: The raw value from the waveform is a scaled value. To interpret the waveform:
+    | **Resolution**          | 8 BIT         | 10 BIT        | 12 BIT        |
+    |-------------------------|---------------|---------------|---------------|
+    | **Voltage Range Scale** | $`\pm 32,512`$| $`\pm 32,512`$| $`\pm 32,512`$|
 
-  
+  - **Calculation**:
+    - The actual voltage is calculated as:
+      $$\text{Actual Voltage} = \text{Voltage Range (in Volts)} \times \frac{\text{Raw Waveform Value}}{\text{Voltage Range (in Scale Units)}}$$
+
+  - **Example**:
+    - **Resolution**: $`8 \text{Bits}`$
+    - **Voltage Range (in Volts)**: $`\pm 20  \text{V}`$
+    - **Raw Waveform Value**: $`8129`$
+    - **Voltage Range (in Scale Units)**: $`\pm 32,512`$.
+      $$\text{Actual Voltage} = 20 \text{V} \times \frac{8192}{32512} = 5.04 \text{V}$$
+      
