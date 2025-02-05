@@ -14,93 +14,108 @@ int MAX_CONNECT_TRIES = 12;
 int16_t status;
 int8_t* serial_num_buffer;
 
+void log_error(char* function_name, int16_t status, const char* FILE, int LINE){ 
+    printf("Error in %s (file: %s, line: %d). Status code: 0x%08lX\n", function_name, FILE, LINE, status);
+}
 
 int16_t close_picoscope(){ 
-    printf("CLOSE UNIT\n");
-
+    
     status = ps6000aCloseUnit(handle);
     handle = 0;
     if (status != PICO_OK) 
     { 
-        printf("ps6000aCloseUnit Status: %d\n", status);
-        return status;  
+        log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
+        return -1;  
     }
-    printf("HANDLE: %d\n", handle);
 
-    return status;
+    return 0;
 }
-
 
 int16_t open_picoscope(int16_t resolution){
-    printf("Open unit with resolution: %d\n", resolution);
 
-    // If no picoscope is open, open it. Otherwise close picoscope and 
-    // reopen with new configs.
-    if (handle == 0) {
+    // If handle is less than or equal to zero no device is open.
+    // Picoscope API returns handle as -1 if attempt to open device fails.
+    if (handle <= 0) {
         status = ps6000aOpenUnit(&handle, NULL, resolution);
-    } else {
-        status = close_picoscope(); 
-        status = ps6000aOpenUnit(&handle, NULL, resolution);
+        if (status != PICO_OK) 
+        { 
+            log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 
+            return -1;  
+        }
+        printf("Open unit with resolution: %d\n", resolution);
+    }
+    return 0;
+}
+
+int16_t set_device_resolution(int16_t resolution){ 
+    
+    status = ps6000aSetDeviceResolution(handle, resolution); 
+
+    if (status != PICO_OK){ 
+        log_error("ps6000aSetDeviceResolution", status, __FILE__, __LINE__);
+        return -1;
     }
 
-    if (status != PICO_OK) 
-    { 
-        printf("ps6000aOpenUnit Status: %d\n", status);
-        return status;  
-    }
-
-    return status;
+    return 0; 
 }
 
 
-int16_t
-get_serial_num(int8_t** serial_num) {
+int16_t get_serial_num(int8_t** serial_num) {
     int16_t required_size;
 
     status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_BATCH_AND_SERIAL);
-    if (status != PICO_OK) 
-        return status;  
+    if (status != PICO_OK) {
+        log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
+        return -1;  
+    }
 
     if (serial_num_buffer == NULL)
         serial_num_buffer = malloc(required_size);
     memset(serial_num_buffer, 0, required_size);
 
     status = ps6000aGetUnitInfo(handle, serial_num_buffer, required_size, &required_size, PICO_BATCH_AND_SERIAL);
+    if (status != PICO_OK) {
+        log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
+        return -1;  
+    }
 
     *serial_num = serial_num_buffer;
 
-    return status;  
+    return 0;  
 }
 
-int set_channel_on(struct ChannelConfigs* channel) {
+int16_t set_channel_on(struct ChannelConfigs* channel) {
     
+
+    status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analogue_offset, channel->bandwidth);
+    if (status != PICO_OK) 
+    {
+        log_error("ps6000aSetChannelOn", status, __FILE__, __LINE__);
+        return -1;
+    }
+
     printf("Set channel %d on.\n", channel->channel);
 
     printf("Coupling: %d\n", channel->coupling); 
     printf("Range: %d\n", channel->range); 
     printf("Analogue offset: %f\n", channel->analogue_offset);     
     printf("Bandwidth: %d\n", channel->bandwidth); 
+  
+    return 0;
 
-    status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analogue_offset, channel->bandwidth);
-    if (status != PICO_OK) 
-    {
-        printf("ps6000aSetChannelOn Status: %d\n", status);
-        return status;
-    }
-    return status;
 }
 
-int set_channel_off(int channel) {
+int16_t set_channel_off(int channel) {
 
-    printf("Set channel %d off.\n", channel);
 
     status = ps6000aSetChannelOff(handle, channel);
     if (status != PICO_OK)
     {
-        printf("ps6000aSetChannelOff Status: %d\n", status);
-        return status;
+        log_error("ps6000aSetChannelOff", status, __FILE__, __LINE__);
+        return -1;
     }
-    return status;
+    printf("Set channel %d off.\n", channel);
+    return 0;
 }
 
 // int16_t

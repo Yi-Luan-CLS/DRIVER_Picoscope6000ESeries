@@ -21,18 +21,23 @@ record(ao, "$(OSC):resolution:set") {
 	field(OIF, "Full")
 	field(OMSL, "closed_loop")
 
-    field(VAL,  "1")
+    field(VAL,  "10")
 	field(OUT, "@L:set_resolution")
 }
 
 record(bo, "$(OSC):ON") {
 	field(DTYP, "Soft Channel")
-	field(DESC, "Picoscope On")
+	field(DESC, "Turn picoscope on/off.")
 	field(ZNAM, "OFF")    	
 	field(ONAM, "ON") 
 
     field(VAL,  "1")
-	field(FLNK,  "$(OSC):ON:set")
+	field(FLNK,  "$(OSC):ON:fanout")
+}
+
+record(fanout, "$(OSC):ON:fanout") {
+	field(LNK1, "$(OSC):ON:set")
+	field(LNK2, "$(OSC):serial_num")
 }
 
 record(ao, "$(OSC):ON:set") {
@@ -48,8 +53,9 @@ record(ao, "$(OSC):ON:set") {
 
 record(stringin, "$(OSC):serial_num") {
 	field(DTYP, "Picoscope")
+	field(DESC, "Serial number of connected device.")
 	field(INP, "@L:get_serial_num")
-	field(SCAN, "1 second")
+    field(SCAN, "Passive")
 }
 
 ################################################################
@@ -76,12 +82,11 @@ record(mbbo, "$(OSC):down_sample_ratio_mode") {
     field(ZRST, "AGGREGATE")                field(ZRVL, "1")
     field(ONST, "DECIMATE")                 field(ONVL, "2")
     field(TWST, "AVERAGE")                  field(TWVL, "4")
-    field(THST, "DISTRIBUTION")             field(THVL, "8")
-    field(FRST, "TRIG_DATA_FOR_TIME_CALC")  field(FRVL, "0x10000000")
-    field(FVST, "TRIGGER")                  field(FVVL, "0x40000000")
-    field(SXST, "RAW")                      field(SXVL, "0x80000000")
+    field(THST, "TRIG_DATA_FOR_TIME_CALC")  field(THVL, "0x10000000")
+    field(FRST, "TRIGGER")                  field(FRVL, "0x40000000")
+    field(FVST, "RAW")                      field(FVVL, "0x80000000")
 
-    field(VAL, "6")
+    field(VAL, "5")
     field(FLNK,  "$(OSC):down_sample_ratio_mode:set")
 }
 
@@ -109,12 +114,19 @@ record(ao, "$(OSC):post_trigger_samples") {
     field(OUT, "@L:set_post_trigger_samples")
 }
 
+record(ao, "$(OSC):timebase") {
+    field(DESC, "Timebase")
+    field(DTYP, "Picoscope")
+    field(VAL, "1")
+    field(OUT, "@L:set_timebase")
+}
+
 # TODO: return values from ps6000aGetTimebase 
-# record(ao, "$(OSC):time_interval_ns") {
+# record(ai, "$(OSC):time_interval_ns") {
 #     field(DTYP, "Picoscope")
 #     field(DESC, "Time interval between readings in ns.") 
 #}
-# record(ao, "$(OSC):max_samples ") {
+# record(ai, "$(OSC):max_samples ") {
 #     field(DTYP, "Picoscope")
 #     field(DESC, "Maximum number of samples available.") 
 #
@@ -244,7 +256,7 @@ record(ao, "$(OSC):CH$(channel):bandwidth:set") {
 	field(OUT, "@L:set_bandwidth")
 }
 
-record(ao, "$(OSC):CH$(channel):analogueoffset") {
+record(ao, "$(OSC):CH$(channel):analogue_offset") {
 	field(DTYP, "Picoscope")
 	field(VAL, "0.0")
 	field(OUT, "@L:set_analogue_offset")
