@@ -4,19 +4,26 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ---
 ## Usage
-- It is expected that a picoscope is connected at application start-up. If a picoscope is connected after the application is started, setting `$(OSC):ON` to ON will open the scope.  
-- The PVs used to configure a channel, `$(OSC):CH$(channel):coupling`, `$(OSC):CH$(channel):range`, `$(OSC):CH$(channel):bandwidth`, and `$(OSC):CH$(channel):analogue_offset`, are NOT applied to the channel until `$(OSC):CH$(channel):ON` is set to ON, even if the channel is already ON. 
-  - The following shows a successful application of a change to a channels configuration. 
-  ```bash 
-    $ caget OSC1021-01:CHA:ON
-      OSC1021-01:CHA:ON              ON
-    $ caput OSC1021-01:CHA:range PICO_X1_PROBE_10MV
-      Old : OSC1021-01:CHA:range           PICO_X1_PROBE_50MV
-      New : OSC1021-01:CHA:range           PICO_X1_PROBE_10MV
-    $ caput OSC1021-01:CHA:ON ON
-      Old : OSC1021-01:CHA:ON              ON
-      New : OSC1021-01:CHA:ON              ON
-  ```
+- It is expected that a PicoScope is connected at application start-up. If a PicoScope is connected after the application has started, setting `<OSCNAME>:ON` to `1` will open the scope.  
+
+- The following Process Variables (PVs) are used to configure a channel:  
+  - `<OSCNAME>:CH[A-D]:coupling`  
+  - `<OSCNAME>:CH[A-D]:range`  
+  - `<OSCNAME>:CH[A-D]:bandwidth`  
+  - `<OSCNAME>:CH[A-D]:analogue_offset`  
+
+- **Important Note**: Changes to these PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `ON`, even if the channel is already `ON`.
+- The following shows a successful application of a change to a channels configuration. 
+    ```bash 
+      $ caget OSC1021-01:CHA:ON
+        OSC1021-01:CHA:ON              ON
+      $ caput OSC1021-01:CHA:range PICO_X1_PROBE_10MV
+        Old : OSC1021-01:CHA:range           PICO_X1_PROBE_50MV
+        New : OSC1021-01:CHA:range           PICO_X1_PROBE_10MV
+      $ caput OSC1021-01:CHA:ON ON
+        Old : OSC1021-01:CHA:ON              ON
+        New : OSC1021-01:CHA:ON              ON
+    ```
 - To acquire a waveform:
     ```bash 
       $ caput OSC1021-01:CHA:waveform:acquire 1 
@@ -24,8 +31,8 @@ This document provides detailed information about the EPICS driver for the Picos
         New : OSC1021-01:CHA:waveform:acquire ACQUIRING
     ```
   - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
-  - To acquire a waveform for a specific channel, the PV `$(OSC):CH$(channel):ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:acquire` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
-  - The waveform data will be returned in the PV `$(OSC):CH$(channel):waveform`. 
+  - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:acquire` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
+  - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
 
 ---
 
