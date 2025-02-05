@@ -181,7 +181,8 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Description**: The time scale to determine time per division
 - **Fields**:
   - `VAL`: Timebase
-  
+  ![image](https://github.lightsource.ca/cid/DRIVER_Picoscope6000ESeries/assets/209/a348ee4f-d014-44ec-a948-070051ce5d46)
+
     _Minimum Timebase:_
     |                   | 8 BIT      | 10 BIT     |  
     |-------------------|------------|------------|  
@@ -359,5 +360,19 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get waveform result
     $ caget OSC1234-01:CHA:waveform
   ```
+- **Note**: The raw value from the waveform is a scaled value. To interpret the waveform:
+    | **Resolution**          | 8 BIT         | 10 BIT        | 12 BIT        |
+    |-------------------------|---------------|---------------|---------------|
+    | **Voltage Range Scale** | $`\pm 32,512`$| $`\pm 32,512`$| $`\pm 32,512`$|
 
-  
+  - **Calculation**:
+    - The actual voltage is calculated as:
+      $$\text{Actual Voltage} = \text{Voltage Range (in Volts)} \times \frac{\text{Raw Waveform Value}}{\text{Voltage Range (in Scale Units)}}$$
+
+  - **Example**:
+    - **Resolution**: $`8 \text{Bits}`$
+    - **Voltage Range (in Volts)**: $`\pm 20  \text{V}`$
+    - **Raw Waveform Value**: $`8129`$
+    - **Voltage Range (in Scale Units)**: $`\pm 32,512`$.
+      $$\text{Actual Voltage} = 20 \text{V} \times \frac{8192}{32512} = 5.04 \text{V}$$
+      
