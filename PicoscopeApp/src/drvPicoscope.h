@@ -2,7 +2,7 @@
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
 
-int16_t get_serial_num(int8_t** serial_num_return);
+int16_t get_device_info(int8_t** device_info);
 
 int16_t connect_picoscope();
 

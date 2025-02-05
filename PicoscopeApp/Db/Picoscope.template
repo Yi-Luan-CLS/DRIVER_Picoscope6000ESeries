@@ -37,7 +37,7 @@ record(bo, "$(OSC):ON") {
 
 record(fanout, "$(OSC):ON:fanout") {
 	field(LNK1, "$(OSC):ON:set")
-	field(LNK2, "$(OSC):serial_num")
+	field(LNK2, "$(OSC):device_info")
 }
 
 record(ao, "$(OSC):ON:set") {
@@ -51,10 +51,10 @@ record(ao, "$(OSC):ON:set") {
 	field(OUT, "@L:open_picoscope")
 }
 
-record(stringin, "$(OSC):serial_num") {
+record(stringin, "$(OSC):device_info") {
 	field(DTYP, "Picoscope")
-	field(DESC, "Serial number of connected device.")
-	field(INP, "@L:get_serial_num")
+	field(DESC, "Model and serial number of device.")
+	field(INP, "@L:get_device_info")
     field(SCAN, "Passive")
 }
 

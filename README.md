@@ -38,11 +38,11 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ## PVs
 **_Oscilloscope configurations:_**
-### OSCNAME:serial_num
+### OSCNAME:device_info
 - **Type**: `stringin`
-- **Description**: Retrieves the serial number of the oscilloscope device. This is a read-only PV that provides the unique identifier for the connected oscilloscope.
+- **Description**: Retrieves the model and serial number of the connected picoscope. 
 - **Fields**:
-  - **VAL**: The serial number of the device (string).
+  - **VAL**: The model and serial number of the device (string).
 - **Example**:
   ```bash
   # To read the serial number:
