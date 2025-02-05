@@ -32,7 +32,12 @@ record(bo, "$(OSC):ON") {
 	field(ONAM, "ON") 
 
     field(VAL,  "1")
-	field(FLNK,  "$(OSC):ON:set")
+	field(FLNK,  "$(OSC):ON:fanout")
+}
+
+record(fanout, "$(OSC):ON:fanout") {
+	field(LNK1, "$(OSC):ON:set")
+	field(LNK2, "$(OSC):serial_num")
 }
 
 record(ao, "$(OSC):ON:set") {
@@ -48,8 +53,9 @@ record(ao, "$(OSC):ON:set") {
 
 record(stringin, "$(OSC):serial_num") {
 	field(DTYP, "Picoscope")
+	field(DESC, "Serial number of the connected picoscope.")
 	field(INP, "@L:get_serial_num")
-    field(scan, "30 seconds")
+    field(SCAN, "Passive")
 }
 
 ################################################################
