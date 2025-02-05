@@ -1,5 +1,5 @@
 #include <unistd.h>
-
+#include <stdint.h>
 #include "PicoDeviceEnums.h"
 
 #ifndef PICOSCOPE_CONFIG
@@ -16,11 +16,11 @@ struct ChannelConfigs{
 };
 
 struct SampleConfigs{ 
-    u_int64_t num_samples; 
-    u_int64_t pre_trigger_samples; 
-    u_int64_t post_trigger_samples; 
+    uint64_t num_samples; 
+    uint64_t pre_trigger_samples; 
+    uint64_t post_trigger_samples; 
     enum enPicoTimeUnits time_units; 
-    u_int64_t down_sample_ratio;
+    uint64_t down_sample_ratio;
     enum enPicoRatioMode down_sample_ratio_mode; 
 };
 
