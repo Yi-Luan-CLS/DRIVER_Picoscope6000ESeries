@@ -208,68 +208,67 @@ int16_t retrieve_waveform_data(int16_t* waveform_buffer, struct SampleConfigs* s
 
 int16_t retrieve_waveform(struct ChannelConfigs* channel_config, 
                           struct SampleConfigs* sample_config, 
-                          int16_t** waveform) {
+                          int16_t* waveform_buffer) {
     int16_t status = 0;
-    int16_t* waveform_buffer = NULL;
     double time_indisposed_ms = 0;
     uint32_t timebase = 2;
 
-    status = configure_channel(channel_config);
-    if (status != PICO_OK) {
-        return status;
-    }
+    // status = configure_channel(channel_config);
+    // if (status != PICO_OK) {
+    //     return status;
+    // }
 
-    status = allocate_waveform_buffer(&waveform_buffer, sample_config);
-    if (status != PICO_OK) {
-        return status;
-    }
+    // status = allocate_waveform_buffer(&waveform_buffer, sample_config);
+    // if (status != PICO_OK) {
+    //     return status;
+    // }
 
     status = run_block_capture(sample_config, timebase, &time_indisposed_ms);
     if (status != PICO_OK) {
-        free(waveform_buffer);
+        // free(waveform_buffer);
         return status;
     }
 
     status = wait_for_capture_completion();
     if (status != PICO_OK) {
-        free(waveform_buffer);
+        // free(waveform_buffer);
         return status;
     }
 
     status = set_data_buffer(waveform_buffer, channel_config, sample_config);
     if (status != PICO_OK) {
-        free(waveform_buffer);
+        // free(waveform_buffer);
         return status;
     }
 
     status = retrieve_waveform_data(waveform_buffer, sample_config);
     if (status != PICO_OK) {
-        free(waveform_buffer);
+        // free(waveform_buffer);
         return status;
     }
 
-    *waveform = waveform_buffer;
+    // *waveform = waveform_buffer;
     printf("First sample value: %d\n", waveform_buffer[0]);
 
     return status;
 }
 
-int16_t configure_channel(struct ChannelConfigs* channel_config) {
-    int16_t status = ps6000aSetChannelOn(
-        handle,
-        channel_config->channel,
-        channel_config->coupling,
-        channel_config->range,
-        channel_config->analogue_offset,
-        channel_config->bandwidth
-    );
+// int16_t configure_channel(struct ChannelConfigs* channel_config) {
+//     int16_t status = ps6000aSetChannelOn(
+//         handle,
+//         channel_config->channel,
+//         channel_config->coupling,
+//         channel_config->range,
+//         channel_config->analogue_offset,
+//         channel_config->bandwidth
+//     );
 
-    if (status != PICO_OK) {
-        printf("ps6000aSetChannelOn Error Code: %d.\n", status);
-    }
+//     if (status != PICO_OK) {
+//         printf("ps6000aSetChannelOn Error Code: %d.\n", status);
+//     }
 
-    return status;
-}
+//     return status;
+// }
 
 int16_t allocate_waveform_buffer(int16_t** buffer, struct SampleConfigs* sample_config) {
     *buffer = (int16_t*)malloc(sizeof(int16_t) * sample_config->num_samples);
@@ -316,17 +315,14 @@ int16_t wait_for_capture_completion() {
             break;
         }
 
-        usleep(10000);  // Sleep for 10 ms to avoid busy-waiting
+        usleep(10000);
     }
 
     return 0;
 }
 
 int16_t set_data_buffer(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config) {
-    printf("channel %d, num_samples %ld, mode:%x \n",
-    channel_config->channel,
-    sample_config->num_samples,
-    sample_config->down_sample_ratio_mode);
+
     int16_t status = ps6000aSetDataBuffer(
         handle, 
         channel_config->channel, 
@@ -349,12 +345,10 @@ int16_t retrieve_waveform_data(int16_t* waveform_buffer, struct SampleConfigs* s
     uint64_t start_index = 0;
     uint64_t segment_index = 0;
     int16_t overflow = 0;
-    // uint64_t num_samples = sample_config->num_samples;
     int16_t status = ps6000aGetValues(
         handle, 
         start_index, 
         &sample_config->num_samples, 
-        // &num_samples,
         sample_config->down_sample_ratio, 
         sample_config->down_sample_ratio_mode, 
         segment_index, 

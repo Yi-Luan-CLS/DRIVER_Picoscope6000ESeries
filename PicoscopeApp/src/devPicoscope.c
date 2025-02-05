@@ -724,63 +724,76 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
     
 	pwaveform->udf = FALSE;
 
-	// if(isInitialised == 0){
-	// 	if(dev_connect_picoscope()){
-	// 		return 1;
-	// 	}
-	// 	isInitialised++;
-	// }
-	// printf("waveform init\n");
-
 	return 0;
 }
 
 pthread_mutex_t waveform_mutex = PTHREAD_MUTEX_INITIALIZER;
+int16_t* waveform = NULL;
 
 static long
 read_waveform (struct waveformRecord *pwaveform){
     int16_t status;
 
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
-	int16_t* waveform = NULL;
-    if(sample_configurations->num_samples > pwaveform->nelm){
-		sample_configurations->num_samples = pwaveform->nelm;
-    	printf("Sample size exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n", 
-		 MAX_SAMPLE_SIZE);
-	}
 	switch (vdp->ioType)
     {
 		case RETRIEVE_WAVEFORM:	
-			// enum enPicoChannel channel = record_name_to_pico_channel(record_name);
 			pthread_mutex_lock(&waveform_mutex);
 			record_name = pwaveform->name; 
 			channel_index = find_channel_index_from_record(record_name, channels); 	
-			struct ChannelConfigs* channel_configurations = channels[channel_index];
-			channel_configurations->channel = 1;
-			channel_configurations->coupling = 1;
-			channel_configurations->range = 10;
-			channel_configurations->analogue_offset = 0.0;
-			channel_configurations->bandwidth = 0;
-			// int sample_size = 1000000;
+			struct ChannelConfigs* channel_configurations_local;
+			struct SampleConfigs* sample_configurations_local;
+
+			channel_configurations_local = (struct ChannelConfigs*)malloc(sizeof(struct ChannelConfigs));
+			sample_configurations_local = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
+			if(waveform == NULL){
+    			waveform = (int16_t*)malloc(sizeof(int16_t) * pwaveform->nelm);
+			}
+
+			if (channel_configurations_local == NULL || sample_configurations_local == NULL || waveform == NULL) {
+				fprintf(stderr, "Memory allocation failed\n");
+				pthread_mutex_unlock(&waveform_mutex);
+				return -1;
+			}
+	    	
+			memset(waveform, 0, sizeof(int16_t) * pwaveform->nelm);
+
+			channel_configurations_local->channel = channels[channel_index]->channel;
+			channel_configurations_local->coupling = channels[channel_index]->coupling;
+			channel_configurations_local->range = channels[channel_index]->range;
+			channel_configurations_local->analogue_offset = channels[channel_index]->analogue_offset;
+			channel_configurations_local->bandwidth = channels[channel_index]->bandwidth;
+			sample_configurations_local->timebase = sample_configurations->timebase;
+			sample_configurations_local->num_samples = sample_configurations->num_samples;
+			sample_configurations_local->pre_trigger_samples = sample_configurations->pre_trigger_samples;
+			sample_configurations_local->post_trigger_samples = sample_configurations->post_trigger_samples;
+			sample_configurations_local->down_sample_ratio = sample_configurations->down_sample_ratio;
+			sample_configurations_local->down_sample_ratio_mode = sample_configurations->down_sample_ratio_mode;
+
+			if(sample_configurations_local->num_samples > pwaveform->nelm){
+				sample_configurations->num_samples = pwaveform->nelm;
+				printf("Sample size exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n", 
+				MAX_SAMPLE_SIZE);
+			}
+
 			// Two caput can happened at the same time cause racing condition
-			status = retrieve_waveform(channel_configurations, sample_configurations, &waveform);
+			status = retrieve_waveform(channel_configurations_local, sample_configurations_local, waveform);
 			if(status != 0){
 				printf("retrieve_waveform Error with code: %d \n", status);
-				free(waveform);
+				// free(waveform);
 				pthread_mutex_unlock(&waveform_mutex);
 				return -1;
 			}
 			if(waveform==NULL){
 				printf("\nwaveform is NULL\n");
-				free(waveform);
+				// free(waveform);
 				pthread_mutex_unlock(&waveform_mutex);
 				return -1;
 			}
-			pwaveform->nord = sample_configurations->num_samples;
-			// pwaveform->nord = sample_size;
+			pwaveform->nord = sample_configurations_local->num_samples;
 
 			memcpy(pwaveform->bptr, waveform, pwaveform->nord * sizeof(int16_t) );
-			free(waveform);
+			// free(waveform);
 			pthread_mutex_unlock(&waveform_mutex);
 			break;
        	default:
