@@ -33,22 +33,17 @@ int16_t close_picoscope(){
 
 int16_t open_picoscope(int16_t resolution){
 
-    // If no picoscope is open, open it. Otherwise close picoscope and 
-    // reopen with new configs.
+    // If handle is less than or equal to zero no device is open.
+    // Picoscope API returns handle as -1 if attempt to open device fails.
     if (handle <= 0) {
         status = ps6000aOpenUnit(&handle, NULL, resolution);
-    } else {
-        status = close_picoscope(); 
-        status = ps6000aOpenUnit(&handle, NULL, resolution);
+        if (status != PICO_OK) 
+        { 
+            log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 
+            return -1;  
+        }
+        printf("Open unit with resolution: %d\n", resolution);
     }
-
-    if (status != PICO_OK) 
-    { 
-        log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 
-        return -1;  
-    }
-    
-    printf("Open unit with resolution: %d\n", resolution);
 
     return 0;
 }
