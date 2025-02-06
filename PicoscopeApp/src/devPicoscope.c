@@ -34,10 +34,9 @@ enum ioType
 	SET_TIMEBASE,
 	SET_DOWN_SAMPLE_RATIO,
 	SET_DOWN_SAMPLE_RATIO_MODE,
-	// SET_PRE_TRIGGER_SAMPLES,
-	// SET_POST_TRIGGER_SAMPLES,
 	SET_TRIGGER_POSITION_RATIO,
   	GET_SERIAL_NUM,
+  	GET_DEVICE_INFO,
 	SET_CHANNEL_ON,
 	SET_COUPLING,
 	SET_RANGE, 
@@ -66,7 +65,7 @@ static struct aioType
 		{"set_down_sampling_ratio", isOutput, SET_DOWN_SAMPLE_RATIO, ""},
 		{"set_down_sampling_ratio_mode", isOutput, SET_DOWN_SAMPLE_RATIO_MODE, ""},
 		{"set_trigger_position_ratio", isOutput, SET_TRIGGER_POSITION_RATIO, "" },
-	 	{"get_serial_num", isInput, GET_SERIAL_NUM, "" },
+	 	{"get_device_info", isInput, GET_DEVICE_INFO, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
 		{"retrieve_waveform", isInput, RETRIEVE_WAVEFORM, "" },
@@ -184,20 +183,20 @@ init_record_ai (struct aiRecord *pai)
 
 static long
 read_ai (struct aiRecord *pai){
-	struct PicoscopeData *vdp = (struct PicoscopeData *)pai->dpvt;
+	// struct PicoscopeData *vdp = (struct PicoscopeData *)pai->dpvt;
 
-	switch (vdp->ioType)
-	{
-		case GET_SERIAL_NUM:
-			// printf("case invoked\n");
-			// pai->val = get_serial_num();
-			return 1;
-			break;
-		default:
-			return 2;
+	// switch (vdp->ioType)
+	// {
+	// 	case GET_DEVICE_INFO:
+	// 		return 1;
+	// 		break;
+	// 	default:
+	// 		return 2;
+// 
+	// return 0;
+	// }
+	return 0;
 
-		return 0;
-	}
 }	
 
 /****************************************************************************************
@@ -634,6 +633,25 @@ init_record_stringin(struct stringinRecord * pstringin)
 	
 	pstringin->udf = FALSE;
 
+	switch (vdp->ioType)
+	{
+		case GET_DEVICE_INFO:
+			int8_t* device_info = (int8_t*)"No device detected";
+			result = get_device_info(&device_info);
+			
+			if (result != 0){
+				printf("Error getting device information.\n");
+			} 
+			memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
+			
+			break;
+			
+		default:
+			return 2;
+
+		return 0;
+	}
+
 	return 0;
 }
 
@@ -644,15 +662,15 @@ read_stringin (struct stringinRecord *pstringin){
 
 	switch (vdp->ioType)
 	{
-		case GET_SERIAL_NUM:
-			int8_t* serial_num = NULL;
-			result = get_serial_num(&serial_num);
-
+		case GET_DEVICE_INFO:
+			int8_t* device_info = (int8_t*)"No device detected";
+			result = get_device_info(&device_info);
+			
 			if (result != 0){
-				printf("Error getting device serial number.\n");
-			} else {
-				memcpy(pstringin->val, serial_num, strlen((char *)serial_num) + 1);
-			}
+				printf("Error getting device information.\n");
+			} 
+			memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
+			
 			break;
 			
 		default:
@@ -660,6 +678,9 @@ read_stringin (struct stringinRecord *pstringin){
 
 		return 0;
 	}
+	
+	return 0;
+
 }	
 
 /****************************************************************************************
