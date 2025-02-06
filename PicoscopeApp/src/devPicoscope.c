@@ -17,7 +17,7 @@
 #include <menuConvert.h>
 #include <epicsExport.h>
 #include <errlog.h>
-
+#include <epicsMutex.h>
 #include "picoscopeConfig.h"
 #include "drvPicoscope.h"
 
@@ -34,8 +34,9 @@ enum ioType
 	SET_TIMEBASE,
 	SET_DOWN_SAMPLE_RATIO,
 	SET_DOWN_SAMPLE_RATIO_MODE,
-	SET_PRE_TRIGGER_SAMPLES,
-	SET_POST_TRIGGER_SAMPLES,
+	// SET_PRE_TRIGGER_SAMPLES,
+	// SET_POST_TRIGGER_SAMPLES,
+	SET_TRIGGER_POSITION_RATIO,
   	GET_SERIAL_NUM,
 	SET_CHANNEL_ON,
 	SET_COUPLING,
@@ -64,8 +65,7 @@ static struct aioType
 		{"set_timebase", isOutput, SET_TIMEBASE, ""},
 		{"set_down_sampling_ratio", isOutput, SET_DOWN_SAMPLE_RATIO, ""},
 		{"set_down_sampling_ratio_mode", isOutput, SET_DOWN_SAMPLE_RATIO_MODE, ""},
-		{"set_pre_trigger_samples", isOutput, SET_PRE_TRIGGER_SAMPLES, "" },
-		{"set_post_trigger_samples", isOutput, SET_POST_TRIGGER_SAMPLES, "" },
+		{"set_trigger_position_ratio", isOutput, SET_TRIGGER_POSITION_RATIO, "" },
 	 	{"get_serial_num", isInput, GET_SERIAL_NUM, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
@@ -115,8 +115,6 @@ format_device_support_function(char *string, char *paramName)
  ****************************************************************************************/
 
 typedef long (*DEVSUPFUN_AI)(struct aiRecord *);
-
-int integerRatio(double value, long *numerator, long *denominator);
 
 static long init_record_ai (struct aiRecord *pai);
 static long read_ai (struct aiRecord *pai);
@@ -317,13 +315,18 @@ init_record_ao (struct aoRecord *pao)
 			sample_configurations->down_sample_ratio_mode = pao->val; 
 			break; 
 		
-		case SET_PRE_TRIGGER_SAMPLES: 
-			sample_configurations->pre_trigger_samples = (int)pao->val;
-			break;
+		// case SET_PRE_TRIGGER_SAMPLES: 
+		// 	sample_configurations->pre_trigger_samples = (int)pao->val;
+		// 	break;
 		
-		case SET_POST_TRIGGER_SAMPLES: 
-			sample_configurations->post_trigger_samples = (int)pao->val;
-			break;  
+		// case SET_POST_TRIGGER_SAMPLES: 
+		// 	sample_configurations->post_trigger_samples = (int)pao->val;
+		// 	break;
+
+		case SET_TRIGGER_POSITION_RATIO:
+		printf("SET_TRIGGER_POSITION_RATIO INVOKED!!! %f\n",(float)pao->val);
+			sample_configurations->trigger_position_ratio = (float)pao->val;
+			break;
 
 		case OPEN_PICOSCOPE: 
 			int pv_value = (int)pao->val; 
@@ -435,12 +438,16 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->down_sample_ratio_mode = pao->val; 
 			break; 
 		
-		case SET_PRE_TRIGGER_SAMPLES: 
-			sample_configurations->pre_trigger_samples = (int)pao->val;
-			break;
+		// case SET_PRE_TRIGGER_SAMPLES: 
+		// 	sample_configurations->pre_trigger_samples = (int)pao->val;
+		// 	break;
 		
-		case SET_POST_TRIGGER_SAMPLES: 
-			sample_configurations->post_trigger_samples = (int)pao->val;
+		// case SET_POST_TRIGGER_SAMPLES: 
+		// 	sample_configurations->post_trigger_samples = (int)pao->val;
+		// 	break;
+
+		case SET_TRIGGER_POSITION_RATIO:
+			sample_configurations->trigger_position_ratio = (float)pao->val;
 			break;  
 			
 		case OPEN_PICOSCOPE: 
@@ -687,13 +694,18 @@ struct{
 
 epicsExportAddress(dset, devPicoscopeWaveform);
 
+epicsMutexId epics_mutex = NULL;
 
 static long init_record_waveform(struct waveformRecord * pwaveform)
 {
 	struct instio  *pinst;
 	struct PicoscopeData *vdp;
 
-
+	epics_mutex = epicsMutexCreate();
+	if (!epics_mutex) {
+		printf("Failed to create EPICS mutex\n");
+		return -1;
+	}
     if (pwaveform->inp.type != INST_IO)
 	{
 		errlogPrintf("%s: INP field type should be INST_IO\n", pwaveform->name);
@@ -727,7 +739,7 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 	return 0;
 }
 
-pthread_mutex_t waveform_mutex = PTHREAD_MUTEX_INITIALIZER;
+// pthread_mutex_t waveform_mutex = PTHREAD_MUTEX_INITIALIZER;
 int16_t* waveform = NULL;
 
 static long
@@ -738,24 +750,28 @@ read_waveform (struct waveformRecord *pwaveform){
 	switch (vdp->ioType)
     {
 		case RETRIEVE_WAVEFORM:	
-			pthread_mutex_lock(&waveform_mutex);
+		    if (epicsMutexLock(epics_mutex) == epicsMutexLockTimeout) {
+				// Handle error: mutex lock failed
+				printf("Failed to lock mutex\n");
+				return -1;
+			}
+			// pthread_mutex_lock(&waveform_mutex);
 			record_name = pwaveform->name; 
-			channel_index = find_channel_index_from_record(record_name, channels); 	
+			channel_index = find_channel_index_from_record(record_name, channels); 
+
 			struct ChannelConfigs* channel_configurations_local;
 			struct SampleConfigs* sample_configurations_local;
-
 			channel_configurations_local = (struct ChannelConfigs*)malloc(sizeof(struct ChannelConfigs));
 			sample_configurations_local = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
 			if(waveform == NULL){
     			waveform = (int16_t*)malloc(sizeof(int16_t) * pwaveform->nelm);
 			}
-
 			if (channel_configurations_local == NULL || sample_configurations_local == NULL || waveform == NULL) {
 				fprintf(stderr, "Memory allocation failed\n");
-				pthread_mutex_unlock(&waveform_mutex);
+				// pthread_mutex_unlock(&waveform_mutex);
+				epicsMutexUnlock(epics_mutex);
 				return -1;
 			}
-	    	
 			memset(waveform, 0, sizeof(int16_t) * pwaveform->nelm);
 
 			channel_configurations_local->channel = channels[channel_index]->channel;
@@ -763,38 +779,41 @@ read_waveform (struct waveformRecord *pwaveform){
 			channel_configurations_local->range = channels[channel_index]->range;
 			channel_configurations_local->analogue_offset = channels[channel_index]->analogue_offset;
 			channel_configurations_local->bandwidth = channels[channel_index]->bandwidth;
+
 			sample_configurations_local->timebase = sample_configurations->timebase;
 			sample_configurations_local->num_samples = sample_configurations->num_samples;
-			sample_configurations_local->pre_trigger_samples = sample_configurations->pre_trigger_samples;
-			sample_configurations_local->post_trigger_samples = sample_configurations->post_trigger_samples;
+			sample_configurations_local->trigger_position_ratio = sample_configurations->trigger_position_ratio;
 			sample_configurations_local->down_sample_ratio = sample_configurations->down_sample_ratio;
 			sample_configurations_local->down_sample_ratio_mode = sample_configurations->down_sample_ratio_mode;
 
 			if(sample_configurations_local->num_samples > pwaveform->nelm){
-				sample_configurations->num_samples = pwaveform->nelm;
+				sample_configurations_local->num_samples = pwaveform->nelm;
 				printf("Sample size exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n", 
 				MAX_SAMPLE_SIZE);
 			}
 
-			// Two caput can happened at the same time cause racing condition
 			status = retrieve_waveform(channel_configurations_local, sample_configurations_local, waveform);
 			if(status != 0){
 				printf("retrieve_waveform Error with code: %d \n", status);
 				// free(waveform);
-				pthread_mutex_unlock(&waveform_mutex);
+				// pthread_mutex_unlock(&waveform_mutex);
+				epicsMutexUnlock(epics_mutex);
 				return -1;
 			}
 			if(waveform==NULL){
 				printf("\nwaveform is NULL\n");
 				// free(waveform);
-				pthread_mutex_unlock(&waveform_mutex);
+				// pthread_mutex_unlock(&waveform_mutex);
+				epicsMutexUnlock(epics_mutex);
 				return -1;
 			}
 			pwaveform->nord = sample_configurations_local->num_samples;
 
 			memcpy(pwaveform->bptr, waveform, pwaveform->nord * sizeof(int16_t) );
 			// free(waveform);
-			pthread_mutex_unlock(&waveform_mutex);
+			// pthread_mutex_unlock(&waveform_mutex);
+			epicsMutexUnlock(epics_mutex);
+
 			break;
        	default:
 			if (recGblSetSevr(pwaveform, READ_ALARM, INVALID_ALARM)  &&  errVerbose

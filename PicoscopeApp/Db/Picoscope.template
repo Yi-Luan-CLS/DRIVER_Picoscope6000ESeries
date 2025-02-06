@@ -65,6 +65,8 @@ record(ao, "$(OSC):num_samples"){
     field(DESC, "Number of samples required.")
     field(DTYP, "Picoscope")
     field(VAL, "1000")
+	field(DRVH, "1073741696")
+	field(DRVL, "1") 
     field(OUT, "@L:set_num_samples")
 }
 
@@ -100,20 +102,28 @@ record(ao, "$(OSC):down_sample_ratio_mode:set") {
 	field(OUT, "@L:set_down_sampling_ratio_mode")
 }
 
-record(ao, "$(OSC):pre_trigger_samples") {
-    field(DESC, "Number of pre trigger samples required.")
-    field(DTYP, "Picoscope")
-    field(VAL, "0")
-    field(OUT, "@L:set_pre_trigger_samples")
-}
+# record(ao, "$(OSC):pre_trigger_samples") {
+#     field(DESC, "Number of pre trigger samples required.")
+#     field(DTYP, "Picoscope")
+#     field(VAL, "0")
+#     field(OUT, "@L:set_pre_trigger_samples")
+# }
+# 
+# record(ao, "$(OSC):post_trigger_samples") {
+#     field(DESC, "Number of post trigger samples required.")
+#     field(DTYP, "Picoscope")
+#     field(VAL, "1000")
+#     field(OUT, "@L:set_post_trigger_samples")
+# }
 
-record(ao, "$(OSC):post_trigger_samples") {
-    field(DESC, "Number of post trigger samples required.")
+record(ao, "$(OSC):trigger_position_ratio") {
+    field(DESC, "The position of the trigger point.")
     field(DTYP, "Picoscope")
-    field(VAL, "1000")
-    field(OUT, "@L:set_post_trigger_samples")
+    field(VAL, "0.8")
+	field(DRVH, "1")
+	field(DRVL, "0") 
+    field(OUT, "@L:set_trigger_position_ratio")
 }
-
 record(ao, "$(OSC):timebase") {
     field(DESC, "Timebase")
     field(DTYP, "Picoscope")

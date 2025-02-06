@@ -33,8 +33,7 @@ struct ChannelConfigs{
 struct SampleConfigs{ 
     uint32_t timebase;
     uint64_t num_samples; 
-    uint64_t pre_trigger_samples; 
-    uint64_t post_trigger_samples; 
+    float trigger_position_ratio;
     uint64_t down_sample_ratio;
     enum RatioMode down_sample_ratio_mode; 
 };

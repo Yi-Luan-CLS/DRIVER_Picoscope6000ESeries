@@ -155,32 +155,21 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:num_samples
   ```
 
-### OSCNAME:pre_trigger_samples
+### OSCNAME:trigger_position_ratio
 - **Type**: `ao`
-- **Description**: Number of samples to return before the trigger event happened.
+- **Description**: A value between 0 and 1 that determines the position of the trigger point in the acquisition window.
 - **Fields**:
-  - `VAL`: Number of pre-trigger samples required.
+  - `VAL`: The ratio of pre-trigger to post-trigger samples.
+    - 0: All samples are post-trigger (no pre-trigger).
+    - 1: All samples are pre-trigger (no post-trigger).
+    - 0.5: Equal pre-trigger and post-trigger samples (50% each).
 - **Example**:
   ```bash
-    # Set pre-trigger sample size to 50000 
-    $ caput OSC1234-01:pre_trigger_samples 50000
+    # Set trigger position ratio 80% pre-trigger samples, 20% post-trigger samples 
+    $ caput OSC1234-01:trigger_position_ratio 0.8
 
-    # Get pre-trigger sample size 
-    $ caget OSC1234-01:pre_trigger_samples
-  ```
-
-### OSCNAME:post_trigger_samples
-- **Type**: `ao`
-- **Description**: Number of samples to return after the trigger event happened.
-- **Fields**:
-  - `VAL`: Number of post-trigger samples required.
-- **Example**:
-  ```bash
-    # Set post-trigger sample size to 50000 
-    $ caput OSC1234-01:post_trigger_samples 50000
-
-    # Get post-trigger sample size 
-    $ caget OSC1234-01:post_trigger_samples
+    # Get trigger position ratio 
+    $ caget OSC1234-01:trigger_position_ratio
   ```
 
 ### OSCNAME:timebase

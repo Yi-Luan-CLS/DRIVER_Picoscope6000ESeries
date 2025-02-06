@@ -118,88 +118,6 @@ int16_t set_channel_off(int channel) {
     return 0;
 }
 
-// int16_t
-// retrieve_waveform(struct ChannelConfigs* channel_configuration,
-//                     // struct SampleConfigs* sample_configuration,
-//                     int16_t** waveform,
-//                     int sample_size){
-//     int16_t* waveform_buffer = NULL;
-//     double timeIntervalNs = 0.0;
-//     uint64_t maxSamples = 0;
-//     double timeIndisposedMs = 0;
-//     uint32_t timebase = 20 ;
-//     int16_t triggerStatus = 0;
-
-//     status = ps6000aSetChannelOn(
-//         handle,
-//         channel_configuration->channel,
-//         channel_configuration->coupling,
-//         channel_configuration->range,
-//         channel_configuration->analogue_offset,
-//         channel_configuration->bandwidth
-//         );
-//     // sample_configuration->down_sample_ratio;
-//     // sample_configuration->down_sample_ratio_mode;
-//     // sample_configuration->post_trigger_samples;
-//     // sample_configuration->pre_trigger_samples;
-//     // sample_configuration->num_samples;
-
-//     waveform_buffer = (int16_t *)malloc(sizeof(int16_t) * sample_size);  // Allocate memory for the captured data
-//     memset(waveform_buffer, 0, sizeof(int16_t) * sample_size);
-//     status = ps6000aRunBlock(
-//         handle,
-//         // sample_configuration->pre_trigger_samples,
-//         // sample_configuration->post_trigger_samples,
-//         0,
-//         sample_size,
-//         timebase,
-//         &timeIndisposedMs,
-//         0,
-//         NULL, NULL);
-//     if(status!=PICO_OK){
-//         printf("ps6000aRunBlock Error Code: %d.\n",status);
-//         return status;
-//     }
-
-//     while (1) {
-//             status = ps6000aIsReady(handle, &triggerStatus);
-//             if(status!=PICO_OK){
-//                 printf("ps6000aIsReady Error Code: %d.\n",status);
-//                 break;
-//             }
-//             if (triggerStatus == 1) {
-//                 printf("Capture finished.\n");
-//                 break;
-//             }
-//             usleep(10000);  
-//         }
-
-//     status = ps6000aSetDataBuffer(handle, PICO_CHANNEL_B, waveform_buffer, sample_size, PICO_INT16_T, 0, PICO_RATIO_MODE_RAW, PICO_ADD);
-//     if(status!=PICO_OK){
-//         printf("ps6000aSetDataBuffer Error Code: %d.\n",status);
-//         return status;
-//     }
-    
-//     uint64_t startIndex = 0;
-//     uint64_t noOfSamples = sample_size;
-//     uint64_t downSampleRatio = 1;
-//     PICO_RATIO_MODE downSampleRatioMode = PICO_RATIO_MODE_RAW;
-//     uint64_t segmentIndex = 0;
-//     int16_t overflow = 0;
-    
-//     status = ps6000aGetValues(handle, startIndex, &noOfSamples, downSampleRatio, downSampleRatioMode, segmentIndex, &overflow);
-//     if(status!=PICO_OK){
-//         printf("ps6000aGetValues Error Code: %d.\n",status);
-//         return status;
-//     }
-    
-//     *waveform = waveform_buffer;
-//     printf("%d \n", waveform_buffer[1]);
-//     return status;
- 
-// }
-
-int16_t configure_channel(struct ChannelConfigs* channel_config);
 int16_t allocate_waveform_buffer(int16_t** buffer, struct SampleConfigs* sample_config);
 int16_t run_block_capture(struct SampleConfigs* sample_config, uint32_t timebase, double* time_indisposed_ms);
 int16_t wait_for_capture_completion();
@@ -212,11 +130,6 @@ int16_t retrieve_waveform(struct ChannelConfigs* channel_config,
     int16_t status = 0;
     double time_indisposed_ms = 0;
     uint32_t timebase = 2;
-
-    // status = configure_channel(channel_config);
-    // if (status != PICO_OK) {
-    //     return status;
-    // }
 
     // status = allocate_waveform_buffer(&waveform_buffer, sample_config);
     // if (status != PICO_OK) {
@@ -253,23 +166,6 @@ int16_t retrieve_waveform(struct ChannelConfigs* channel_config,
     return status;
 }
 
-// int16_t configure_channel(struct ChannelConfigs* channel_config) {
-//     int16_t status = ps6000aSetChannelOn(
-//         handle,
-//         channel_config->channel,
-//         channel_config->coupling,
-//         channel_config->range,
-//         channel_config->analogue_offset,
-//         channel_config->bandwidth
-//     );
-
-//     if (status != PICO_OK) {
-//         printf("ps6000aSetChannelOn Error Code: %d.\n", status);
-//     }
-
-//     return status;
-// }
-
 int16_t allocate_waveform_buffer(int16_t** buffer, struct SampleConfigs* sample_config) {
     *buffer = (int16_t*)malloc(sizeof(int16_t) * sample_config->num_samples);
     if (*buffer == NULL) {
@@ -281,10 +177,12 @@ int16_t allocate_waveform_buffer(int16_t** buffer, struct SampleConfigs* sample_
 }
 
 int16_t run_block_capture(struct SampleConfigs* sample_config, uint32_t timebase, double* time_indisposed_ms) {
+    uint64_t pre_trigger_samples = (uint64_t)sample_config->num_samples * sample_config->trigger_position_ratio;
+    uint64_t post_trigger_samples = sample_config->num_samples - pre_trigger_samples;
     int16_t status = ps6000aRunBlock(
         handle,
-        sample_config->pre_trigger_samples,
-        sample_config->post_trigger_samples,
+        pre_trigger_samples,    
+        post_trigger_samples,
         timebase,
         time_indisposed_ms,
         0,
@@ -322,8 +220,15 @@ int16_t wait_for_capture_completion() {
 }
 
 int16_t set_data_buffer(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config) {
-
     int16_t status = ps6000aSetDataBuffer(
+        handle, channel_config->channel, NULL, 0, PICO_INT16_T, 0, 0, 
+        PICO_CLEAR_ALL      // Clear buffer in Picoscope buffer list
+    );
+    if (status != PICO_OK) {
+        printf("ps6000aSetDataBuffer Clear Error Code: %d.\n", status);
+    }
+
+    status = ps6000aSetDataBuffer(
         handle, 
         channel_config->channel, 
         waveform_buffer, 
@@ -335,7 +240,7 @@ int16_t set_data_buffer(int16_t* waveform_buffer, struct ChannelConfigs* channel
     );
 
     if (status != PICO_OK) {
-        printf("ps6000aSetDataBuffer Error Code: %d.\n", status);
+        printf("ps6000aSetDataBuffer Add Error Code: %d.\n", status);
     }
 
     return status;
