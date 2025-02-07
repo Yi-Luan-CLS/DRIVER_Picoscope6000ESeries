@@ -9,31 +9,31 @@
 
 #include "picoscopeConfig.h"
 
-int16_t handle = 0;
-int MAX_CONNECT_TRIES = 12;
+
+int16_t handle = 0; // The identifier of the connected picoscope
+
 int16_t status;
 
 void log_error(char* function_name, int16_t status, const char* FILE, int LINE){ 
     printf("Error in %s (file: %s, line: %d). Status code: 0x%08X\n", function_name, FILE, LINE, status);
 }
 
-int16_t close_picoscope(){ 
-    
-    status = ps6000aCloseUnit(handle);
-    handle = 0;
-    if (status != PICO_OK) 
-    { 
-        log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
-        return -1;  
-    }
-
-    return 0;
-}
-
+/**
+ * Opens the PicoScope device with the specified resolution. 
+ * If a device is already open, it does nothing. 
+ * 
+ * @param resolution The sampling resolution to be used when opening the PicoScope.  
+ *                   The following values are valid: 
+ *                      - 0: 8-bit resolution
+ *                      - 10: 10-bit resolution
+ *                      - 1: 12-bit resolution
+ * 
+ * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+*/
 int16_t open_picoscope(int16_t resolution){
 
     // If handle is less than or equal to zero no device is open.
-    // Picoscope API returns handle as -1 if attempt to open device fails.
+    // Note: ps6000aOpenUnit returns handle as -1 if attempt to open the device fails.
     if (handle <= 0) {
         status = ps6000aOpenUnit(&handle, NULL, resolution);
         if (status != PICO_OK) 
@@ -46,6 +46,37 @@ int16_t open_picoscope(int16_t resolution){
     return 0;
 }
 
+/**
+ * Close an open PicoScope device.
+ * 
+ * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+*/
+int16_t close_picoscope(){ 
+    
+    if (handle > 0) {
+        status = ps6000aCloseUnit(handle);
+        if (status != PICO_OK) 
+        { 
+            log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
+            return -1;  
+        } 
+        handle = 0;
+    }
+
+    return 0;
+}
+
+/**
+ * Set the sample resolution of the currently connected PicoScope. 
+ * 
+ * @param resolution The sampling resolution to be used.  
+ *                   The following values are valid: 
+ *                      - 0: 8-bit resolution
+ *                      - 10: 10-bit resolution
+ *                      - 1: 12-bit resolution
+ * 
+ * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+*/
 int16_t set_device_resolution(int16_t resolution){ 
     
     status = ps6000aSetDeviceResolution(handle, resolution); 
@@ -58,11 +89,19 @@ int16_t set_device_resolution(int16_t resolution){
     return 0; 
 }
 
-int8_t* serial_num_buffer;
 int16_t required_size;
-
+/**
+ * Retrieves the serial number of the currently connected PicoScope. 
+ * 
+ * @param serial_num A pointer to a pointer that will hold the dynamically allocated address of
+ *                  the memory buffer containing the serial number. 
+ * 
+ * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+*/
 int16_t get_serial_num(int8_t** serial_num) {
 
+    int8_t* serial_num_buffer = NULL;
+    
     status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_BATCH_AND_SERIAL);
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
@@ -84,10 +123,19 @@ int16_t get_serial_num(int8_t** serial_num) {
     return 0;  
 }
 
-int8_t* model_num_buffer;
 
+/**
+ * Retrieves the model number of the currently connected PicoScope. 
+ * 
+ * @param model_num A pointer to a pointer that will hold the dynamically allocated address of
+ *                  the memory buffer containing the model number. 
+ * 
+ * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+*/
 int16_t get_model_num(int8_t** model_num) {
 
+    int8_t* model_num_buffer = NULL;
+    
     status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_VARIANT_INFO);
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
@@ -110,6 +158,14 @@ int16_t get_model_num(int8_t** model_num) {
 }
 
 
+/**
+ * Retrieves the model and serial number of the currently connected PicoScope. 
+ * 
+ * @param device_info A pointer to a pointer that will hold the dynamically allocated address of
+ *                    the memory buffer containing the device information. 
+ * 
+ * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+*/
 int16_t get_device_info(int8_t** device_info) {
 
     int8_t* device_info_buffer = NULL; 
@@ -138,9 +194,18 @@ int16_t get_device_info(int8_t** device_info) {
     return 0; 
 }
 
+/**
+ * Enables a specified channel on the connected Picocope with the given configurations. 
+ * Setting the channels coupling, range, analogue offset, and bandwidth. 
+ * 
+ * @param channel A pointer to a `ChannelConfigs` structure that contains the configuration 
+ *                to be activated. The structure holds the coupling type, voltage range, analogue
+ *                offset, and bandwidth to configure the channel. 
+ * 
+ * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+*/
 int16_t set_channel_on(struct ChannelConfigs* channel) {
     
-
     status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analogue_offset, channel->bandwidth);
     if (status != PICO_OK) 
     {
@@ -159,8 +224,19 @@ int16_t set_channel_on(struct ChannelConfigs* channel) {
 
 }
 
+/**
+ * Deactivates the specified channel on the connected Picoscope. 
+ * 
+ * @param channel The channel to be shut off. 
+ *                The following values are valid: 
+ *                  - 0: Channel A
+ *                  - 1: Channel B 
+ *                  - 2: Channel C
+ *                  - 3: Channel E
+ *  
+ * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+*/
 int16_t set_channel_off(int channel) {
-
 
     status = ps6000aSetChannelOff(handle, channel);
     if (status != PICO_OK)

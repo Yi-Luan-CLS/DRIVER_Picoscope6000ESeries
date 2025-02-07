@@ -4,7 +4,7 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ---
 ## Usage
-- It is expected that a PicoScope is connected at application start-up. If a PicoScope is connected after the application has started, setting `<OSCNAME>:ON` to `1` will open the scope.  
+- It is expected that a PicoScope is connected at application start-up. If a PicoScope is connected after the application has started, setting `<OSCNAME>:ON` to `1` or `ON` will open the scope.  
 
 - The following Process Variables (PVs) are used to configure a channel:  
   - `<OSCNAME>:CH[A-D]:coupling`  
@@ -12,7 +12,7 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:bandwidth`  
   - `<OSCNAME>:CH[A-D]:analogue_offset`  
 
-- **Important Note**: Changes to these PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `ON`, even if the channel is already `ON`.
+- **Important Note**: Changes to these PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
 - The following shows a successful application of a change to a channels configuration. 
     ```bash 
       $ caget OSC1021-01:CHA:ON
