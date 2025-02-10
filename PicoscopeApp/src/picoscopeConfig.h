@@ -9,7 +9,6 @@ enum Channel{
     CHANNEL_B = 1,
     CHANNEL_C = 2,
     CHANNEL_D = 3,
-    CHANNEL_E = 4,
 };
 
 enum RatioMode {
@@ -30,6 +29,7 @@ struct ChannelConfigs{
     int16_t bandwidth;
 };
 
+/** Structure for data capture configurations*/
 struct SampleConfigs{ 
     uint32_t timebase;
     uint64_t num_samples; 
