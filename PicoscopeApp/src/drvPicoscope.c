@@ -249,6 +249,7 @@ int16_t set_channel_off(int channel) {
 }
 
 int16_t run_block_capture(struct SampleConfigs* sample_config, uint32_t timebase, double* time_indisposed_ms);
+int16_t set_trigger(struct ChannelConfigs* channel_config);
 int16_t wait_for_capture_completion();
 int16_t set_data_buffer(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config);
 int16_t retrieve_waveform_data(int16_t* waveform_buffer, struct SampleConfigs* sample_config);
@@ -272,7 +273,6 @@ int16_t retrieve_waveform(struct ChannelConfigs* channel_config,
     if (status != PICO_OK) {
         return status;
     }
-
     status = wait_for_capture_completion();
     if (status != PICO_OK) {
         return status;
@@ -283,6 +283,10 @@ int16_t retrieve_waveform(struct ChannelConfigs* channel_config,
         return status;
     }
 
+    // status = set_trigger(channel_config);
+    // if (status != PICO_OK) {
+    //     return status;
+    // }
     status = retrieve_waveform_data(waveform_buffer, sample_config);
     if (status != PICO_OK) {
         return status;
@@ -314,7 +318,6 @@ int16_t run_block_capture(struct SampleConfigs* sample_config, uint32_t timebase
         NULL, 
         NULL
     );
-
     if (status != PICO_OK) {
         log_error("ps6000aRunBlock", status, __FILE__, __LINE__);
     }
@@ -322,6 +325,24 @@ int16_t run_block_capture(struct SampleConfigs* sample_config, uint32_t timebase
     return status;
 }
 
+int16_t set_trigger(struct ChannelConfigs* channel_config) {
+    ps6000aSetSimpleTrigger(
+        handle,
+        1,
+        channel_config->channel,
+        4064,
+        PICO_FALLING,
+        0,
+        0
+    );
+
+    // ps6000aSetTriggerChannelConditions
+    if (status != PICO_OK) {
+        log_error("ps6000aRunBlock", status, __FILE__, __LINE__);
+    }
+
+    return status;
+}
 /**
  * Waits for the block capture to complete by polling the Picoscope device.
  * 

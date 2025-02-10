@@ -43,7 +43,7 @@ USR_SYS_LIBS += ps6000a
 include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD RULES AFTER THIS LINE
-SNCSEQ=/opt/picoscope
+SNCSEQ=/home/luany/srv-unix-home/picoscope
 USR_CPPFLAGS += -I$(SNCSEQ)/include/libps6000a
 USR_CPPFLAGS += -DUSE_TYPED_RSET 
 USR_LDFLAGS +=  -L$(SNCSEQ)/lib
