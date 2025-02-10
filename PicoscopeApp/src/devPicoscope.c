@@ -716,6 +716,7 @@ struct{
 epicsExportAddress(dset, devPicoscopeWaveform);
 
 epicsMutexId epics_mutex = NULL;
+int16_t* waveform = NULL;
 
 static long init_record_waveform(struct waveformRecord * pwaveform)
 {
@@ -754,14 +755,13 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
     	errlogPrintf("%s: Invalid type: \"@%s\"\n", pwaveform->name, vdp->paramLabel);
         return(S_db_badField);
     }
-    
 	pwaveform->udf = FALSE;
+
+    waveform = (int16_t*)malloc(sizeof(int16_t) * pwaveform->nelm);
 
 	return 0;
 }
 
-// pthread_mutex_t waveform_mutex = PTHREAD_MUTEX_INITIALIZER;
-int16_t* waveform = NULL;
 
 static long
 read_waveform (struct waveformRecord *pwaveform){
@@ -773,66 +773,65 @@ read_waveform (struct waveformRecord *pwaveform){
 		case RETRIEVE_WAVEFORM:	
 		    if (epicsMutexLock(epics_mutex) == epicsMutexLockTimeout) {
 				// Handle error: mutex lock failed
-				printf("Failed to lock mutex\n");
+				fprintf(stderr, "Failed to lock mutex\n");
 				return -1;
 			}
-			// pthread_mutex_lock(&waveform_mutex);
 			record_name = pwaveform->name; 
 			channel_index = find_channel_index_from_record(record_name, channels); 
 
+			// Make local copies of configurations, make sure the PV changes when processing won't cause error 
 			struct ChannelConfigs* channel_configurations_local;
 			struct SampleConfigs* sample_configurations_local;
 			channel_configurations_local = (struct ChannelConfigs*)malloc(sizeof(struct ChannelConfigs));
 			sample_configurations_local = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
-			if(waveform == NULL){
-    			waveform = (int16_t*)malloc(sizeof(int16_t) * pwaveform->nelm);
-			}
+
 			if (channel_configurations_local == NULL || sample_configurations_local == NULL || waveform == NULL) {
 				fprintf(stderr, "Memory allocation failed\n");
-				// pthread_mutex_unlock(&waveform_mutex);
 				epicsMutexUnlock(epics_mutex);
 				return -1;
 			}
 			memset(waveform, 0, sizeof(int16_t) * pwaveform->nelm);
 
+	        // Copy channel configurations to the local structure
 			channel_configurations_local->channel = channels[channel_index]->channel;
 			channel_configurations_local->coupling = channels[channel_index]->coupling;
 			channel_configurations_local->range = channels[channel_index]->range;
 			channel_configurations_local->analogue_offset = channels[channel_index]->analogue_offset;
 			channel_configurations_local->bandwidth = channels[channel_index]->bandwidth;
 
+	        // Copy sample configurations to the local structure
 			sample_configurations_local->timebase = sample_configurations->timebase;
 			sample_configurations_local->num_samples = sample_configurations->num_samples;
 			sample_configurations_local->trigger_position_ratio = sample_configurations->trigger_position_ratio;
 			sample_configurations_local->down_sample_ratio = sample_configurations->down_sample_ratio;
 			sample_configurations_local->down_sample_ratio_mode = sample_configurations->down_sample_ratio_mode;
-
+			
+			// Ensure the number of samples does not exceed the maximum allowed by the waveform buffer
 			if(sample_configurations_local->num_samples > pwaveform->nelm){
 				sample_configurations_local->num_samples = pwaveform->nelm;
 				printf("Sample size exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n", 
 				MAX_SAMPLE_SIZE);
 			}
 
+        	// Retrieve the waveform data using the local configurations
 			status = retrieve_waveform(channel_configurations_local, sample_configurations_local, waveform);
 			if(status != 0){
-				printf("retrieve_waveform Error with code: %d \n", status);
-				// free(waveform);
-				// pthread_mutex_unlock(&waveform_mutex);
+				fprintf(stderr, "retrieve_waveform Error with code: %d \n",status);
 				epicsMutexUnlock(epics_mutex);
 				return -1;
 			}
 			if(waveform==NULL){
-				printf("\nwaveform is NULL\n");
-				// free(waveform);
-				// pthread_mutex_unlock(&waveform_mutex);
+				fprintf(stderr, "waveform is NULL after retrieve\n");
 				epicsMutexUnlock(epics_mutex);
 				return -1;
 			}
-			pwaveform->nord = sample_configurations_local->num_samples;
 
+			// Set the number of elements read in the waveform record, 
+			// num_samples will be the acutall read data size, from retrieve_waveform()
+			pwaveform->nord = sample_configurations_local->num_samples;
+			
+	        // Copy the retrieved waveform data to the EPICS waveform record buffer
 			memcpy(pwaveform->bptr, waveform, pwaveform->nord * sizeof(int16_t) );
-			// free(waveform);
-			// pthread_mutex_unlock(&waveform_mutex);
 			epicsMutexUnlock(epics_mutex);
 
 			break;

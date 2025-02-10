@@ -172,12 +172,19 @@ int16_t set_channel_off(int channel) {
     return 0;
 }
 
-int16_t allocate_waveform_buffer(int16_t** buffer, struct SampleConfigs* sample_config);
 int16_t run_block_capture(struct SampleConfigs* sample_config, uint32_t timebase, double* time_indisposed_ms);
 int16_t wait_for_capture_completion();
 int16_t set_data_buffer(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config);
 int16_t retrieve_waveform_data(int16_t* waveform_buffer, struct SampleConfigs* sample_config);
 
+/**
+ * Retrieves waveform data from the Picoscope device based on the provided channel and sample configurations.
+ * 
+ * @param channel_config Pointer to the ChannelConfigs structure containing channel-specific settings.
+ * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
+ * @param waveform_buffer Pointer to the buffer where the retrieved waveform data will be stored.
+ * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 int16_t retrieve_waveform(struct ChannelConfigs* channel_config, 
                           struct SampleConfigs* sample_config, 
                           int16_t* waveform_buffer) {
@@ -185,51 +192,39 @@ int16_t retrieve_waveform(struct ChannelConfigs* channel_config,
     double time_indisposed_ms = 0;
     uint32_t timebase = 2;
 
-    // status = allocate_waveform_buffer(&waveform_buffer, sample_config);
-    // if (status != PICO_OK) {
-    //     return status;
-    // }
-
     status = run_block_capture(sample_config, timebase, &time_indisposed_ms);
     if (status != PICO_OK) {
-        // free(waveform_buffer);
         return status;
     }
 
     status = wait_for_capture_completion();
     if (status != PICO_OK) {
-        // free(waveform_buffer);
         return status;
     }
 
     status = set_data_buffer(waveform_buffer, channel_config, sample_config);
     if (status != PICO_OK) {
-        // free(waveform_buffer);
         return status;
     }
 
     status = retrieve_waveform_data(waveform_buffer, sample_config);
     if (status != PICO_OK) {
-        // free(waveform_buffer);
         return status;
     }
 
-    // *waveform = waveform_buffer;
     printf("First sample value: %d\n", waveform_buffer[0]);
 
     return status;
 }
 
-int16_t allocate_waveform_buffer(int16_t** buffer, struct SampleConfigs* sample_config) {
-    *buffer = (int16_t*)malloc(sizeof(int16_t) * sample_config->num_samples);
-    if (*buffer == NULL) {
-        printf("Memory allocation failed for waveform buffer.\n");
-        return -1;
-    }
-    memset(*buffer, 0, sizeof(int16_t) * sample_config->num_samples);
-    return 0;
-}
-
+/**
+ * Initiates a block capture on the Picoscope device.
+ * 
+ * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
+ * @param timebase The timebase value to use for the capture.
+ * @param time_indisposed_ms Pointer to a variable where the time indisposed (in milliseconds) will be stored.
+ * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 int16_t run_block_capture(struct SampleConfigs* sample_config, uint32_t timebase, double* time_indisposed_ms) {
     uint64_t pre_trigger_samples = (uint64_t)sample_config->num_samples * sample_config->trigger_position_ratio;
     uint64_t post_trigger_samples = sample_config->num_samples - pre_trigger_samples;
@@ -245,12 +240,17 @@ int16_t run_block_capture(struct SampleConfigs* sample_config, uint32_t timebase
     );
 
     if (status != PICO_OK) {
-        printf("ps6000aRunBlock Error Code: %d.\n", status);
+        log_error("ps6000aRunBlock", status, __FILE__, __LINE__);
     }
 
     return status;
 }
 
+/**
+ * Waits for the block capture to complete by polling the Picoscope device.
+ * 
+ * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 int16_t wait_for_capture_completion() {
     int16_t status = 0;
     int16_t trigger_status = 0;
@@ -258,7 +258,7 @@ int16_t wait_for_capture_completion() {
     while (1) {
         status = ps6000aIsReady(handle, &trigger_status);
         if (status != PICO_OK) {
-            printf("ps6000aIsReady Error Code: %d.\n", status);
+            log_error("ps6000aIsReady", status, __FILE__, __LINE__);
             return status;
         }
 
@@ -273,13 +273,21 @@ int16_t wait_for_capture_completion() {
     return 0;
 }
 
+/**
+ * Configures the data buffer for the specified channel on the Picoscope device.
+ * 
+ * @param waveform_buffer Pointer to the buffer where the waveform data will be stored.
+ * @param channel_config Pointer to the ChannelConfigs structure containing channel-specific settings.
+ * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
+ * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 int16_t set_data_buffer(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config) {
     int16_t status = ps6000aSetDataBuffer(
         handle, channel_config->channel, NULL, 0, PICO_INT16_T, 0, 0, 
         PICO_CLEAR_ALL      // Clear buffer in Picoscope buffer list
     );
     if (status != PICO_OK) {
-        printf("ps6000aSetDataBuffer Clear Error Code: %d.\n", status);
+        log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
     }
 
     status = ps6000aSetDataBuffer(
@@ -294,12 +302,19 @@ int16_t set_data_buffer(int16_t* waveform_buffer, struct ChannelConfigs* channel
     );
 
     if (status != PICO_OK) {
-        printf("ps6000aSetDataBuffer Add Error Code: %d.\n", status);
+        log_error("ps6000aSetDataBuffer PICO_ADD", status, __FILE__, __LINE__);
     }
 
     return status;
 }
 
+/**
+ * Retrieves the captured waveform data from the Picoscope device and stores it in the provided buffer.
+ * 
+ * @param waveform_buffer Pointer to the buffer where the waveform data will be stored.
+ * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
+ * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 int16_t retrieve_waveform_data(int16_t* waveform_buffer, struct SampleConfigs* sample_config) {
     uint64_t start_index = 0;
     uint64_t segment_index = 0;
@@ -315,7 +330,7 @@ int16_t retrieve_waveform_data(int16_t* waveform_buffer, struct SampleConfigs* s
     );
 
     if (status != PICO_OK) {
-        printf("ps6000aGetValues Error Code: %d.\n", status);
+        log_error("ps6000aGetValues", status, __FILE__, __LINE__);
     }
 
     return status;
