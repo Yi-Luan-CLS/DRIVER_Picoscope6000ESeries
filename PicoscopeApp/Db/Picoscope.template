@@ -1,0 +1,344 @@
+################################################################
+#### Oscilloscope  PVs 
+################################################################
+
+record(mbbo, "$(OSC):resolution"){
+    field(DTYP, "Soft Channel")
+    field(DESC, "Sampling resolution of device.")
+
+	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
+	field(ONST, "PICO_DR_10BIT")       field(ONVL, "10")
+	field(TWST, "PICO_DR_12BIT")       field(TWVL, "1")
+    
+    field(VAL,  "1")
+	field(FLNK, "$(OSC):resolution:fanout")
+}
+
+record(fanout, "$(OSC):resolution:fanout") {
+	field(SELM, "All")
+	field(LNK1, "$(OSC):resolution:set")
+	field(LNK2, "$(OSC):resolution:fbk:get")
+	field(LNK3, "$(OSC):resolution:fbk")
+}
+
+record(ao, "$(OSC):resolution:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):resolution.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+
+    field(VAL,  "10")
+	field(OUT, "@L:set_resolution")
+}
+
+record(ao, "$(OSC):resolution:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:get_resolution")
+}
+
+record(mbbo, "$(OSC):resolution:fbk") {
+	field(DTYP, "Soft Channel")
+
+	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
+	field(TEST, "PICO_DR_10BIT")       field(TEVL, "10")
+	field(ONST, "PICO_DR_12BIT")       field(ONVL, "1")
+
+	field(VAL, "10")
+	field(SCAN, "Passive")
+	field(OMSL, "closed_loop")
+
+	field(DOL, "$(OSC):resolution:fbk:get")
+}
+
+record(bo, "$(OSC):ON") {
+	field(DTYP, "Soft Channel")
+	field(DESC, "Turn picoscope on/off.")
+	field(ZNAM, "OFF")    	
+	field(ONAM, "ON") 
+
+    field(VAL,  "1")
+	field(FLNK,  "$(OSC):ON:fanout")
+}
+
+record(ao, "$(OSC):ON:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):ON.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+    field(VAL,  "1")
+
+	field(OUT, "@L:open_picoscope")
+}
+
+record(fanout, "$(OSC):ON:fanout") {
+	field(SELM, "All")
+	field(LNK1, "$(OSC):ON:set")
+	field(LNK2, "$(OSC):device_info")
+	field(LNK3, "$(OSC):ON:fbk:get")
+}
+
+record(ao, "$(OSC):ON:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(SCAN, "5 second")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:get_device_status")
+	field(FLNK, "$(OSC):ON:fbk.PROC")
+}
+
+record(bo, "$(OSC):ON:fbk") {
+	field(DTYP, "Soft Channel")
+	field(ZNAM, "OFF")
+	field(ONAM, "ON")
+	
+	field(SCAN, "Passive")
+	field(OMSL, "closed_loop")
+
+	field(DOL, "$(OSC):ON:fbk:get.RVAL")
+}
+
+record(stringin, "$(OSC):device_info") {
+	field(DTYP, "Picoscope")
+	field(DESC, "Model and serial number of device.")
+	field(INP, "@L:get_device_info")
+    field(SCAN, "Passive")
+}
+
+################################################################
+#### PVs used to configure data capture
+################################################################
+record(ao, "$(OSC):num_samples"){
+    field(DESC, "Number of samples required.")
+    field(DTYP, "Picoscope")
+    field(VAL, "10000")
+	field(DRVH, "1000000")
+	field(DRVL, "1") 
+    field(OUT, "@L:set_num_samples")
+}
+
+record(ao, "$(OSC):down_sample_ratio"){
+    field(DESC, "Down sampling factor to apply to data.")
+    field(DTYP, "Picoscope")
+    field(VAL, "0")
+    field(OUT, "@L:set_down_sampling_ratio")
+}
+
+record(mbbo, "$(OSC):down_sample_ratio_mode") {
+    field(DTYP, "Soft Channel")
+    field(DESC, "Method of data reduction/downsampling.")
+
+    field(ZRST, "AGGREGATE")                field(ZRVL, "1")
+    field(ONST, "DECIMATE")                 field(ONVL, "2")
+    field(TWST, "AVERAGE")                  field(TWVL, "4")
+    field(THST, "TRIG_DATA_FOR_TIME_CALC")  field(THVL, "0x10000000")
+    field(FRST, "TRIGGER")                  field(FRVL, "0x40000000")
+    field(FVST, "RAW")                      field(FVVL, "0x80000000")
+
+    field(VAL, "5")
+    field(FLNK,  "$(OSC):down_sample_ratio_mode:set")
+}
+
+record(ao, "$(OSC):down_sample_ratio_mode:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):down_sample_ratio_mode.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(VAL, "0x80000000")
+	field(OUT, "@L:set_down_sampling_ratio_mode")
+}
+
+# record(ao, "$(OSC):pre_trigger_samples") {
+#     field(DESC, "Number of pre trigger samples required.")
+#     field(DTYP, "Picoscope")
+#     field(VAL, "0")
+#     field(OUT, "@L:set_pre_trigger_samples")
+# }
+# 
+# record(ao, "$(OSC):post_trigger_samples") {
+#     field(DESC, "Number of post trigger samples required.")
+#     field(DTYP, "Picoscope")
+#     field(VAL, "1000")
+#     field(OUT, "@L:set_post_trigger_samples")
+# }
+
+record(ao, "$(OSC):trigger_position_ratio") {
+    field(DESC, "The position of the trigger point.")
+    field(DTYP, "Picoscope")
+    field(VAL, "0.5")
+	field(DRVH, "1")
+	field(DRVL, "0") 
+    field(OUT, "@L:set_trigger_position_ratio")
+}
+record(ao, "$(OSC):timebase") {
+    field(DESC, "Timebase")
+    field(DTYP, "Picoscope")
+    field(VAL, "1")
+    field(OUT, "@L:set_timebase")
+}
+
+# TODO: return values from ps6000aGetTimebase 
+# record(ai, "$(OSC):time_interval_ns") {
+#     field(DTYP, "Picoscope")
+#     field(DESC, "Time interval between readings in ns.") 
+#}
+# record(ai, "$(OSC):max_samples ") {
+#     field(DTYP, "Picoscope")
+#     field(DESC, "Maximum number of samples available.") 
+#
+# }
+
+################################################################
+#### PVs used to configure channels 
+################################################################
+record(bo, "$(OSC):CH$(channel):ON") {
+	field(DTYP, "Soft Channel")
+	field(DESC, "Set channel $(channel) on/off")
+	field(VAL,  "0")
+	field(ZNAM, "OFF")    	
+	field(ONAM, "ON") 
+	field(FLNK,  "$(OSC):CH$(channel):fanout")
+}
+
+record(fanout, "$(OSC):CH$(channel):fanout") {
+	field(SELM, "All")
+	field(LNK1, "$(OSC):CH$(channel):ON:fbk:get")
+	field(LNK2, "$(OSC):CH$(channel):ON:fbk")
+}
+
+record(ao, "$(OSC):CH$(channel):ON:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):CH$(channel):ON.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(VAL, "0")
+	field(OUT, "@L:set_channel_on")
+}
+
+record(bo, "$(OSC):CH$(channel):ON:fbk") {
+	field(DTYP, "Soft Channel")
+	
+	field(ZNAM, "OFF")    	
+	field(ONAM, "ON") 
+
+	field(SCAN, "Passive")
+	field(OMSL, "closed_loop")
+
+	field(DOL, "$(OSC):CH$(channel):ON:fbk:get")
+}
+
+record(bo, "$(OSC):CH$(channel):waveform:acquire") {
+	field(DTYP, "Raw Soft Channel")
+	field(VAL,  "0")
+	field(ZNAM, "DONE")    	
+	field(ONAM, "ACQUIRING")
+	field(HIGH, "1")
+	field(FLNK, "$(OSC):CH$(channel):waveform:acquire:calcout.PROC")	
+}
+
+record(calcout, "$(OSC):CH$(channel):waveform:acquire:calcout") {
+    field(SCAN, "Passive")
+    field(CALC, "A")
+	field(INPA, "$(OSC):CH$(channel):waveform:acquire")
+	field(OOPT, "Transition To Non-zero")
+	field(OUT, "$(OSC):CH$(channel):waveform.PROC PP")
+}
+
+record(waveform, "$(OSC):CH$(channel):waveform"){
+    field(DTYP, "Picoscope")
+#	field(NELM, "1073741696")
+	field(NELM, "1000000")
+	field(SCAN, "Passive")
+	field(FTVL, "SHORT")
+    field(INP, "@L:retrieve_waveform")
+}
+
+record(mbbo, "$(OSC):CH$(channel):coupling") {
+    field(DTYP, "Soft Channel")
+    field(DESC, "Impedance and coupling type.")
+
+    field(ZRST, "PICO_AC")            field(ZRVL, "0")
+    field(ONST, "PICO_DC")            field(ONVL, "1")
+    
+    field(VAL, "1")
+    field(FLNK, "$(OSC):CH$(channel):coupling:set.PROC")	
+}
+
+record(ao, "$(OSC):CH$(channel):coupling:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):CH$(channel):coupling.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+    field(VAL, "1")
+	field(OUT, "@L:set_coupling")
+}
+
+record(mbbo, "$(OSC):CH$(channel):range") {
+
+	field(DTYP, "Soft Channel")
+    field(DESC, "Input voltage range.")
+
+	field(ZRST, "PICO_X1_PROBE_10MV")  field(ZRVL, "0")
+	field(ONST, "PICO_X1_PROBE_20MV")  field(ONVL, "1")
+	field(TWST, "PICO_X1_PROBE_50MV")  field(TWVL, "2")
+    field(THST, "PICO_X1_PROBE_100MV") field(THVL, "3")
+    field(FRST, "PICO_X1_PROBE_200MV") field(FRVL, "4")
+    field(FVST, "PICO_X1_PROBE_500MV") field(FVVL, "5")
+    field(SXST, "PICO_X1_PROBE_1V")    field(SXVL, "6")
+    field(SVST, "PICO_X1_PROBE_2V")    field(SVVL, "7")
+    field(EIST, "PICO_X1_PROBE_5V")    field(EIVL, "8")
+    field(NIST, "PICO_X1_PROBE_10V")   field(NIVL, "9")
+    field(TEST, "PICO_X1_PROBE_20V")   field(TEVL, "10")
+    field(ELST, "PICO_X1_PROBE_50V")   field(ELVL, "11")
+    field(TVST, "PICO_X1_PROBE_100V")  field(TVVL, "12")
+    field(TTST, "PICO_X1_PROBE_200V")  field(TTVL, "13")
+    field(FTST, "PICO_X1_PROBE_500V")  field(FTVL, "14")
+    field(FFST, "PICO_X1_PROBE_1KV")   field(FFVL, "15")
+
+	field(VAL, "0")
+	field(FLNK, "$(OSC):CH$(channel):range:set.PROC")	
+}
+
+record(ao, "$(OSC):CH$(channel):range:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):CH$(channel):range.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:set_range")
+}
+
+record(mbbo, "$(OSC):CH$(channel):bandwidth") {
+    field(DTYP, "Soft Channel")
+    field(DESC, "Bandwidth limiter setting.")
+
+	field(ZRST, "PICO_BW_FULL")       	field(ZRVL, "0")
+	field(ONST, "PICO_BW_20MHZ")       	field(ONVL, "1")
+	field(TWST, "PICO_BW_200MHZ")       field(TWVL, "2")
+	
+	field(VAL, "0")
+	field(FLNK, "$(OSC):CH$(channel):bandwidth:set.PROC")	
+}
+
+record(ao, "$(OSC):CH$(channel):bandwidth:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):CH$(channel):range.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(VAL, "0")
+	field(OUT, "@L:set_bandwidth")
+}
+
+record(ao, "$(OSC):CH$(channel):analogue_offset") {
+	field(DTYP, "Picoscope")
+	field(VAL, "0.0")
+	field(OUT, "@L:set_analogue_offset")
+}
