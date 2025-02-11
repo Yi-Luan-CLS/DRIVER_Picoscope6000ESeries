@@ -20,7 +20,6 @@ void log_error(char* function_name, int16_t status, const char* FILE, int LINE){
 
 /**
  * Opens the PicoScope device with the specified resolution. 
- * If a device is already open, it does nothing. 
  * 
  * @param resolution The sampling resolution to be used when opening the PicoScope.  
  *                   The following values are valid: 
@@ -32,17 +31,13 @@ void log_error(char* function_name, int16_t status, const char* FILE, int LINE){
 */
 int16_t open_picoscope(int16_t resolution){
 
-    // If handle is less than or equal to zero no device is open.
-    // Note: ps6000aOpenUnit returns handle as -1 if attempt to open the device fails.
-    if (handle <= 0) {
-        status = ps6000aOpenUnit(&handle, NULL, resolution);
-        if (status != PICO_OK) 
-        { 
-            log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 
-            return -1;  
-        }
-        printf("Open unit with resolution: %d\n", resolution);
+    status = ps6000aOpenUnit(&handle, NULL, resolution);
+    if (status != PICO_OK) 
+    { 
+        log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 
+        return -1;  
     }
+    
     return 0;
 }
 
@@ -53,17 +48,41 @@ int16_t open_picoscope(int16_t resolution){
 */
 int16_t close_picoscope(){ 
     
-    if (handle > 0) {
-        status = ps6000aCloseUnit(handle);
-        if (status != PICO_OK) 
-        { 
-            log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
-            return -1;  
-        } 
-        handle = 0;
-    }
-
+    status = ps6000aCloseUnit(handle);
+    if (status != PICO_OK) 
+    { 
+        log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
+        return -1;  
+    } 
+    handle = 0;
+    
     return 0;
+}
+
+/**
+ * Check that open device is still connected. 
+ * 
+ * @return 1 if the device is connected, 0 if not. 
+*/
+int16_t ping_count = 0; 
+int16_t ping_picoscope(){ 
+    
+    status = ps6000aPingUnit(handle); 
+    if (status != PICO_OK) {
+        log_error("ps6000aPingUnit. Cannot ping device.", status, __FILE__, __LINE__);
+        
+        // If another call to the driver is made at the same time as this, the error code
+        // 0x00000043 will be thrown. The following is to prevent the handle from being reset 
+        // to 0 until the ping has failed twice, ensuring the device is actually disconnected.
+        if (ping_count >= 2){ 
+            handle = 0; // set handle to 0, no device is connected
+            ping_count = 0; 
+        } else {
+            ping_count++; 
+        }
+        return 0; 
+    }
+    return 1;
 }
 
 /**
@@ -75,10 +94,9 @@ int16_t close_picoscope(){
  *                      - 10: 10-bit resolution
  *                      - 1: 12-bit resolution
  * 
- * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+ * @return 0 if resolution successfully set, or -1 if an error occurs. 
 */
 int16_t set_device_resolution(int16_t resolution){ 
-    
     status = ps6000aSetDeviceResolution(handle, resolution); 
 
     if (status != PICO_OK){ 
@@ -86,6 +104,28 @@ int16_t set_device_resolution(int16_t resolution){
         return -1;
     }
 
+    return 0; 
+}
+
+/**
+ * Get  the sample resolution of the currently connected PicoScope. 
+ * 
+ * @param on exit, the resolution of the device
+ * 
+ * @return 0 if resolution returned, or -1 if an error occurs. 
+*/
+int16_t get_resolution(int16_t* resolution) {
+
+    PICO_DEVICE_RESOLUTION device_resolution; 
+
+    status = ps6000aGetDeviceResolution(handle, &device_resolution); 
+
+    if(status != PICO_OK) {
+        log_error("ps6000aGetDeviceResolution", status, __FILE__, __LINE__);
+        return -1;
+    }
+
+    *resolution = (int16_t)device_resolution; 
     return 0; 
 }
 
