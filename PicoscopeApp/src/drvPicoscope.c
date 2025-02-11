@@ -97,7 +97,6 @@ int16_t ping_picoscope(){
  * @return 0 if resolution successfully set, or -1 if an error occurs. 
 */
 int16_t set_device_resolution(int16_t resolution){ 
-    printf("set resolution %d\n", resolution);
     status = ps6000aSetDeviceResolution(handle, resolution); 
 
     if (status != PICO_OK){ 
