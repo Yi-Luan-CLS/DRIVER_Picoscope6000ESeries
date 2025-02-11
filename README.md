@@ -250,7 +250,7 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:CHA:ON
   ```
 
-### OSCNAME:CH[A-B]:ON:fbk 
+### OSCNAME:CH[A-D]:ON:fbk 
 - **Type**: `bo`
 - **Description**: The actual state of the channel.
   - Updated when a new value set to `OSCNAME:CH[A-D]:ON`. 
