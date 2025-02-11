@@ -21,7 +21,7 @@
 #include "picoscopeConfig.h"
 #include "drvPicoscope.h"
 
-#define MAX_SAMPLE_SIZE 1073741696
+#define MAX_SAMPLE_SIZE 1000000
 
 int16_t result; 
 
@@ -323,7 +323,6 @@ init_record_ao (struct aoRecord *pao)
 		// 	break;
 
 		case SET_TRIGGER_POSITION_RATIO:
-		printf("SET_TRIGGER_POSITION_RATIO INVOKED!!! %f\n",(float)pao->val);
 			sample_configurations->trigger_position_ratio = (float)pao->val;
 			break;
 

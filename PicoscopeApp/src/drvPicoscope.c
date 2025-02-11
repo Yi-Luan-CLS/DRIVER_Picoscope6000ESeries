@@ -248,7 +248,7 @@ int16_t set_channel_off(int channel) {
     return 0;
 }
 
-int16_t run_block_capture(struct SampleConfigs* sample_config, uint32_t timebase, double* time_indisposed_ms);
+int16_t run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms);
 int16_t set_trigger(struct ChannelConfigs* channel_config);
 int16_t wait_for_capture_completion();
 int16_t set_data_buffer(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config);
@@ -267,9 +267,8 @@ int16_t retrieve_waveform(struct ChannelConfigs* channel_config,
                           int16_t* waveform_buffer) {
     int16_t status = 0;
     double time_indisposed_ms = 0;
-    uint32_t timebase = 2;
 
-    status = run_block_capture(sample_config, timebase, &time_indisposed_ms);
+    status = run_block_capture(sample_config, &time_indisposed_ms);
     if (status != PICO_OK) {
         return status;
     }
@@ -292,8 +291,6 @@ int16_t retrieve_waveform(struct ChannelConfigs* channel_config,
         return status;
     }
 
-    printf("First sample value: %d\n", waveform_buffer[0]);
-
     return status;
 }
 
@@ -305,14 +302,14 @@ int16_t retrieve_waveform(struct ChannelConfigs* channel_config,
  * @param time_indisposed_ms Pointer to a variable where the time indisposed (in milliseconds) will be stored.
  * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-int16_t run_block_capture(struct SampleConfigs* sample_config, uint32_t timebase, double* time_indisposed_ms) {
+int16_t run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms) {
     uint64_t pre_trigger_samples = (uint64_t)sample_config->num_samples * sample_config->trigger_position_ratio;
     uint64_t post_trigger_samples = sample_config->num_samples - pre_trigger_samples;
     int16_t status = ps6000aRunBlock(
         handle,
         pre_trigger_samples,    
         post_trigger_samples,
-        timebase,
+        sample_config->timebase,
         time_indisposed_ms,
         0,
         NULL, 
