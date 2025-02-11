@@ -34,7 +34,7 @@ This document provides detailed information about the EPICS driver for the Picos
   ```
   All details of these configurations can be found in this document.
 
-  **The waveform data is a scaled value. Calculation is [here](###OSCNAME:CH[A-D]:waveform)**
+  **The waveform data is a scaled value. The calculation is located at the bottom.**
 
 - **Important Note**: Changes to these PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
 - The following shows a successful application of a change to a channels configuration. 
