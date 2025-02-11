@@ -69,7 +69,7 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:ON
   ```
 ### OSCNAME:ON:fbk 
-- **Type**: `bo` 
+- **Type**: `bi` 
 - **Description**: The actual state of the device.
   - Updates every 5 seconds with a ping to the device. 
 - **Fields**: 
@@ -97,7 +97,7 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:resolution
   ```
 ### OSCNAME:resolution:fbk 
-- **Type:** `ao`
+- **Type:** `mbbi`
 - **Description:** The actual value of the resolution set to the device. 
   - Updated when a new value is set to `OSCNAME:resolution`. 
 - **Fields:** 

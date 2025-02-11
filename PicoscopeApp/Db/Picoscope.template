@@ -32,15 +32,13 @@ record(ao, "$(OSC):resolution:set") {
 	field(OUT, "@L:set_resolution")
 }
 
-record(ao, "$(OSC):resolution:fbk:get") {
+record(ai, "$(OSC):resolution:fbk:get") {
 	field(DTYP, "Picoscope")
 	field(SCAN, "Passive")
-	field(OIF, "Full")
-	field(OMSL, "closed_loop")
-	field(OUT, "@L:get_resolution")
+	field(INP, "@L:get_resolution")
 }
 
-record(mbbo, "$(OSC):resolution:fbk") {
+record(mbbi, "$(OSC):resolution:fbk") {
 	field(DTYP, "Soft Channel")
 
 	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
@@ -49,9 +47,8 @@ record(mbbo, "$(OSC):resolution:fbk") {
 
 	field(VAL, "10")
 	field(SCAN, "Passive")
-	field(OMSL, "closed_loop")
 
-	field(DOL, "$(OSC):resolution:fbk:get")
+	field(INP, "$(OSC):resolution:fbk:get")
 }
 
 record(bo, "$(OSC):ON") {
@@ -79,27 +76,23 @@ record(fanout, "$(OSC):ON:fanout") {
 	field(SELM, "All")
 	field(LNK1, "$(OSC):ON:set")
 	field(LNK2, "$(OSC):device_info")
-	field(LNK3, "$(OSC):ON:fbk:get")
 }
 
-record(ao, "$(OSC):ON:fbk:get") {
+record(ai, "$(OSC):ON:fbk:get") {
 	field(DTYP, "Picoscope")
 	field(SCAN, "5 second")
-	field(OIF, "Full")
-	field(OMSL, "closed_loop")
-	field(OUT, "@L:get_device_status")
+	field(INP, "@L:get_device_status")
 	field(FLNK, "$(OSC):ON:fbk.PROC")
 }
 
-record(bo, "$(OSC):ON:fbk") {
+record(bi, "$(OSC):ON:fbk") {
 	field(DTYP, "Soft Channel")
 	field(ZNAM, "OFF")
 	field(ONAM, "ON")
 	
 	field(SCAN, "Passive")
-	field(OMSL, "closed_loop")
 
-	field(DOL, "$(OSC):ON:fbk:get.RVAL")
+	field(INP, "$(OSC):ON:fbk:get")
 }
 
 record(stringin, "$(OSC):device_info") {
