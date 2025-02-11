@@ -14,7 +14,7 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:timebase`  
 
 - **Simple usage example walkthrough:**
-  
+  Make sure you have the Picoscope libraries located at /opt/picoscope
   This is a case using Channel B with a signal voltage within ±20V.
 
   ```bash
