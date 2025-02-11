@@ -29,7 +29,9 @@ enum ioType
 	{
 	UNKNOWN_IOTYPE, // default case, must be 0 
 	OPEN_PICOSCOPE,
+	GET_DEVICE_STATUS,
 	SET_RESOLUTION,
+	GET_RESOLUTION,
 	SET_NUM_SAMPLES,
 	SET_TIMEBASE,
 	SET_DOWN_SAMPLE_RATIO,
@@ -59,7 +61,9 @@ static struct aioType
 	} AioType[] =
     {
 		{"open_picoscope", isOutput, OPEN_PICOSCOPE, ""},
+		{"get_device_status", isOutput, GET_DEVICE_STATUS, ""},
 		{"set_resolution", isOutput, SET_RESOLUTION, ""},
+		{"get_resolution", isOutput, GET_RESOLUTION, ""},
 		{"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
 		{"set_timebase", isOutput, SET_TIMEBASE, ""},
 		{"set_down_sampling_ratio", isOutput, SET_DOWN_SAMPLE_RATIO, ""},
@@ -231,11 +235,13 @@ struct
 
 epicsExportAddress(dset, devPicoscopeAo);
 
-struct ChannelConfigs* channels[4] = {NULL}; 
 
-struct SampleConfigs* sample_configurations = NULL;
+struct ChannelConfigs* channels[4] = {NULL}; // List of Picoscope channels and their configurations
 
-int16_t resolution;
+struct SampleConfigs* sample_configurations = NULL; // Configurations for data capture
+
+int16_t resolution; 
+
 char* record_name; 
 int channel_index; 
 
@@ -328,21 +334,20 @@ init_record_ao (struct aoRecord *pao)
 			break;
 
 		case OPEN_PICOSCOPE: 
-			int pv_value = (int)pao->val; 
-
-			if (pv_value == 1){
-				result = open_picoscope(resolution);
-				if (result != 0) {
-					printf("Error opening picoscope.\n");
-				}
-			} else {
-				result = close_picoscope(); 
-				if (result != 0) {
-					printf("Error closing picoscope.\n");
-				}
+			// On initialization open picoscope with default resolution. 
+			result = open_picoscope(resolution);
+			if (result != 0) {
+				printf("Error opening picoscope.\n");
+				pao->val = 0; // Cannot connect to picoscope, set PV to OFF. 
 			}
+
 			break;
 
+		case GET_DEVICE_STATUS:
+			result = ping_picoscope(); 
+			pao->val = result;
+			break;
+		
 		// Following cases are specific to a channel
         case SET_COUPLING:	
 			record_name = pao->name;
@@ -376,22 +381,11 @@ init_record_ao (struct aoRecord *pao)
 
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 
-		    
-			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
-			pv_value = pao->val;
 
-			// If PV value is 1 (ON) set channel on 
-			if (pv_value == 1) { 
-				result = set_channel_on(channels[channel_index]);
-				if (result != 0) {
-					printf("Error setting channel %s on.\n", record_name);
-				}
-			}
-			else {
-				set_channel_off((int)channels[channel_index]->channel);
-				if (result != 0) {
-					printf("Error setting channel %s off.\n", record_name);
-				}
+			// On initalization, set all channels off. 
+			result = set_channel_off((int)channels[channel_index]->channel);
+			if (result != 0) {
+				printf("Error setting channel %s off.\n", record_name);
 			}
 			break;
 
@@ -452,10 +446,6 @@ write_ao (struct aoRecord *pao)
 		case OPEN_PICOSCOPE: 
 			int pv_value = (int)pao->val; 
 			
-			
-
-
-
 			if (pv_value == 1){
 				result = open_picoscope(resolution);
 				if (result != 0) {
@@ -468,6 +458,16 @@ write_ao (struct aoRecord *pao)
 				}
 			}
 			break;
+
+		case GET_DEVICE_STATUS:
+			result = ping_picoscope();
+			pao->val = result;
+			break;
+
+		case GET_RESOLUTION: 
+			result = get_resolution(&resolution);
+			pao->val = resolution;  
+			break; 
 
        	// Following cases are specific to a channel
         case SET_COUPLING:	
@@ -511,12 +511,14 @@ write_ao (struct aoRecord *pao)
 				result = set_channel_on(channels[channel_index]);
 				if (result != 0) {
 					printf("Error setting channel %s on.\n", record_name);
+					pao->val = 0; 
 				}
 			} 
 			else {
-				set_channel_off((int)channels[channel_index]->channel);
+				result = set_channel_off((int)channels[channel_index]->channel);
 				if (result != 0) {
 					printf("Error setting channel %s off.\n", record_name);
+					pao->val = 0; 
 				}
 			}	
 			break;
