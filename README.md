@@ -68,6 +68,13 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get connection status
     $ caget OSC1234-01:ON
   ```
+### OSCNAME:ON:fbk 
+- **Type**: `bo` 
+- **Description**: The actual state of the device.
+  - Updates every 5 seconds with a ping to the device. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:ON`.
+
 
 ### OSCNAME:resolution
 - **Type**: `mbbo`
@@ -89,6 +96,12 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get resolution
     $ caget OSC1234-01:resolution
   ```
+### OSCNAME:resolution:fbk 
+- **Type:** `ao`
+- **Description:** The actual value of the resolution set to the device. 
+  - Updated when a new value is set to `OSCNAME:resolution`. 
+- **Fields:** 
+  - `VAL`: See `OSCNAME:resolution`
 
 ---
 
@@ -237,6 +250,12 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:CHA:ON
   ```
 
+### OSCNAME:CH[A-B]:ON:fbk 
+- **Type**: `bo`
+- **Description**: The actual state of the channel.
+  - Updated when a new value set to `OSCNAME:CH[A-D]:ON`. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:CH[A-D]:ON` 
 
 ### OSCNAME:CH[A-D]:coupling
 - **Type**: `mbbo`

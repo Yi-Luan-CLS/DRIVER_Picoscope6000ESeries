@@ -8,7 +8,11 @@ int16_t connect_picoscope();
 
 int16_t open_picoscope(int16_t resolution); 
 
+int16_t ping_picoscope();
+
 int16_t set_device_resolution(int16_t resolution);
+
+int16_t get_resolution(int16_t* resolution);
 
 int16_t close_picoscope();
 
