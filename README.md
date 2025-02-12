@@ -19,6 +19,13 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Simple usage example walkthrough:**
   
   Make sure you have the Picoscope libraries located at `/opt/picoscope`
+     ```bash
+   In order to install the picoscope libraties at '/opt/picoscope' run the following:
+  - sudo bash -c 'wget -O- https://labs.picotech.com/Release.gpg.key  | gpg --dearmor > /usr/share/keyrings/picotech-archive-keyring.gpg'
+  - sudo bash -c 'echo "deb [signed-by=/usr/share/keyrings/picotech-archive-keyring.gpg] https://labs.picotech.com/picoscope7/debian/  picoscope main" >/etc/apt/sources.list.d/picoscope7.list'
+  - sudo apt-get update
+  - sudo apt-get install libps6000a
+   ```
   
   This is a case using Channel B with a signal voltage within ±20V.
 
