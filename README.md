@@ -13,7 +13,8 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:analogue_offset`    
 >[!Note] 
 >Changes to the above PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
->To ensure the channel is ON, check `<OSCNAME>:CH[A-D]:ON:fbk`. 
+>To ensure the channel is ON, verify the staus with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
+  - Channel configuration PVs have corresponding feedback PVs with the same name, plus the suffix :fbk. These feedback PVs reflect the current value of the configuration when the channel is ON. However, if `<OSCNAME>:CH[A-D]:ON:fbk` is OFF, the configuration feedback PVs do not accurately reflect the channel's settings. 
 
 - **Simple usage example walkthrough:**
   Make sure you have the Picoscope libraries located at `/opt/picoscope`
@@ -38,13 +39,6 @@ This document provides detailed information about the EPICS driver for the Picos
   All details of these configurations can be found in this document.
 
   **The waveform data is a scaled value. The calculation is located at the bottom.**
-
-- To acquire a waveform:
-    ```bash 
-      $ caput OSC1021-01:CHA:waveform:acquire 1 
-        Old : OSC1021-01:CHA:waveform:acquire DONE
-        New : OSC1021-01:CHA:waveform:acquire ACQUIRING
-    ```
   - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
   - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:acquire` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
   - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
