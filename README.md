@@ -11,6 +11,31 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:range`  
   - `<OSCNAME>:CH[A-D]:bandwidth`  
   - `<OSCNAME>:CH[A-D]:analogue_offset`  
+  - `<OSCNAME>:timebase`  
+
+- **Simple usage example walkthrough:**
+  Make sure you have the Picoscope libraries located at `/opt/picoscope`
+  
+  This is a case using Channel B with a signal voltage within ±20V.
+
+  ```bash
+  git clone git@github.lightsource.ca:cid/DRIVER_Picoscope6000ESeries.git
+  cd DRIVER_Picoscope6000ESeries/
+  make clean all
+  cd iocBoot/iocOPI2027-002/
+  ./st.cmd
+
+  # On another terminal
+  caput OSC1022-01:timebase 156254    # Set the sample time interval to 1 ms
+  caput OSC1022-01:CHB:range 10       # Set the voltage range for Channel B to +/-20V
+  caput OSC1022-01:num_samples 10000  # Set the number of samples to 10,000
+  caput OSC1022-01:CHB:ON 1           # Enable and apply changes to Channel B
+  caput OSC1022-01:CHB:waveform:acquire 1 # Acquire the waveform (takes approximately 10 seconds)
+  caget OSC1022-01:CHB:waveform       # when waveform is ready, get the waveform. The waveform has a maximum size of 1,000,000 elements. Only the first 10,000 elements will contain data; the rest will be zeros.
+  ```
+  All details of these configurations can be found in this document.
+
+  **The waveform data is a scaled value. The calculation is located at the bottom.**
 
 - **Important Note**: Changes to these PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
 - The following shows a successful application of a change to a channels configuration. 

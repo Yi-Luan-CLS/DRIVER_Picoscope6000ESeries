@@ -108,8 +108,8 @@ record(stringin, "$(OSC):device_info") {
 record(ao, "$(OSC):num_samples"){
     field(DESC, "Number of samples required.")
     field(DTYP, "Picoscope")
-    field(VAL, "1000")
-	field(DRVH, "1073741696")
+    field(VAL, "10000")
+	field(DRVH, "1000000")
 	field(DRVL, "1") 
     field(OUT, "@L:set_num_samples")
 }
@@ -163,7 +163,7 @@ record(ao, "$(OSC):down_sample_ratio_mode:set") {
 record(ao, "$(OSC):trigger_position_ratio") {
     field(DESC, "The position of the trigger point.")
     field(DTYP, "Picoscope")
-    field(VAL, "0.8")
+    field(VAL, "0.5")
 	field(DRVH, "1")
 	field(DRVL, "0") 
     field(OUT, "@L:set_trigger_position_ratio")
@@ -406,8 +406,8 @@ record(calcout, "$(OSC):CH$(channel):waveform:acquire:calcout") {
 
 record(waveform, "$(OSC):CH$(channel):waveform"){
     field(DTYP, "Picoscope")
-	field(NELM, "1073741696")
-#	field(NELM, "1000000")
+#	field(NELM, "1073741696")
+	field(NELM, "1000000")
 	field(SCAN, "Passive")
 	field(FTVL, "SHORT")
     field(INP, "@L:retrieve_waveform")
