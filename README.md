@@ -10,8 +10,11 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:coupling`  
   - `<OSCNAME>:CH[A-D]:range`  
   - `<OSCNAME>:CH[A-D]:bandwidth`  
-  - `<OSCNAME>:CH[A-D]:analogue_offset`  
-  - `<OSCNAME>:timebase`  
+  - `<OSCNAME>:CH[A-D]:analogue_offset`    
+>[!Note] 
+>Changes to the above PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
+>To ensure the channel is ON, verify the staus with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
+  - Channel configuration PVs have corresponding feedback PVs with the same name, plus the suffix :fbk. These feedback PVs reflect the current value of the configuration when the channel is ON. However, if `<OSCNAME>:CH[A-D]:ON:fbk` is OFF, the configuration feedback PVs do not accurately reflect the channel's settings. 
 
 - **Simple usage example walkthrough:**
   
@@ -37,25 +40,6 @@ This document provides detailed information about the EPICS driver for the Picos
   All details of these configurations can be found in this document.
 
   **The waveform data is a scaled value. The calculation is located at the bottom.**
-
-- **Important Note**: Changes to these PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
-- The following shows a successful application of a change to a channels configuration. 
-    ```bash 
-      $ caget OSC1021-01:CHA:ON
-        OSC1021-01:CHA:ON              ON
-      $ caput OSC1021-01:CHA:range PICO_X1_PROBE_10MV
-        Old : OSC1021-01:CHA:range           PICO_X1_PROBE_50MV
-        New : OSC1021-01:CHA:range           PICO_X1_PROBE_10MV
-      $ caput OSC1021-01:CHA:ON ON
-        Old : OSC1021-01:CHA:ON              ON
-        New : OSC1021-01:CHA:ON              ON
-    ```
-- To acquire a waveform:
-    ```bash 
-      $ caput OSC1021-01:CHA:waveform:acquire 1 
-        Old : OSC1021-01:CHA:waveform:acquire DONE
-        New : OSC1021-01:CHA:waveform:acquire ACQUIRING
-    ```
   - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
   - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:acquire` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
   - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
@@ -95,7 +79,7 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:ON
   ```
 ### OSCNAME:ON:fbk 
-- **Type**: `bo` 
+- **Type**: `bi` 
 - **Description**: The actual state of the device.
   - Updates every 5 seconds with a ping to the device. 
 - **Fields**: 
@@ -123,7 +107,7 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:resolution
   ```
 ### OSCNAME:resolution:fbk 
-- **Type:** `ao`
+- **Type:** `mbbi`
 - **Description:** The actual value of the resolution set to the device. 
   - Updated when a new value is set to `OSCNAME:resolution`. 
 - **Fields:** 
@@ -285,7 +269,7 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:CH[A-D]:coupling
 - **Type**: `mbbo`
-- **Description**: 
+- **Description**: The impedance and coupling type. 
 - **Fields**:
   - `VAL`: The impedance and coupling type.
     | VAL   | Enum      | Description                   |
@@ -302,7 +286,13 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get coupling type
     $ caget OSC1234-01:CHA:coupling
   ```
-
+### OSCNAME:CH[A-D]:coupling:fbk
+- **Type**: `mbbi`
+- **Description**: The actual impedance and coupling type set to a channel. 
+  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
+  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:CH[A-B]:coupling` 
 
 ### OSCNAME:CH[A-D]:range
 - **Type**: `mbbo`
@@ -337,7 +327,13 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get voltage range
     $ caget OSC1234-01:CHA:range
   ```
-
+### OSCNAME:CH[A-D]:range:fbk
+- **Type**: `mbbi`
+- **Description**: The actual value of the voltage range set to a channel.  
+  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
+  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:CH[A-B]:range` 
 
 ### OSCNAME:CH[A-D]:bandwidth
 - **Type**: `mbbo`
@@ -360,6 +356,14 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:CHA:bandwith
   ```
 
+### OSCNAME:CH[A-D]:bandwith:fbk
+- **Type**: `mbbi`
+- **Description**: The actual value of the voltage range set to a channel.  
+  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
+  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:CH[A-B]:bandwith` 
+
 ### OSCNAME:CH[A-D]:analogue_offset
 - **Type**: `ao`
 - **Description**: A voltage to add to the input channel before digitization.
@@ -375,7 +379,13 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get offset
     $ caput OSC1234-01:CHA:analogueoffset
   ```
-
+### OSCNAME:CH[A-D]:analogue_offset:fbk
+- **Type**: `ai`
+- **Description**: The actual voltage to added to the input channel before digitization.  
+  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
+  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:CH[A-B]:analogue_offset` 
 
 ### OSCNAME:CH[A-D]:waveform:acquire
 - **Type**: `bo`
@@ -404,7 +414,7 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Note**: The raw value from the waveform is a scaled value. To interpret the waveform:
     | **Resolution**          | 8 BIT         | 10 BIT        | 12 BIT        |
     |-------------------------|---------------|---------------|---------------|
-    | **Voltage Range Scale** | $`\pm 32,512`$| $`\pm 32,512`$| $`\pm 32,512`$|
+    | **Voltage Range Scale** | $\pm 32,512$  | $\pm 32,704$  | $\pm 32,736$  |
 
   - **Calculation**:
     - The actual voltage is calculated as:
