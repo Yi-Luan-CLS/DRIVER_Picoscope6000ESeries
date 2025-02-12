@@ -253,12 +253,7 @@ int16_t set_channel_on(struct ChannelConfigs* channel) {
         return -1;
     }
 
-    printf("Set channel %d on.\n", channel->channel);
-
-    printf("Coupling: %d\n", channel->coupling); 
-    printf("Range: %d\n", channel->range); 
-    printf("Analogue offset: %f\n", channel->analogue_offset);     
-    printf("Bandwidth: %d\n", channel->bandwidth); 
+    printf("Setting channel %d on.\n", channel->channel);
   
     return 0;
 

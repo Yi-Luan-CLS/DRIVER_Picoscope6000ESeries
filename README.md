@@ -259,7 +259,7 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:CH[A-D]:coupling
 - **Type**: `mbbo`
-- **Description**: 
+- **Description**: The impedance and coupling type. 
 - **Fields**:
   - `VAL`: The impedance and coupling type.
     | VAL   | Enum      | Description                   |
@@ -276,7 +276,13 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get coupling type
     $ caget OSC1234-01:CHA:coupling
   ```
-
+### OSCNAME:CH[A-D]:coupling:fbk
+- **Type**: `mbbi`
+- **Description**: The actual impedance and coupling type set to a channel. 
+  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
+  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:CH[A-B]:coupling` 
 
 ### OSCNAME:CH[A-D]:range
 - **Type**: `mbbo`
@@ -311,7 +317,13 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get voltage range
     $ caget OSC1234-01:CHA:range
   ```
-
+### OSCNAME:CH[A-D]:range:fbk
+- **Type**: `mbbi`
+- **Description**: The actual value of the voltage range set to a channel.  
+  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
+  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:CH[A-B]:range` 
 
 ### OSCNAME:CH[A-D]:bandwidth
 - **Type**: `mbbo`
@@ -334,6 +346,14 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:CHA:bandwith
   ```
 
+### OSCNAME:CH[A-D]:bandwith:fbk
+- **Type**: `mbbi`
+- **Description**: The actual value of the voltage range set to a channel.  
+  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
+  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:CH[A-B]:bandwith` 
+
 ### OSCNAME:CH[A-D]:analogue_offset
 - **Type**: `ao`
 - **Description**: A voltage to add to the input channel before digitization.
@@ -349,7 +369,13 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get offset
     $ caput OSC1234-01:CHA:analogueoffset
   ```
-
+### OSCNAME:CH[A-D]:analogue_offset:fbk
+- **Type**: `ai`
+- **Description**: The actual voltage to added to the input channel before digitization.  
+  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
+  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:CH[A-B]:analogue_offset` 
 
 ### OSCNAME:CH[A-D]:waveform:acquire
 - **Type**: `bo`
@@ -378,7 +404,7 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Note**: The raw value from the waveform is a scaled value. To interpret the waveform:
     | **Resolution**          | 8 BIT         | 10 BIT        | 12 BIT        |
     |-------------------------|---------------|---------------|---------------|
-    | **Voltage Range Scale** | $`\pm 32,512`$| $`\pm 32,512`$| $`\pm 32,512`$|
+    | **Voltage Range Scale** | $\pm 32,512$  | $\pm 32,704$  | $\pm 32,736$  |
 
   - **Calculation**:
     - The actual voltage is calculated as:

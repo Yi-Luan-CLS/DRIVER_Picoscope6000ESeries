@@ -41,10 +41,14 @@ enum ioType
   	GET_DEVICE_INFO,
 	SET_CHANNEL_ON,
 	SET_COUPLING,
+	GET_COUPLING,
 	SET_RANGE, 
-	RETRIEVE_WAVEFORM,
+	GET_RANGE,
 	SET_ANALOGUE_OFFSET,
-	SET_BANDWIDTH
+	GET_ANALOGUE_OFFSET,
+	SET_BANDWIDTH, 
+	GET_BANDWIDTH,
+	RETRIEVE_WAVEFORM,
 	};
 
 enum ioFlag
@@ -72,10 +76,14 @@ static struct aioType
 	 	{"get_device_info", isInput, GET_DEVICE_INFO, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
-		{"retrieve_waveform", isInput, RETRIEVE_WAVEFORM, "" },
+		{"get_coupling", isInput, GET_COUPLING, ""},
 		{"set_range", isOutput, SET_RANGE,   "" }, 
+		{"get_range", isInput, GET_RANGE, ""},
 		{"set_analogue_offset", isOutput, SET_ANALOGUE_OFFSET, ""},
+		{"get_analogue_offset", isInput, GET_ANALOGUE_OFFSET, ""},
 		{"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
+		{"get_bandwidth", isInput, GET_BANDWIDTH, "" }, 
+		{"retrieve_waveform", isInput, RETRIEVE_WAVEFORM, "" },
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -112,6 +120,13 @@ format_device_support_function(char *string, char *paramName)
         return 0;
 }
 
+
+struct ChannelConfigs* channels[4] = {NULL}; // List of Picoscope channels and their configurations
+
+struct SampleConfigs* sample_configurations = NULL; // Configurations for data capture
+
+char* record_name; 
+int channel_index; 
 
 /****************************************************************************************
  * AI Record
@@ -201,6 +216,35 @@ read_ai (struct aiRecord *pai){
 			pai->val = resolution;  
 			break; 
 
+		case GET_COUPLING: 
+			record_name = pai->name; 
+			channel_index = find_channel_index_from_record(record_name, channels); 
+
+			pai->val = channels[channel_index]->coupling; 
+			break; 
+
+		case GET_RANGE: 
+			record_name = pai->name; 
+			channel_index = find_channel_index_from_record(record_name, channels); 
+
+			pai->val = channels[channel_index]->range; 
+			break; 
+
+		case GET_BANDWIDTH: 
+			record_name = pai->name; 
+			channel_index = find_channel_index_from_record(record_name, channels); 
+
+			pai->val = channels[channel_index]->bandwidth; 
+			break; 
+
+		case GET_ANALOGUE_OFFSET: 
+			// TODO: add call to ps6000aGetAnalogueOffsetLimits to get valid values
+			record_name = pai->name; 
+			channel_index = find_channel_index_from_record(record_name, channels); 
+
+			pai->val = channels[channel_index]->analogue_offset; 
+			break; 
+
 		default:
 			return 2;
 
@@ -241,14 +285,6 @@ struct
 
 epicsExportAddress(dset, devPicoscopeAo);
 
-
-struct ChannelConfigs* channels[4] = {NULL}; // List of Picoscope channels and their configurations
-
-struct SampleConfigs* sample_configurations = NULL; // Configurations for data capture
-
-
-char* record_name; 
-int channel_index; 
 
 static long
 init_record_ao (struct aoRecord *pao)
@@ -347,7 +383,7 @@ init_record_ao (struct aoRecord *pao)
 			}
 
 			break;
-
+		
 		// Following cases are specific to a channel
         case SET_COUPLING:	
 			record_name = pao->name;
@@ -392,7 +428,6 @@ init_record_ao (struct aoRecord *pao)
         default:
             return 0;
     }
-
 
 	return 2;
 }
@@ -632,9 +667,7 @@ init_record_stringin(struct stringinRecord * pstringin)
 			break;
 			
 		default:
-			return 2;
-
-		return 0;
+			return 0;
 	}
 
 	return 0;
@@ -659,9 +692,7 @@ read_stringin (struct stringinRecord *pstringin){
 			break;
 			
 		default:
-			return 2;
-
-		return 0;
+			return 0;
 	}
 	
 	return 0;
