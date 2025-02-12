@@ -10,9 +10,21 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:coupling`  
   - `<OSCNAME>:CH[A-D]:range`  
   - `<OSCNAME>:CH[A-D]:bandwidth`  
-  - `<OSCNAME>:CH[A-D]:analogue_offset`  
-  - `<OSCNAME>:timebase`  
-
+  - `<OSCNAME>:CH[A-D]:analogue_offset`    
+>[!Note] 
+>Changes to the above PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
+>To ensure the channel is ON, check `<OSCNAME>:CH[A-D]:ON:fbk`. 
+- The following shows a successful application of a change to a channels configuration. 
+    ```bash 
+      $ caget OSC1021-01:CHA:ON
+        OSC1021-01:CHA:ON              ON
+      $ caput OSC1021-01:CHA:range PICO_X1_PROBE_10MV
+        Old : OSC1021-01:CHA:range           PICO_X1_PROBE_50MV
+        New : OSC1021-01:CHA:range           PICO_X1_PROBE_10MV
+      $ caput OSC1021-01:CHA:ON ON
+        Old : OSC1021-01:CHA:ON              ON
+        New : OSC1021-01:CHA:ON              ON
+    ```
 - **Simple usage example walkthrough:**
   Make sure you have the Picoscope libraries located at `/opt/picoscope`
   
@@ -37,18 +49,6 @@ This document provides detailed information about the EPICS driver for the Picos
 
   **The waveform data is a scaled value. The calculation is located at the bottom.**
 
-- **Important Note**: Changes to these PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
-- The following shows a successful application of a change to a channels configuration. 
-    ```bash 
-      $ caget OSC1021-01:CHA:ON
-        OSC1021-01:CHA:ON              ON
-      $ caput OSC1021-01:CHA:range PICO_X1_PROBE_10MV
-        Old : OSC1021-01:CHA:range           PICO_X1_PROBE_50MV
-        New : OSC1021-01:CHA:range           PICO_X1_PROBE_10MV
-      $ caput OSC1021-01:CHA:ON ON
-        Old : OSC1021-01:CHA:ON              ON
-        New : OSC1021-01:CHA:ON              ON
-    ```
 - To acquire a waveform:
     ```bash 
       $ caput OSC1021-01:CHA:waveform:acquire 1 
