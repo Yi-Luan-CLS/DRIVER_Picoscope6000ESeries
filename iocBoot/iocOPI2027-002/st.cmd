@@ -12,7 +12,8 @@ dbLoadDatabase "dbd/Picoscope.dbd"
 Picoscope_registerRecordDeviceDriver pdbbase
 
 ## Load record instances
-dbLoadTemplate("PicoscopeApp/Db/Picoscope.substitutions", "OSC=OSC1022-01")
+dbLoadRecords("PicoscopeApp/Db/Picoscope.db","OSC=OSC1022-11")
+dbLoadTemplate("PicoscopeApp/Db/Picoscope.substitutions", "OSC=OSC1022-11")
 
 cd "${TOP}/iocBoot/${IOC}"
 iocInit

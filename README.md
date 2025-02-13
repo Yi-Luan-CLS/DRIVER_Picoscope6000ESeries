@@ -43,6 +43,9 @@ This document provides detailed information about the EPICS driver for the Picos
   - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:acquire` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
   - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
 
+>[!Note] 
+>Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:CH[A-D]:waveform:acquire`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
+
 ---
 
 ## PVs
@@ -139,6 +142,13 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:down_sample_ratio_mode
   ```
 
+### OSCNAME:down_sample_ratio_mode:fbk 
+- **Type**: `mbbi`
+- **Description**: The method of data reduction applied to the last waveform acquired. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:down_sample_ratio_mode`. 
+
 ### OSCNAME:down_sample_ratio
 - **Type**: `ao`
 - **Description**: The downsampling factor that will be applied to the raw data. 
@@ -153,6 +163,14 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get current down sampling ratio
     $ caget OSC1234-01:down_sample_ratio
   ```
+
+### OSCNAME:down_sample_ratio:fbk 
+- **Type**: `ai`
+- **Description**: The downsampling facter that has been applied to the raw data of the last waveform acquired. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:down_sample_ratio`. 
+
 ### OSCNAME:num_samples
 - **Type**: `ao`
 - **Description**: The number of samples will be collected. Applies to all channels.
@@ -177,6 +195,13 @@ This document provides detailed information about the EPICS driver for the Picos
     $ caget OSC1234-01:num_samples
   ```
 
+### OSCNAME:num_samples:fbk 
+- **Type**: `ai`
+- **Description**: The number of samples collected for the last waveform acquired. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:num_samples`. 
+
 ### OSCNAME:trigger_position_ratio
 - **Type**: `ao`
 - **Description**: A value between 0 and 1 that determines the position of the trigger point in the acquisition window.
@@ -193,6 +218,13 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get trigger position ratio 
     $ caget OSC1234-01:trigger_position_ratio
   ```
+
+### OSCNAME:trigger_position_ratio:fbk 
+- **Type**: `ai`
+- **Description**: The position of the trigger in the last acquired waveform.  
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:trigger_position_ratio`. 
 
 ### OSCNAME:timebase
 - **Type**: `ao`
@@ -216,8 +248,14 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get timebase
     $ caget OSC1234-01:timebase
   ```
-  
-### OSCNAME:time_interval_ns
+### OSCNAME:timebase:fbk 
+- **Type**: `ai`
+- **Description**: The timebase associated with the last acquired waveform.  
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+- **Fields**: 
+  - `VAL`: See `OSCNAME:timebase`. 
+
+### OSCNAME:time_interval_ns - not implemented 
 - **Type**: `ai`
 - **Description**: Time interval between samples collected in ns. A read-only value.
 - **Fields**:
@@ -227,7 +265,7 @@ This document provides detailed information about the EPICS driver for the Picos
     # Get time interval
     $ caget OSC1234-01:time_intervals_ns
   ```
-### OSCNAME:max_samples
+### OSCNAME:max_samples - not implemented 
 - **Type**: `ai`
 - **Description**: Maximum number of samples available based on number of segments, channels enabled, and timebase. A read-only value.
 - **Fields**:

@@ -1,0 +1,219 @@
+################################################################
+#### Oscilloscope  PVs 
+################################################################
+
+record(mbbo, "$(OSC):resolution"){
+    field(DTYP, "Soft Channel")
+    field(DESC, "Sampling resolution of device.")
+
+	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
+	field(ONST, "PICO_DR_10BIT")       field(ONVL, "10")
+	field(TWST, "PICO_DR_12BIT")       field(TWVL, "1")
+    field(TPRO,"1")
+    field(VAL,  "1")
+	field(FLNK, "$(OSC):resolution:fanout")
+}
+
+record(fanout, "$(OSC):resolution:fanout") {
+	field(SELM, "All")
+	field(LNK1, "$(OSC):resolution:set")
+	field(LNK2, "$(OSC):resolution:fbk:get")
+	field(LNK3, "$(OSC):resolution:fbk")
+}
+
+record(ao, "$(OSC):resolution:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):resolution.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+
+    field(VAL,  "10")
+	field(OUT, "@L:set_resolution")
+}
+
+record(ai, "$(OSC):resolution:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(SCAN, "Passive")
+	field(INP, "@L:get_resolution")
+}
+
+record(mbbi, "$(OSC):resolution:fbk") {
+	field(DTYP, "Soft Channel")
+
+	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
+	field(TEST, "PICO_DR_10BIT")       field(TEVL, "10")
+	field(ONST, "PICO_DR_12BIT")       field(ONVL, "1")
+
+	field(VAL, "10")
+	field(SCAN, "Passive")
+
+	field(INP, "$(OSC):resolution:fbk:get")
+}
+
+record(bo, "$(OSC):ON") {
+	field(DTYP, "Soft Channel")
+	field(DESC, "Turn picoscope on/off.")
+	field(ZNAM, "OFF")    	
+	field(ONAM, "ON") 
+
+    field(VAL,  "1")
+	field(FLNK,  "$(OSC):ON:fanout")
+}
+
+record(ao, "$(OSC):ON:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):ON.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+    field(VAL,  "1")
+
+	field(OUT, "@L:open_picoscope")
+}
+
+record(fanout, "$(OSC):ON:fanout") {
+	field(SELM, "All")
+	field(LNK1, "$(OSC):ON:set")
+	field(LNK2, "$(OSC):device_info")
+}
+
+record(ai, "$(OSC):ON:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(SCAN, "5 second")
+	field(INP, "@L:get_device_status")
+	field(FLNK, "$(OSC):ON:fbk.PROC")
+}
+
+record(bi, "$(OSC):ON:fbk") {
+	field(DTYP, "Soft Channel")
+
+	field(ZNAM, "OFF")
+	field(ONAM, "ON")
+	
+	field(SCAN, "Passive")
+	field(INP, "$(OSC):ON:fbk:get")
+}
+
+record(stringin, "$(OSC):device_info") {
+	field(DTYP, "Picoscope")
+	field(DESC, "Model and serial number of device.")
+	field(INP, "@L:get_device_info")
+    field(SCAN, "Passive")
+}
+
+################################################################
+#### PVs used to configure data capture
+################################################################
+record(ao, "$(OSC):num_samples"){
+    field(DESC, "Number of samples required.")
+    field(DTYP, "Picoscope")
+    field(VAL, "10000")
+	field(DRVH, "1000000")
+	field(DRVL, "1") 
+    field(OUT, "@L:set_num_samples")
+}
+
+record(ai, "$(OSC):num_samples:fbk") {
+    field(DESC, "Number of samples returned.")
+    field(DTYP, "Picoscope")
+    field(INP, "@L:get_num_samples")
+}
+
+record(ao, "$(OSC):down_sample_ratio"){
+    field(DESC, "Down sampling factor to apply to data.")
+    field(DTYP, "Picoscope")
+    field(VAL, "0")
+    field(OUT, "@L:set_down_sampling_ratio")
+}
+
+record(ai, "$(OSC):down_sample_ratio:fbk"){
+    field(DESC, "Actual down sampling factor applied.")
+    field(DTYP, "Picoscope")
+    field(INP, "@L:get_down_sampling_ratio")
+}
+
+record(mbbo, "$(OSC):down_sample_ratio_mode") {
+    field(DTYP, "Soft Channel")
+    field(DESC, "Method of data reduction/downsampling.")
+
+    field(ZRST, "AGGREGATE")                field(ZRVL, "1")
+    field(ONST, "DECIMATE")                 field(ONVL, "2")
+    field(TWST, "AVERAGE")                  field(TWVL, "4")
+    field(THST, "TRIG_DATA_FOR_TIME_CALC")  field(THVL, "0x10000000")
+    field(FRST, "TRIGGER")                  field(FRVL, "0x40000000")
+    field(FVST, "RAW")                      field(FVVL, "0x80000000")
+
+    field(VAL, "5")
+    field(FLNK,  "$(OSC):down_sample_ratio_mode:set.PROC")
+}
+
+record(ao, "$(OSC):down_sample_ratio_mode:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):down_sample_ratio_mode.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(VAL, "0x80000000")
+	field(OUT, "@L:set_down_sampling_ratio_mode")
+}
+
+record(ai, "$(OSC):down_sample_ratio_mode:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_down_sampling_ratio_mode")
+	field(FLNK, "$(OSC):down_sample_ratio_mode:fbk")
+}
+
+record(mbbi, "$(OSC):down_sample_ratio_mode:fbk") {
+	field(DTYP, "Soft Channel")
+    field(DESC, "Data reduction/downsampling method set.")
+	
+    field(ZRST, "AGGREGATE")                field(ZRVL, "1")
+    field(ONST, "DECIMATE")                 field(ONVL, "2")
+    field(TWST, "AVERAGE")                  field(TWVL, "4")
+    field(THST, "TRIG_DATA_FOR_TIME_CALC")  field(THVL, "0x10000000")
+    field(FRST, "TRIGGER")                  field(FRVL, "0x40000000")
+    field(FVST, "RAW")                      field(FVVL, "0x80000000")
+	
+	field(SCAN, "Passive")
+	field(INP, "$(OSC):down_sample_ratio_mode:fbk:get")
+}
+
+record(ao, "$(OSC):trigger_position_ratio") {
+    field(DESC, "The position of the trigger point.")
+    field(DTYP, "Picoscope")
+    field(VAL, "0.5")
+	field(DRVH, "1")
+	field(DRVL, "0") 
+    field(OUT, "@L:set_trigger_position_ratio")
+}
+
+record(ai, "$(OSC):trigger_position_ratio:fbk"){ 
+    field(DESC, "Actual position of the trigger point.")
+    field(DTYP, "Picoscope")
+    field(INP, "@L:get_trigger_position_ratio")
+}
+
+record(ao, "$(OSC):timebase") {
+    field(DESC, "Timebase")
+    field(DTYP, "Picoscope")
+    field(VAL, "1")
+    field(OUT, "@L:set_timebase")
+}
+
+record(ai, "$(OSC):timebase:fbk"){
+    field(DESC, "Actual timebase")
+    field(DTYP, "Picoscope")
+    field(INP, "@L:get_timebase")
+}
+
+# TODO: return values from ps6000aGetTimebase 
+# record(ai, "$(OSC):time_interval_ns") {
+#     field(DTYP, "Picoscope")
+#     field(DESC, "Time interval between readings in ns.") 
+#}
+# record(ai, "$(OSC):max_samples ") {
+#     field(DTYP, "Picoscope")
+#     field(DESC, "Maximum number of samples available.") 
+#
+# }
