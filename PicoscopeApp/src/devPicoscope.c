@@ -33,10 +33,15 @@ enum ioType
 	SET_RESOLUTION,
 	GET_RESOLUTION,
 	SET_NUM_SAMPLES,
+	GET_NUM_SAMPLES,
 	SET_TIMEBASE,
+	GET_TIMEBASE,
 	SET_DOWN_SAMPLE_RATIO,
+	GET_DOWN_SAMPLE_RATIO,
 	SET_DOWN_SAMPLE_RATIO_MODE,
+	GET_DOWN_SAMPLE_RATIO_MODE,
 	SET_TRIGGER_POSITION_RATIO,
+	GET_TRIGGER_POSITION_RATIO,
   	GET_SERIAL_NUM,
   	GET_DEVICE_INFO,
 	SET_CHANNEL_ON,
@@ -69,10 +74,15 @@ static struct aioType
 		{"set_resolution", isOutput, SET_RESOLUTION, ""},
 		{"get_resolution", isInput, GET_RESOLUTION, ""},
 		{"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
+		{"get_num_samples", isInput, GET_NUM_SAMPLES, ""},
 		{"set_timebase", isOutput, SET_TIMEBASE, ""},
+		{"get_timebase", isInput, GET_TIMEBASE, ""},
 		{"set_down_sampling_ratio", isOutput, SET_DOWN_SAMPLE_RATIO, ""},
+		{"get_down_sampling_ratio", isInput, GET_DOWN_SAMPLE_RATIO, ""},
 		{"set_down_sampling_ratio_mode", isOutput, SET_DOWN_SAMPLE_RATIO_MODE, ""},
+		{"get_down_sampling_ratio_mode", isInput, GET_DOWN_SAMPLE_RATIO_MODE, ""},
 		{"set_trigger_position_ratio", isOutput, SET_TRIGGER_POSITION_RATIO, "" },
+		{"get_trigger_position_ratio", isInput, GET_TRIGGER_POSITION_RATIO, "" },
 	 	{"get_device_info", isInput, GET_DEVICE_INFO, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
@@ -206,6 +216,7 @@ read_ai (struct aiRecord *pai){
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pai->dpvt;
 	switch (vdp->ioType)
 	{
+		// Device configuration fbk
 		case GET_DEVICE_STATUS:
 			result = ping_picoscope(); 
 			pai->val = result;
@@ -216,6 +227,7 @@ read_ai (struct aiRecord *pai){
 			pai->val = resolution;  
 			break; 
 
+		// Channel configuration fbk
 		case GET_COUPLING: 
 			record_name = pai->name; 
 			channel_index = find_channel_index_from_record(record_name, channels); 
@@ -245,6 +257,27 @@ read_ai (struct aiRecord *pai){
 			pai->val = channels[channel_index]->analogue_offset; 
 			break; 
 
+		// Data configuration fbk 
+		case GET_NUM_SAMPLES: 
+			pai->val = sample_configurations->num_samples; 
+			break; 
+
+		case GET_DOWN_SAMPLE_RATIO: 
+			pai->val = sample_configurations->down_sample_ratio; 
+			break; 
+
+		case GET_DOWN_SAMPLE_RATIO_MODE: 
+			pai->val = translate_down_sample_ratio_mode(sample_configurations->down_sample_ratio_mode);
+			break;
+
+		case GET_TRIGGER_POSITION_RATIO: 
+			pai->val = sample_configurations->trigger_position_ratio;
+			break; 
+			
+		case GET_TIMEBASE: 
+			pai->val = sample_configurations->timebase; 
+			break; 
+
 		default:
 			return 2;
 
@@ -252,6 +285,43 @@ read_ai (struct aiRecord *pai){
 	return 2;
 
 }	
+
+#define AGGREGATE      0
+#define DECIMATE       1
+#define AVERAGE        2
+#define TRIG_DATA      3
+#define TRIGGER        4
+#define RAW            5
+
+/**
+ * Match downsample ratio mode values from the Picoscope API to the corresponding 
+ * value in the EPICS mbbo record $(OSC):down_sample_ratio_mode:fbk. 
+ * 
+ * @param mode The mode value as defined by the Picoscope API
+ * 
+ * @return The value of the mode in the mbbo PV, or -1 if mode does not exist.
+ */
+int16_t translate_down_sample_ratio_mode(int mode){
+	if (mode == 1) {
+		return AGGREGATE;
+	}
+	if (mode == 2){
+		return DECIMATE;
+	}	
+	if (mode == 4) {
+		return AVERAGE;
+	}	
+	if (mode & 268435456) {
+		return TRIG_DATA;
+	}
+	if (mode & 1073741824) {
+		return TRIGGER;
+	}	
+	if (mode == -2147483648) {
+		return RAW;
+	}
+	return -1;
+}
 
 /****************************************************************************************
  * AO Record
@@ -358,16 +428,8 @@ init_record_ao (struct aoRecord *pao)
 			break; 
 		
 		case SET_DOWN_SAMPLE_RATIO_MODE: 
-			sample_configurations->down_sample_ratio_mode = pao->val; 
+			sample_configurations->down_sample_ratio_mode = (int)pao->val; 
 			break; 
-		
-		// case SET_PRE_TRIGGER_SAMPLES: 
-		// 	sample_configurations->pre_trigger_samples = (int)pao->val;
-		// 	break;
-		
-		// case SET_POST_TRIGGER_SAMPLES: 
-		// 	sample_configurations->post_trigger_samples = (int)pao->val;
-		// 	break;
 
 		case SET_TRIGGER_POSITION_RATIO:
 			sample_configurations->trigger_position_ratio = (float)pao->val;
@@ -380,7 +442,6 @@ init_record_ao (struct aoRecord *pao)
 				printf("Error opening picoscope.\n");
 				pao->val = 0; // Cannot connect to picoscope, set PV to OFF. 
 			}
-
 			break;
 		
 		// Following cases are specific to a channel
@@ -462,7 +523,7 @@ write_ao (struct aoRecord *pao)
 			break; 
 		
 		case SET_DOWN_SAMPLE_RATIO_MODE: 
-			sample_configurations->down_sample_ratio_mode = pao->val; 
+			sample_configurations->down_sample_ratio_mode = (int)pao->val; 
 			break; 
 
 		case SET_TRIGGER_POSITION_RATIO:
@@ -484,7 +545,6 @@ write_ao (struct aoRecord *pao)
 				}
 			}
 			break;
-
 
        	// Following cases are specific to a channel
         case SET_COUPLING:	
@@ -519,8 +579,7 @@ write_ao (struct aoRecord *pao)
 
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 
-		    
-			// Get value of PV OSCXXXX-XX:CH[A-B]:ON:set 
+
 			pv_value = pao->val;
 
 			// If PV value is 1 (ON) set channel on 
@@ -557,7 +616,15 @@ write_ao (struct aoRecord *pao)
 	return 0;
 }
 
-/** Get the channel from the record formatted "OSCXXXX-XX:CH[A-B]:" and return index in channels array */
+/** 
+ * Gets the channel from the record name formatted "OSCXXXX-XX:CH[A-B]:" and returns index of that channel 
+ * from an array of ChannelConfigs. 
+ * 
+ * @param record_name PV name formated "OSCXXXX-XX:CH[A-B]:"
+ * 		  channels Array of ChannelConfigs 
+ * 
+ * @returns Index of channel in the channels array if successful, otherwise returns -1 
+ * */
 int find_channel_index_from_record(const char* record_name, struct ChannelConfigs* channels[]) {
     char channel_str[4];
     sscanf(record_name, "%*[^:]:%4[^:]", channel_str);  // Extract the channel part, e.g., "CHA", "CHB", etc.
