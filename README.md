@@ -43,6 +43,9 @@ This document provides detailed information about the EPICS driver for the Picos
   - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:acquire` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
   - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
 
+>[!Note] 
+>Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:CH[A-D]:waveform:acquire`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
+
 ---
 
 ## PVs
