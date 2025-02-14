@@ -639,6 +639,7 @@ int find_channel_index_from_record(const char* record_name, struct ChannelConfig
     } else if (strcmp(channel_str, "CHD") == 0) {
         channel = CHANNEL_D;
     } else {
+		printf("Channel not found from record name: %s.\n", record_name); 
         return -1;  // Invalid channel
     }
 

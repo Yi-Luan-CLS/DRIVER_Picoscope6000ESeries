@@ -21,7 +21,7 @@ Picoscope_DBD += Picoscope_support.dbd
 #Picoscope_DBD += xxx.dbd
 
 # Add all the support libraries needed by this IOC
-# Picoscope_LIBS += /opt/picoscope/lib
+# Picoscope_LIBS += 
 
 # Picoscope_registerRecordDeviceDriver.cpp derives from Picoscope.dbd
 Picoscope_SRCS += Picoscope_registerRecordDeviceDriver.cpp
@@ -43,7 +43,7 @@ USR_SYS_LIBS += ps6000a
 include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD RULES AFTER THIS LINE
-SNCSEQ=/opt/picoscope
+SNCSEQ=$(TOP)/PicoscopeApp/src/picoscope
 USR_CPPFLAGS += -I$(SNCSEQ)/include/libps6000a
-USR_CPPFLAGS += -DUSE_TYPED_RSET 
 USR_LDFLAGS +=  -L$(SNCSEQ)/lib
+USR_CPPFLAGS += -DUSE_TYPED_RSET 
