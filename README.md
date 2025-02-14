@@ -17,7 +17,8 @@ This document provides detailed information about the EPICS driver for the Picos
   - Channel configuration PVs have corresponding feedback PVs with the same name, plus the suffix :fbk. These feedback PVs reflect the current value of the configuration when the channel is ON. However, if `<OSCNAME>:CH[A-D]:ON:fbk` is OFF, the configuration feedback PVs do not accurately reflect the channel's settings. 
 
 - **Simple usage example walkthrough:**
-  Make sure you have the Picoscope libraries located at `/opt/picoscope`
+
+  The driver for PicoScope 6000E Series devices (libps6000a), from Pico Technology (https://www.picotech.com/downloads), is included in this repository. 
   
   This is a case using Channel B with a signal voltage within ±20V.
 
