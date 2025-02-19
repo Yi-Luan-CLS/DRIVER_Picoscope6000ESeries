@@ -9,7 +9,6 @@ record(mbbo, "$(OSC):resolution"){
 	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
 	field(ONST, "PICO_DR_10BIT")       field(ONVL, "10")
 	field(TWST, "PICO_DR_12BIT")       field(TWVL, "1")
-    field(TPRO,"1")
     field(VAL,  "1")
 	field(FLNK, "$(OSC):resolution:fanout")
 }
