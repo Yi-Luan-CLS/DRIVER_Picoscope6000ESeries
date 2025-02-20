@@ -6,7 +6,7 @@ int16_t get_device_info(int8_t** device_info);
 
 int16_t connect_picoscope();
 
-int16_t open_picoscope(int16_t resolution); 
+int16_t open_picoscope(int16_t resolution, int8_t* serial_num); 
 
 int16_t ping_picoscope();
 

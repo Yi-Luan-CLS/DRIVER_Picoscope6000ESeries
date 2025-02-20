@@ -1,3 +1,10 @@
+# PV to identify the picoscope to connect to via the serial number 
+record(ao, "$(SERIAL_NUM)"){ 
+	field(DTYP, "Picoscope")
+	field(DESC, "Serial number of the device to open.")
+	field(OUT, "@L:device_to_open")
+}
+
 ################################################################
 #### Oscilloscope  PVs 
 ################################################################

@@ -55,6 +55,7 @@ enum ioType
 	RETRIEVE_WAVEFORM,
 	SET_SAMPLE_INTERVAL, 
 	GET_SAMPLE_INTERVAL,
+	DEVICE_TO_OPEN
 	};
 
 enum ioFlag
@@ -96,6 +97,7 @@ static struct aioType
 		{"retrieve_waveform", isInput, RETRIEVE_WAVEFORM, "" },
 		{"set_sample_interval", isOutput, SET_SAMPLE_INTERVAL, "" },
 		{"get_sample_interval", isInput, GET_SAMPLE_INTERVAL, "" },
+		{"device_to_open", isOutput, DEVICE_TO_OPEN, ""}
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -361,6 +363,7 @@ struct
 
 epicsExportAddress(dset, devPicoscopeAo);
 
+int8_t* device_serial_number; 
 
 static long
 init_record_ao (struct aoRecord *pao)
@@ -417,6 +420,10 @@ init_record_ao (struct aoRecord *pao)
 
 	switch (vdp->ioType)	
     {	
+		case DEVICE_TO_OPEN: 
+			device_serial_number = (int8_t*)pao->name;
+			break; 
+
 		case SET_RESOLUTION: 
 			resolution = (int)pao->val; 
 			break;
@@ -439,9 +446,9 @@ init_record_ao (struct aoRecord *pao)
 
 		case OPEN_PICOSCOPE: 
 			// On initialization open picoscope with default resolution. 
-			result = open_picoscope(resolution);
+			result = open_picoscope(resolution, device_serial_number);
 			if (result != 0) {
-				printf("Error opening picoscope.\n");
+				printf("Error opening picoscope with serial number %s\n", device_serial_number);
 				pao->val = 0; // Cannot connect to picoscope, set PV to OFF. 
 			}
 			break;
@@ -547,9 +554,9 @@ write_ao (struct aoRecord *pao)
 			int pv_value = (int)pao->val; 
 			
 			if (pv_value == 1){
-				result = open_picoscope(resolution);
+				result = open_picoscope(resolution, device_serial_number);
 				if (result != 0) {
-					printf("Error opening picoscope.\n");
+					printf("Error opening picoscope with serial number %s\n", device_serial_number);
 				}
 			} else {
 				result = close_picoscope(); 

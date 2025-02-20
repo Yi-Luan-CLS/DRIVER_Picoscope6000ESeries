@@ -29,9 +29,9 @@ void log_error(char* function_name, int16_t status, const char* FILE, int LINE){
  * 
  * @return 0 if the device is successfully opened, or -1 if an error occurs. 
 */
-int16_t open_picoscope(int16_t resolution){
+int16_t open_picoscope(int16_t resolution, int8_t* serial_num){
 
-    status = ps6000aOpenUnit(&handle, NULL, resolution);
+    status = ps6000aOpenUnit(&handle, serial_num, resolution);
     if (status != PICO_OK) 
     { 
         log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 

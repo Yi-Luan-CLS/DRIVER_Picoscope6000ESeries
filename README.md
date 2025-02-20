@@ -4,6 +4,7 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ---
 ## Usage
+- The picoscope to open is identified by the SERIAL_NUM macro in the st.cmd file. This macro must equal the serial number of the PicoScope you wish to connect to. 
 - It is expected that a PicoScope is connected at application start-up. If a PicoScope is connected after the application has started, setting `<OSCNAME>:ON` to `1` or `ON` will open the scope.  
 
 - The following Process Variables (PVs) are used to configure a channel:  
