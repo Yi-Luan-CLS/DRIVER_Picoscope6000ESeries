@@ -227,9 +227,24 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger_position_ratio`. 
 
-### OSCNAME:timebase
+### OSCNAME:sample_interval 
 - **Type**: `ao`
-- **Description**: The time scale to determine time per division
+- **Description**: The requested sample interval in seconds. 
+- **Fields**: 
+  - `VAL`: The sample interval in seconds you would like to obtain. 
+
+### OSCNAME:sample_interval:fbk
+- **Type**: `ai`
+- **Description**: The actual sample interval in seconds that will be applied when capturing data.
+  - Updated with a new value put to `OSCNAME:sample_interval` or when any channel is turned ON/OFF. 
+- **Fields**: 
+  - `VAL`: The actual sample interval appliead in seconds. 
+
+### OSCNAME:timebase:fbk
+- **Type**: `ai`
+- **Description**: The time scale used to determine time per division when capturing data. 
+  - The value returned is based on the value of `OSCNAME:sample_interval:fbk`. 
+  - This value will update when a new value is put to `OSCNAME:sample_interval` or when any channel is turned ON/OFF.
 - **Fields**:
   - `VAL`: Timebase
   ![image](https://github.lightsource.ca/cid/DRIVER_Picoscope6000ESeries/assets/209/a348ee4f-d014-44ec-a948-070051ce5d46)
@@ -241,41 +256,7 @@ This document provides detailed information about the EPICS driver for the Picos
     | Two Channels      | 0 (200 ps) | 2 (800 ps) |  
     | Three Channels    | 1 (400 ps) | N/A        |  
     | Four Channels     | 1 (400 ps) | N/A        | 
-- **Example**:
-  ```bash
-    # Set timebase to 5
-    $ caput OSC1234-01:timebase 5
 
-    # Get timebase
-    $ caget OSC1234-01:timebase
-  ```
-### OSCNAME:timebase:fbk 
-- **Type**: `ai`
-- **Description**: The timebase associated with the last acquired waveform.  
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
-- **Fields**: 
-  - `VAL`: See `OSCNAME:timebase`. 
-
-### OSCNAME:time_interval_ns - not implemented 
-- **Type**: `ai`
-- **Description**: Time interval between samples collected in ns. A read-only value.
-- **Fields**:
-  - `VAL`: Time interval between samples collected in ns.
-- **Example**:
-  ```bash
-    # Get time interval
-    $ caget OSC1234-01:time_intervals_ns
-  ```
-### OSCNAME:max_samples - not implemented 
-- **Type**: `ai`
-- **Description**: Maximum number of samples available based on number of segments, channels enabled, and timebase. A read-only value.
-- **Fields**:
-  - `VAL`: Maximum number of samples available.
-- **Example**:
-  ```bash
-    # Get maximum number of samples. 
-    $ caget OSC1234-01:max_samples
-  ```
 ---
 **_Channel configurations:_**
 ### OSCNAME:CH[A-D]:ON
