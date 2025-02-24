@@ -32,6 +32,7 @@ struct ChannelConfigs{
 /** Structure for data capture configurations*/
 struct SampleConfigs{ 
     uint32_t timebase;
+    double time_interval_secs;
     uint64_t num_samples; 
     float trigger_position_ratio;
     uint64_t down_sample_ratio;

@@ -1,3 +1,10 @@
+# PV to identify the picoscope to connect to via the serial number 
+record(ao, "$(SERIAL_NUM)"){ 
+	field(DTYP, "Picoscope")
+	field(DESC, "Serial number of the device to open.")
+	field(OUT, "@L:device_to_open")
+}
+
 ################################################################
 #### Oscilloscope  PVs 
 ################################################################
@@ -60,6 +67,12 @@ record(bo, "$(OSC):ON") {
 	field(FLNK,  "$(OSC):ON:fanout")
 }
 
+record(fanout, "$(OSC):ON:fanout") {
+	field(SELM, "All")
+	field(LNK1, "$(OSC):ON:set")
+	field(LNK2, "$(OSC):device_info")
+}
+
 record(ao, "$(OSC):ON:set") {
 	field(DTYP, "Picoscope")
 	field(DOL, "$(OSC):ON.RVAL")
@@ -69,12 +82,6 @@ record(ao, "$(OSC):ON:set") {
     field(VAL,  "1")
 
 	field(OUT, "@L:open_picoscope")
-}
-
-record(fanout, "$(OSC):ON:fanout") {
-	field(SELM, "All")
-	field(LNK1, "$(OSC):ON:set")
-	field(LNK2, "$(OSC):device_info")
 }
 
 record(ai, "$(OSC):ON:fbk:get") {
@@ -193,11 +200,22 @@ record(ai, "$(OSC):trigger_position_ratio:fbk"){
     field(INP, "@L:get_trigger_position_ratio")
 }
 
-record(ao, "$(OSC):timebase") {
-    field(DESC, "Timebase")
-    field(DTYP, "Picoscope")
-    field(VAL, "1")
-    field(OUT, "@L:set_timebase")
+record(ao, "$(OSC):sample_interval"){ 
+	field(DTYP, "Picoscope")
+	field(DESC, "Requested sample interval in seconds.")
+	field(OUT, "@L:set_sample_interval")
+	field(FLNK, "$(OSC):sample_interval:fanout")
+}
+
+record(fanout, "$(OSC):sample_interval:fanout") {
+	field(LNK1, "$(OSC):sample_interval:fbk")
+	field(LNK2, "$(OSC):timebase:fbk")
+}
+
+record(ai, "$(OSC):sample_interval:fbk"){ 
+	field(DTYP, "Picoscope")
+	field(DESC, "Actual sample interval in seconds.")
+	field(INP, "@L:get_sample_interval")
 }
 
 record(ai, "$(OSC):timebase:fbk"){
@@ -205,14 +223,3 @@ record(ai, "$(OSC):timebase:fbk"){
     field(DTYP, "Picoscope")
     field(INP, "@L:get_timebase")
 }
-
-# TODO: return values from ps6000aGetTimebase 
-# record(ai, "$(OSC):time_interval_ns") {
-#     field(DTYP, "Picoscope")
-#     field(DESC, "Time interval between readings in ns.") 
-#}
-# record(ai, "$(OSC):max_samples ") {
-#     field(DTYP, "Picoscope")
-#     field(DESC, "Maximum number of samples available.") 
-#
-# }
