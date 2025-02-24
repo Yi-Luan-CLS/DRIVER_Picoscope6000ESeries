@@ -19,7 +19,7 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Simple usage example walkthrough:**
 
   The driver for PicoScope 6000E Series devices (libps6000a), from Pico Technology (https://www.picotech.com/downloads), is included in this repository. 
-  
+
   This is a case using Channel B with a signal voltage within ±20V.
 
   ```bash
