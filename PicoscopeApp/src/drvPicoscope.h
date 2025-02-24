@@ -6,7 +6,7 @@ int16_t get_device_info(int8_t** device_info);
 
 int16_t connect_picoscope();
 
-int16_t open_picoscope(int16_t resolution); 
+int16_t open_picoscope(int16_t resolution, int8_t* serial_num); 
 
 int16_t ping_picoscope();
 
@@ -19,6 +19,8 @@ int16_t close_picoscope();
 int16_t set_channel_on(struct ChannelConfigs* channel);
 
 int16_t set_channel_off(int channel);
+
+int16_t set_sample_interval(double requested_time_interval, uint32_t* timebase, double* available_time_interval);
 
 int16_t retrieve_waveform(
     struct ChannelConfigs* channel_configuration,
