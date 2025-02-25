@@ -50,6 +50,8 @@ enum ioType
 	GET_RANGE,
 	SET_ANALOGUE_OFFSET,
 	GET_ANALOGUE_OFFSET,
+	GET_MAX_ANALOGUE_OFFSET,
+	GET_MIN_ANALOGUE_OFFSET,
 	SET_BANDWIDTH, 
 	GET_BANDWIDTH,
 	RETRIEVE_WAVEFORM,
@@ -92,6 +94,8 @@ static struct aioType
 		{"get_range", isInput, GET_RANGE, ""},
 		{"set_analogue_offset", isOutput, SET_ANALOGUE_OFFSET, ""},
 		{"get_analogue_offset", isInput, GET_ANALOGUE_OFFSET, ""},
+		{"get_max_analogue_offset", isInput, GET_MAX_ANALOGUE_OFFSET, ""},
+		{"get_min_analogue_offset", isInput, GET_MIN_ANALOGUE_OFFSET, ""},
 		{"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
 		{"get_bandwidth", isInput, GET_BANDWIDTH, "" }, 
 		{"retrieve_waveform", isInput, RETRIEVE_WAVEFORM, "" },
@@ -141,6 +145,9 @@ struct SampleConfigs* sample_configurations = NULL; // Configurations for data c
 
 char* record_name; 
 int channel_index; 
+
+double max_analogue_offset; 
+double min_analogue_offset; 
 
 /****************************************************************************************
  * AI Record
@@ -260,6 +267,24 @@ read_ai (struct aiRecord *pai){
 
 			pai->val = channels[channel_index]->analogue_offset; 
 			break; 
+
+		case GET_MAX_ANALOGUE_OFFSET: 
+			record_name = pai->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+
+			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
+
+			pai->val = max_analogue_offset; 
+			break;
+
+		case GET_MIN_ANALOGUE_OFFSET: 
+			record_name = pai->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+
+			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
+
+			pai->val = min_analogue_offset; 
+			break;
 
 		// Data configuration fbk 
 		case GET_NUM_SAMPLES: 
@@ -472,7 +497,20 @@ init_record_ao (struct aoRecord *pao)
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 			
-			channels[channel_index]->analogue_offset = pao->val;
+			double max_analogue_offset = 0; 
+			double min_analogue_offset = 0; 
+			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
+
+			// If PV val is outside of the analogue offset limits, use the limit instead. 
+			if (pao->val > max_analogue_offset) {
+				channels[channel_index]->analogue_offset = max_analogue_offset;
+			}
+			else if (pao->val < min_analogue_offset){ 
+				channels[channel_index]->analogue_offset = min_analogue_offset; 
+			} 
+			else {
+				channels[channel_index]->analogue_offset = pao->val;
+			}
 			break;
 
 		case SET_BANDWIDTH: 
@@ -582,10 +620,25 @@ write_ao (struct aoRecord *pao)
 			break;
 
 		case SET_ANALOGUE_OFFSET: 
+
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
+
+			double max_analogue_offset = 0; 
+			double min_analogue_offset = 0; 
+			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
 			
-			channels[channel_index]->analogue_offset = pao->val;
+			// If PV val is outside of the analogue offset limits, use the limit instead. 
+			if (pao->val > max_analogue_offset) {
+				channels[channel_index]->analogue_offset = max_analogue_offset;
+			}
+			else if (pao->val < min_analogue_offset){ 
+				channels[channel_index]->analogue_offset = min_analogue_offset; 
+			} 
+			else {
+				channels[channel_index]->analogue_offset = pao->val;
+			}
+
 			break;
 
 		case SET_BANDWIDTH: 

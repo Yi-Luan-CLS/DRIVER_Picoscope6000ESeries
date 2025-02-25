@@ -12,12 +12,12 @@ record(bo, "$(OSC):CH$(channel):ON") {
 
 record(fanout, "$(OSC):CH$(channel):fanout") {
 	field(SELM, "All")
-	field(LNK1, "$(OSC):CH$(channel):ON:fbk:get")
-	field(LNK2, "$(OSC):CH$(channel):coupling:fbk:get")
-	field(LNK3, "$(OSC):CH$(channel):range:fbk:get")
-	field(LNK4, "$(OSC):CH$(channel):bandwidth:fbk:get")
-	field(LNK5, "$(OSC):CH$(channel):analogue_offset:fbk")
-	field(LNK6, "$(OSC):sample_interval:fanout") 
+	field(LNK1, "$(OSC):CH$(channel):analogue_offset:fbk")
+	field(LNK2, "$(OSC):CH$(channel):ON:fbk:get")
+	field(LNK3, "$(OSC):CH$(channel):coupling:fbk:get")
+	field(LNK4, "$(OSC):CH$(channel):range:fbk:get")
+	field(LNK5, "$(OSC):CH$(channel):bandwidth:fbk:get")
+	field(LNK6, "$(OSC):sample_interval") 
 }
 
 
@@ -51,7 +51,12 @@ record(mbbo, "$(OSC):CH$(channel):coupling") {
     field(ONST, "PICO_DC")            field(ONVL, "1")
     
     field(VAL, "1")
-    field(FLNK, "$(OSC):CH$(channel):coupling:set.PROC")	
+    field(FLNK, "$(OSC):CH$(channel):coupling:fanout")	
+}
+
+record(fanout, "$(OSC):CH$(channel):coupling:fanout") {
+	field(LNK1, "$(OSC):CH$(channel):coupling:set.PROC")	
+	field(LNK2, "$(OSC):CH$(channel):analogue_offset_limits:fanout")
 }
 
 record(ao, "$(OSC):CH$(channel):coupling:set") {
@@ -104,7 +109,12 @@ record(mbbo, "$(OSC):CH$(channel):range") {
     field(FFST, "PICO_X1_PROBE_1KV")   field(FFVL, "15")
 
 	field(VAL, "0")
-	field(FLNK, "$(OSC):CH$(channel):range:set.PROC")	
+	field(FLNK, "$(OSC):CH$(channel):range:fanout")	
+}
+
+record(fanout, "$(OSC):CH$(channel):range:fanout") {
+	field(LNK1, "$(OSC):CH$(channel):range:set.PROC")	
+	field(LNK2, "$(OSC):CH$(channel):analogue_offset_limits:fanout")
 }
 
 record(ao, "$(OSC):CH$(channel):range:set") {
@@ -198,6 +208,23 @@ record(ai, "$(OSC):CH$(channel):analogue_offset:fbk") {
 	field(DTYP, "Picoscope")
 	field(DESC, "Actual voltage added to input channel.")
 	field(INP, "@L:get_analogue_offset")
+}
+
+record(fanout, "$(OSC):CH$(channel):analogue_offset_limits:fanout") {
+	field(LNK1,"$(OSC):CH$(channel):analogue_offset:max")
+	field(LNK2,"$(OSC):CH$(channel):analogue_offset:min")
+}
+
+record(ai, "$(OSC):CH$(channel):analogue_offset:max"){ 
+	field(DTYP, "Picoscope")
+	field(DESC, "Max analogue offset voltage allowed.")
+	field(INP, "@L:get_max_analogue_offset")
+}
+
+record(ai, "$(OSC):CH$(channel):analogue_offset:min"){ 
+	field(DTYP, "Picoscope")
+	field(DESC, "Min analogue offset voltage allowed.")
+	field(INP, "@L:get_min_analogue_offset")
 }
 
 record(bo, "$(OSC):CH$(channel):waveform:acquire") {
