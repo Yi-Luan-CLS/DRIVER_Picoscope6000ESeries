@@ -114,9 +114,9 @@ int16_t set_device_resolution(int16_t resolution){
  * 
  * @return 0 if resolution returned, or -1 if an error occurs. 
 */
-PICO_DEVICE_RESOLUTION device_resolution; 
 int16_t get_resolution(int16_t* resolution) {
 
+    PICO_DEVICE_RESOLUTION device_resolution; 
 
     status = ps6000aGetDeviceResolution(handle, &device_resolution); 
 
@@ -364,12 +364,15 @@ int16_t get_analogue_offset_limits(int16_t range, int16_t coupling, double* max_
  */
 int16_t set_sample_interval(double requested_time_interval, uint32_t* timebase, double* available_time_interval){
 
+    int16_t resolution = 0; 
+    status = get_resolution(&resolution);
+
     uint32_t timebase_return; 
     double time_interval_available;
 
     uint32_t enabledChannels = *(uint32_t*)&channel_status;
 
-    status = ps6000aNearestSampleIntervalStateless(handle, enabledChannels, requested_time_interval, device_resolution, &timebase_return, &time_interval_available); 
+    status = ps6000aNearestSampleIntervalStateless(handle, enabledChannels, requested_time_interval, resolution, &timebase_return, &time_interval_available); 
     if (status != PICO_OK)
     {
         log_error("ps6000aNearestSampleIntervalStateless", status, __FILE__, __LINE__);
