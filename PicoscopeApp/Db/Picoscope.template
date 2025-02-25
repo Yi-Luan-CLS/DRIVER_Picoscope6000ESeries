@@ -249,14 +249,27 @@ record(calcout, "$(OSC):CH$(channel):waveform:acquire:calcout") {
     field(CALC, "A")
 	field(INPA, "$(OSC):CH$(channel):waveform:acquire")
 	field(OOPT, "Transition To Non-zero")
-	field(OUT, "$(OSC):CH$(channel):waveform.PROC PP")
+	field(OUT, "$(OSC):CH$(channel):waveform:start.PROC PP")
+}
+
+record(waveform, "$(OSC):CH$(channel):waveform:start"){
+    field(DTYP, "Picoscope")
+	field(SCAN, "Passive")
+	field(FTVL, "SHORT")
+    field(INP, "@L:retrieve_waveform")
+}
+
+record(ai, "$(OSC):CH$(channel):waveform:scan"){
+    field(DTYP, "Soft Channel")
+	field(SCAN, "1 second")
+    field(FLNK, "$(OSC):CH$(channel):waveform")
 }
 
 record(waveform, "$(OSC):CH$(channel):waveform"){
     field(DTYP, "Picoscope")
+	field(SCAN,"Passive")
 #	field(NELM, "1073741696")
-	field(NELM, "10000")
-	field(SCAN, "Passive")
+	field(NELM, "1000")
 	field(FTVL, "SHORT")
-    field(INP, "@L:retrieve_waveform")
+    field(INP, "@L:update_waveform")
 }

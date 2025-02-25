@@ -20,6 +20,23 @@ int16_t set_channel_on(struct ChannelConfigs* channel);
 
 int16_t set_channel_off(int channel);
 
+// int16_t retrieve_waveform(
+//     struct ChannelConfigs* channel_configuration,
+//     struct SampleConfigs* sample_configurations,
+//     int16_t* waveform);
+
+int16_t setup_picoscope(
+    int16_t* waveform_buffer,
+    struct ChannelConfigs* channel_config,
+    struct SampleConfigs* sample_config,
+    struct TriggerConfigs* trigger_config
+    );
+
+int16_t run_block_capture(
+    struct SampleConfigs* sample_config,
+    double* time_indisposed_ms
+    );
+
 int16_t get_analogue_offset_limits(
     int16_t range, 
     int16_t coupling, 
@@ -30,10 +47,5 @@ int16_t set_sample_interval(
     double requested_time_interval, 
     uint32_t* timebase, 
     double* available_time_interval);
-
-int16_t retrieve_waveform(
-    struct ChannelConfigs* channel_configuration,
-    struct SampleConfigs* sample_configurations,
-    int16_t* waveform);
 
 #endif

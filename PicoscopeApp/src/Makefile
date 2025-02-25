@@ -21,7 +21,7 @@ Picoscope_DBD += Picoscope_support.dbd
 #Picoscope_DBD += xxx.dbd
 
 # Add all the support libraries needed by this IOC
-# Picoscope_LIBS += 
+# Picoscope_LIBS += /opt/picoscope/lib
 
 # Picoscope_registerRecordDeviceDriver.cpp derives from Picoscope.dbd
 Picoscope_SRCS += Picoscope_registerRecordDeviceDriver.cpp
