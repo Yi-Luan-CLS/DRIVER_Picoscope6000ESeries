@@ -30,9 +30,9 @@ void log_error(char* function_name, int16_t status, const char* FILE, int LINE){
  * 
  * @return 0 if the device is successfully opened, or -1 if an error occurs. 
 */
-int16_t open_picoscope(int16_t resolution){
+int16_t open_picoscope(int16_t resolution, int8_t* serial_num){
 
-    status = ps6000aOpenUnit(&handle, NULL, resolution);
+    status = ps6000aOpenUnit(&handle, serial_num, resolution);
     if (status != PICO_OK) 
     { 
         log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 
@@ -45,7 +45,7 @@ int16_t open_picoscope(int16_t resolution){
 /**
  * Close an open PicoScope device.
  * 
- * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+ * @return 0 if the device is successfully closed, or -1 if an error occurs. 
 */
 int16_t close_picoscope(){ 
     
@@ -137,7 +137,7 @@ int16_t required_size;
  * @param serial_num A pointer to a pointer that will hold the dynamically allocated address of
  *                  the memory buffer containing the serial number. 
  * 
- * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+ * @return 0 if the serial number is successfully retrieved, or -1 if an error occurs. 
 */
 int16_t get_serial_num(int8_t** serial_num) {
 
@@ -171,7 +171,7 @@ int16_t get_serial_num(int8_t** serial_num) {
  * @param model_num A pointer to a pointer that will hold the dynamically allocated address of
  *                  the memory buffer containing the model number. 
  * 
- * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+ * @return 0 if the model number is successfully retrieved, or -1 if an error occurs. 
 */
 int16_t get_model_num(int8_t** model_num) {
 
@@ -205,7 +205,7 @@ int16_t get_model_num(int8_t** model_num) {
  * @param device_info A pointer to a pointer that will hold the dynamically allocated address of
  *                    the memory buffer containing the device information. 
  * 
- * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+ * @return 0 if the device information is successfully retrieved, or -1 if an error occurs. 
 */
 int16_t get_device_info(int8_t** device_info) {
 
@@ -235,6 +235,19 @@ int16_t get_device_info(int8_t** device_info) {
     return 0; 
 }
 
+
+// The following struct is intended to track which channels 
+// are enabled (1) or disabled (0) using individual bits. 
+// This is needed for some function calls to the picoscope API. 
+typedef struct {
+    uint32_t channel_a : 1;
+    uint32_t channel_b : 1;
+    uint32_t channel_c : 1;
+    uint32_t channel_d : 1;
+} EnabledChannelFlags; 
+
+EnabledChannelFlags channel_status = {0}; 
+
 /**
  * Enables a specified channel on the connected Picocope with the given configurations. 
  * Setting the channels coupling, range, analogue offset, and bandwidth. 
@@ -243,7 +256,7 @@ int16_t get_device_info(int8_t** device_info) {
  *                to be activated. The structure holds the coupling type, voltage range, analogue
  *                offset, and bandwidth to configure the channel. 
  * 
- * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+ * @return 0 if the channel is succesfully set on, or -1 if an error occurs. 
 */
 int16_t set_channel_on(struct ChannelConfigs* channel) {
     
@@ -252,6 +265,19 @@ int16_t set_channel_on(struct ChannelConfigs* channel) {
     {
         log_error("ps6000aSetChannelOn", status, __FILE__, __LINE__);
         return -1;
+    }
+
+    if (channel->channel == CHANNEL_A) {
+        channel_status.channel_a = 1;
+    }
+    if (channel->channel == CHANNEL_B) {
+        channel_status.channel_b = 1;
+    }    
+    if (channel->channel == CHANNEL_C) {
+        channel_status.channel_c = 1;
+    }    
+    if (channel->channel == CHANNEL_D) {
+        channel_status.channel_d = 1;
     }
 
     printf("Setting channel %d on.\n", channel->channel);
@@ -268,9 +294,9 @@ int16_t set_channel_on(struct ChannelConfigs* channel) {
  *                  - 0: Channel A
  *                  - 1: Channel B 
  *                  - 2: Channel C
- *                  - 3: Channel E
+ *                  - 3: Channel D
  *  
- * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+ * @return 0 if the channel is successfully turned off, or -1 if an error occurs. 
 */
 int16_t set_channel_off(int channel) {
 
@@ -280,9 +306,85 @@ int16_t set_channel_off(int channel) {
         log_error("ps6000aSetChannelOff", status, __FILE__, __LINE__);
         return -1;
     }
+
+    if (channel == CHANNEL_A) {
+        channel_status.channel_a = 0;
+    }
+    if (channel == CHANNEL_B) {
+        channel_status.channel_b = 0;
+    }    
+    if (channel == CHANNEL_C) {
+        channel_status.channel_c = 0;
+    }    
+    if (channel == CHANNEL_D) {
+        channel_status.channel_d = 0;
+    }
+
     printf("Set channel %d off.\n", channel);
     return 0;
 }
+
+/**
+ * Uses the range and coupling of a specific channel to retrieve the maximum and minimum analogue offset voltages possible. 
+ * 
+ * @param range The voltage range set to a channel. See PICO_CONNECT_PROBE_RANGE in PicoConnectProbes.h. 
+ *        coupling The coupling set to a channel. See PICO_COUPLING in PicoDeviceEnums.h.
+ *        max_analogue_offset On exit, the max analogue offset voltage allowed for the range. 
+ *        min_analogue_offset On exit, the min analogue offset voltage allowed for the range. 
+ * 
+ * @return 0 if the analogue offset limits are succesfully retrieved, or -1 if an error occurs. 
+ */
+int16_t get_analogue_offset_limits(int16_t range, int16_t coupling, double* max_analogue_offset, double* min_analogue_offset){
+
+    double maximum_voltage; 
+    double minimum_voltage;
+
+    status = ps6000aGetAnalogueOffsetLimits(handle, range, coupling, &maximum_voltage, &minimum_voltage); 
+    if (status != PICO_OK)
+    {
+        log_error("ps6000aGetAnalogueOffsetLimits", status, __FILE__, __LINE__);
+        return -1;
+    }
+
+    *max_analogue_offset = maximum_voltage;
+    *min_analogue_offset = minimum_voltage;
+
+    return 0; 
+}
+
+/**
+ * Uses a requested sample interval to determine the closest timebase and sample interval that can 
+ * be applied to the connected Picoscope given the resolution and number of channels enabled. 
+ * 
+ * @param requested_time_interval The requested sample interval in seconds. 
+ *        timebase On exit, the value of the closest timebase for the requested interval. 
+ *        available_time_interval On exit, the closests sample interval available, given the device configurations, 
+ *                                to the request interval. 
+ * 
+ * @return 0 if the call is successful, or -1 if an error occurs. 
+ */
+int16_t set_sample_interval(double requested_time_interval, uint32_t* timebase, double* available_time_interval){
+
+    int16_t resolution = 0; 
+    status = get_resolution(&resolution);
+
+    uint32_t timebase_return; 
+    double time_interval_available;
+
+    uint32_t enabledChannels = *(uint32_t*)&channel_status;
+
+    status = ps6000aNearestSampleIntervalStateless(handle, enabledChannels, requested_time_interval, resolution, &timebase_return, &time_interval_available); 
+    if (status != PICO_OK)
+    {
+        log_error("ps6000aNearestSampleIntervalStateless", status, __FILE__, __LINE__);
+        return -1;
+    }
+
+    *timebase = timebase_return;
+    *available_time_interval = time_interval_available; 
+
+    return 0; 
+} 
 
 int16_t setup_picoscope(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config);
 int16_t run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms);

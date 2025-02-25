@@ -34,7 +34,6 @@ enum ioType
 	GET_RESOLUTION,
 	SET_NUM_SAMPLES,
 	GET_NUM_SAMPLES,
-	SET_TIMEBASE,
 	GET_TIMEBASE,
 	SET_DOWN_SAMPLE_RATIO,
 	GET_DOWN_SAMPLE_RATIO,
@@ -51,10 +50,15 @@ enum ioType
 	GET_RANGE,
 	SET_ANALOGUE_OFFSET,
 	GET_ANALOGUE_OFFSET,
+	GET_MAX_ANALOGUE_OFFSET,
+	GET_MIN_ANALOGUE_OFFSET,
 	SET_BANDWIDTH, 
 	GET_BANDWIDTH,
 	RETRIEVE_WAVEFORM,
-	UPDATE_WAVEFORM
+	UPDATE_WAVEFORM,
+	SET_SAMPLE_INTERVAL, 
+	GET_SAMPLE_INTERVAL,
+	DEVICE_TO_OPEN
 	};
 
 enum ioFlag
@@ -76,7 +80,6 @@ static struct aioType
 		{"get_resolution", isInput, GET_RESOLUTION, ""},
 		{"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
 		{"get_num_samples", isInput, GET_NUM_SAMPLES, ""},
-		{"set_timebase", isOutput, SET_TIMEBASE, ""},
 		{"get_timebase", isInput, GET_TIMEBASE, ""},
 		{"set_down_sampling_ratio", isOutput, SET_DOWN_SAMPLE_RATIO, ""},
 		{"get_down_sampling_ratio", isInput, GET_DOWN_SAMPLE_RATIO, ""},
@@ -92,10 +95,15 @@ static struct aioType
 		{"get_range", isInput, GET_RANGE, ""},
 		{"set_analogue_offset", isOutput, SET_ANALOGUE_OFFSET, ""},
 		{"get_analogue_offset", isInput, GET_ANALOGUE_OFFSET, ""},
+		{"get_max_analogue_offset", isInput, GET_MAX_ANALOGUE_OFFSET, ""},
+		{"get_min_analogue_offset", isInput, GET_MIN_ANALOGUE_OFFSET, ""},
 		{"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
 		{"get_bandwidth", isInput, GET_BANDWIDTH, "" }, 
 		{"retrieve_waveform", isInput, RETRIEVE_WAVEFORM, "" },
 		{"update_waveform", isInput, UPDATE_WAVEFORM, "" },
+		{"set_sample_interval", isOutput, SET_SAMPLE_INTERVAL, "" },
+		{"get_sample_interval", isInput, GET_SAMPLE_INTERVAL, "" },
+		{"device_to_open", isOutput, DEVICE_TO_OPEN, ""}
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -140,6 +148,9 @@ struct SampleConfigs* sample_configurations = NULL; // Configurations for data c
 char* record_name; 
 int channel_index; 
 
+double max_analogue_offset; 
+double min_analogue_offset; 
+
 /****************************************************************************************
  * AI Record
  ****************************************************************************************/
@@ -174,6 +185,7 @@ epicsExportAddress(dset, devPicoscopeAi);
 
 int isInitialised = 0;
 
+int16_t resolution; 
 
 static long
 init_record_ai (struct aiRecord *pai)
@@ -211,7 +223,6 @@ init_record_ai (struct aiRecord *pai)
 	return 0;
 }
 
-int16_t resolution; 
 
 static long
 read_ai (struct aiRecord *pai){
@@ -259,6 +270,24 @@ read_ai (struct aiRecord *pai){
 			pai->val = channels[channel_index]->analogue_offset; 
 			break; 
 
+		case GET_MAX_ANALOGUE_OFFSET: 
+			record_name = pai->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+
+			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
+
+			pai->val = max_analogue_offset; 
+			break;
+
+		case GET_MIN_ANALOGUE_OFFSET: 
+			record_name = pai->name;
+			channel_index = find_channel_index_from_record(record_name, channels); 	
+
+			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
+
+			pai->val = min_analogue_offset; 
+			break;
+
 		// Data configuration fbk 
 		case GET_NUM_SAMPLES: 
 			pai->val = sample_configurations->num_samples; 
@@ -278,6 +307,10 @@ read_ai (struct aiRecord *pai){
 			
 		case GET_TIMEBASE: 
 			pai->val = sample_configurations->timebase; 
+			break; 
+		
+		case GET_SAMPLE_INTERVAL: 
+			pai->val = sample_configurations->time_interval_secs; 
 			break; 
 
 		default:
@@ -357,6 +390,7 @@ struct
 
 epicsExportAddress(dset, devPicoscopeAo);
 
+int8_t* device_serial_number; 
 
 static long
 init_record_ao (struct aoRecord *pao)
@@ -413,16 +447,16 @@ init_record_ao (struct aoRecord *pao)
 
 	switch (vdp->ioType)	
     {	
+		case DEVICE_TO_OPEN: 
+			device_serial_number = (int8_t*)pao->name;
+			break; 
+
 		case SET_RESOLUTION: 
 			resolution = (int)pao->val; 
 			break;
 
 		case SET_NUM_SAMPLES: 
 			sample_configurations->num_samples = (int)pao->val; 
-			break; 
-
-		case SET_TIMEBASE: 
-			sample_configurations->timebase = (int)pao->val;
 			break; 
 
 		case SET_DOWN_SAMPLE_RATIO: 
@@ -439,9 +473,9 @@ init_record_ao (struct aoRecord *pao)
 
 		case OPEN_PICOSCOPE: 
 			// On initialization open picoscope with default resolution. 
-			result = open_picoscope(resolution);
+			result = open_picoscope(resolution, device_serial_number);
 			if (result != 0) {
-				printf("Error opening picoscope.\n");
+				printf("Error opening picoscope with serial number %s\n", device_serial_number);
 				pao->val = 0; // Cannot connect to picoscope, set PV to OFF. 
 			}
 			break;
@@ -465,7 +499,20 @@ init_record_ao (struct aoRecord *pao)
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 			
-			channels[channel_index]->analogue_offset = pao->val;
+			double max_analogue_offset = 0; 
+			double min_analogue_offset = 0; 
+			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
+
+			// If PV val is outside of the analogue offset limits, use the limit instead. 
+			if (pao->val > max_analogue_offset) {
+				channels[channel_index]->analogue_offset = max_analogue_offset;
+			}
+			else if (pao->val < min_analogue_offset){ 
+				channels[channel_index]->analogue_offset = min_analogue_offset; 
+			} 
+			else {
+				channels[channel_index]->analogue_offset = pao->val;
+			}
 			break;
 
 		case SET_BANDWIDTH: 
@@ -511,13 +558,24 @@ write_ao (struct aoRecord *pao)
 				printf("Error setting picoscope resolution.\n");
 			}
 			break;
+		
+		case SET_SAMPLE_INTERVAL: 
+			uint32_t timebase; 
+			double available_time_interval; 
+			double requested_time_interval = pao->val;
+
+			result = set_sample_interval(requested_time_interval, &timebase, &available_time_interval);
+			if (result != 0) {
+				printf("Error setting picoscope time interval.\n");
+				break;
+			}
+			// Add returned values to sample configurations for next waveform acquired. 
+			sample_configurations->time_interval_secs = available_time_interval; 
+			sample_configurations->timebase = timebase;
+			break;
 
 		case SET_NUM_SAMPLES: 
 			sample_configurations->num_samples = (int)pao->val; 
-			break; 
-
-		case SET_TIMEBASE: 
-			sample_configurations->timebase = (int)pao->val;
 			break; 
 			
 		case SET_DOWN_SAMPLE_RATIO: 
@@ -536,9 +594,9 @@ write_ao (struct aoRecord *pao)
 			int pv_value = (int)pao->val; 
 			
 			if (pv_value == 1){
-				result = open_picoscope(resolution);
+				result = open_picoscope(resolution, device_serial_number);
 				if (result != 0) {
-					printf("Error opening picoscope.\n");
+					printf("Error opening picoscope with serial number %s\n", device_serial_number);
 				}
 			} else {
 				result = close_picoscope(); 
@@ -564,10 +622,25 @@ write_ao (struct aoRecord *pao)
 			break;
 
 		case SET_ANALOGUE_OFFSET: 
+
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
+
+			double max_analogue_offset = 0; 
+			double min_analogue_offset = 0; 
+			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
 			
-			channels[channel_index]->analogue_offset = pao->val;
+			// If PV val is outside of the analogue offset limits, use the limit instead. 
+			if (pao->val > max_analogue_offset) {
+				channels[channel_index]->analogue_offset = max_analogue_offset;
+			}
+			else if (pao->val < min_analogue_offset){ 
+				channels[channel_index]->analogue_offset = min_analogue_offset; 
+			} 
+			else {
+				channels[channel_index]->analogue_offset = pao->val;
+			}
+
 			break;
 
 		case SET_BANDWIDTH: 
