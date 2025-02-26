@@ -235,7 +235,10 @@ read_ai (struct aiRecord *pai){
 
 		case GET_RESOLUTION: 
 			result = get_resolution(&resolution);
-			pai->val = resolution;  
+
+			int16_t pv_enum_val = translate_resolution(resolution);
+
+			pai->val = pv_enum_val;  
 			break; 
 
 		// Channel configuration fbk
@@ -319,6 +322,32 @@ read_ai (struct aiRecord *pai){
 
 }	
 
+#define PICO_DR_8BIT   0
+#define PICO_DR_10BIT  1
+#define PICO_DR_12BIT  2
+
+/**
+ * Match device resolution values from the Picoscope API to the corresponding 
+ * value in the EPICS mbbo record $(OSC):resolution:fbk. 
+ * 
+ * @param mode The mode value as defined by the Picoscope API.
+ * 
+ * @return The value of the mode in the mbbi fbk PV, or -1 if mode does not exist.
+ */
+int16_t translate_resolution(int mode){
+	if (mode == 0) {
+		return PICO_DR_8BIT;
+	}
+	if (mode == 10){
+		return PICO_DR_10BIT;
+	}	
+	if (mode == 1) {
+		return PICO_DR_12BIT;
+	}	
+	return -1;
+}
+
+
 #define AGGREGATE      0
 #define DECIMATE       1
 #define AVERAGE        2
@@ -332,7 +361,7 @@ read_ai (struct aiRecord *pai){
  * 
  * @param mode The mode value as defined by the Picoscope API
  * 
- * @return The value of the mode in the mbbo PV, or -1 if mode does not exist.
+ * @return The value of the mode in the mbbi fbk PV, or -1 if mode does not exist.
  */
 int16_t translate_down_sample_ratio_mode(int mode){
 	if (mode == 1) {

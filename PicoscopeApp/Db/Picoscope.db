@@ -48,8 +48,8 @@ record(mbbi, "$(OSC):resolution:fbk") {
 	field(DTYP, "Soft Channel")
 
 	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
-	field(TEST, "PICO_DR_10BIT")       field(TEVL, "10")
-	field(ONST, "PICO_DR_12BIT")       field(ONVL, "1")
+	field(ONST, "PICO_DR_10BIT")       field(ONVL, "10")
+	field(TWST, "PICO_DR_12BIT")       field(TWVL, "1")
 
 	field(VAL, "10")
 	field(SCAN, "Passive")

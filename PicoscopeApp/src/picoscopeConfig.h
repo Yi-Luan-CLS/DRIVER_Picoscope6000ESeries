@@ -44,4 +44,6 @@ int find_channel_index_from_record(const char* record_name, struct ChannelConfig
 
 int16_t translate_down_sample_ratio_mode(int mode); 
 
+int16_t translate_resolution(int mode);
+
 #endif
