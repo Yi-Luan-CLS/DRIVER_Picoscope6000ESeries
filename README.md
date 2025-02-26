@@ -401,11 +401,22 @@ This document provides detailed information about the EPICS driver for the Picos
   ```
 ### OSCNAME:CH[A-D]:analogue_offset:fbk
 - **Type**: `ai`
-- **Description**: The actual voltage to added to the input channel before digitization.  
-  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
+- **Description**: The actual voltage to added to the input channel before digitization. The analogue offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analogue_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
+  - Updated when `OSCNAME:CH[A-D]:ON` is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:analogue_offset` 
+
+### OSCNAME:CH[A-D]:analogue_offset:max 
+- **Type**: `ai`
+- **Description**: The maximun allowed analogue offset voltage allowed for the range. 
+  - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
+
+### OSCNAME:CH[A-D]:analogue_offset:min
+- **Type**: `ai`
+- **Description**: The minimum allowed analogue offset voltage allowed for the range. 
+  - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
+
 
 ### OSCNAME:CH[A-D]:waveform:acquire
 - **Type**: `bo`
