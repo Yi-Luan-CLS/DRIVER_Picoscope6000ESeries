@@ -31,22 +31,22 @@ This document provides detailed information about the EPICS driver for the Picos
   ./st.cmd
 
   # On another terminal
-  caput OSC1022-01:timebase 156254    # Set the sample time interval to 1 ms
   caput OSC1022-01:CHB:range 10       # Set the voltage range for Channel B to +/-20V
-  caput OSC1022-01:num_samples 10000  # Set the number of samples to 10,000
+  caput OSC1022-01:num_samples 1000  # Set the number of samples to 1,000
   caput OSC1022-01:CHB:ON 1           # Enable and apply changes to Channel B
-  caput OSC1022-01:CHB:waveform:acquire 1 # Acquire the waveform (takes approximately 10 seconds)
+  caput OSC1022-11:sample_interval 0.001    # Set the sample time interval to 1 ms
+  caput OSC1022-01:CHB:waveform:start 1 # Start the waveform capturing (Use external triggering)
   caget OSC1022-01:CHB:waveform       # when waveform is ready, get the waveform. The waveform has a maximum size of 1,000,000 elements. Only the first 10,000 elements will contain data; the rest will be zeros.
   ```
   All details of these configurations can be found in this document.
 
   **The waveform data is a scaled value. The calculation is located at the bottom.**
   - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
-  - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:acquire` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
+  - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:start` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
   - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
 
 >[!Note] 
->Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:CH[A-D]:waveform:acquire`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
+>Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:CH[A-D]:waveform:start`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
 
 ---
 
@@ -147,7 +147,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:down_sample_ratio_mode:fbk 
 - **Type**: `mbbi`
 - **Description**: The method of data reduction applied to the last waveform acquired. 
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:down_sample_ratio_mode`. 
 
@@ -169,7 +169,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:down_sample_ratio:fbk 
 - **Type**: `ai`
 - **Description**: The downsampling facter that has been applied to the raw data of the last waveform acquired. 
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:down_sample_ratio`. 
 
@@ -200,7 +200,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:num_samples:fbk 
 - **Type**: `ai`
 - **Description**: The number of samples collected for the last waveform acquired. 
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:num_samples`. 
 
@@ -224,7 +224,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:trigger_position_ratio:fbk 
 - **Type**: `ai`
 - **Description**: The position of the trigger in the last acquired waveform.  
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger_position_ratio`. 
 
@@ -418,9 +418,9 @@ This document provides detailed information about the EPICS driver for the Picos
   - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
 
 
-### OSCNAME:CH[A-D]:waveform:acquire
+### OSCNAME:CH[A-D]:waveform:start
 - **Type**: `bo`
-- **Description**: The PV to ask Oscilloscope start acquiring PV with current configuration(set by other PVs).
+- **Description**: The PV to ask Oscilloscope start acquiring wavefrom with current configuration(set by other PVs).
 - **Fields**:
   - `VAL`: Start getting the waveform.
     | VAL   | Description      |
@@ -429,12 +429,26 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Example**:
   ```bash
     # Start acquiring waveform
-    $ caput OSC1234-01:CHA:waveform:acquire 1
+    $ caput OSC1234-01:CHA:waveform:start 1
+  ```
+
+### OSCNAME:CH[A-D]:waveform:stop
+- **Type**: `bo`
+- **Description**: The PV to ask Oscilloscope stop acquiring.
+- **Fields**:
+  - `VAL`: Start getting the waveform.
+    | VAL   | Description      |
+    |-------|------------------|
+    | 1     | Stop acquiring waveform   |
+- **Example**:
+  ```bash
+    # Stop acquiring waveform
+    $ caput OSC1234-01:CHA:waveform:stop 1
   ```
 
 ### OSCNAME:CH[A-D]:waveform
 - **Type**: `waveform`
-- **Description**: Waveform will be available after `OSCNAME:CH[A-D]:waveform:acquire` PV is invoked.
+- **Description**: Waveform will be available after `OSCNAME:CH[A-D]:waveform:start` PV is invoked.
 - **Fields**:
   - `VAL`: Waveform result acquired
 - **Example**:

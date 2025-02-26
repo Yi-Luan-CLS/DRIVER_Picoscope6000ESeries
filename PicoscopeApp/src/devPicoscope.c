@@ -54,7 +54,8 @@ enum ioType
 	GET_MIN_ANALOGUE_OFFSET,
 	SET_BANDWIDTH, 
 	GET_BANDWIDTH,
-	RETRIEVE_WAVEFORM,
+	START_RETRIEVE_WAVEFORM,
+	STOP_RETRIEVE_WAVEFORM,
 	UPDATE_WAVEFORM,
 	SET_SAMPLE_INTERVAL, 
 	GET_SAMPLE_INTERVAL,
@@ -99,7 +100,8 @@ static struct aioType
 		{"get_min_analogue_offset", isInput, GET_MIN_ANALOGUE_OFFSET, ""},
 		{"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
 		{"get_bandwidth", isInput, GET_BANDWIDTH, "" }, 
-		{"retrieve_waveform", isInput, RETRIEVE_WAVEFORM, "" },
+		{"start_retrieve_waveform", isInput, START_RETRIEVE_WAVEFORM, "" },
+		{"stop_retrieve_waveform", isInput, STOP_RETRIEVE_WAVEFORM, "" },
 		{"update_waveform", isInput, UPDATE_WAVEFORM, "" },
 		{"set_sample_interval", isOutput, SET_SAMPLE_INTERVAL, "" },
 		{"get_sample_interval", isInput, GET_SAMPLE_INTERVAL, "" },
@@ -873,22 +875,20 @@ struct{
 
 epicsExportAddress(dset, devPicoscopeWaveform);
 
-epicsMutexId epics_mutex = NULL;
+epicsMutexId epics_channel_mutex[4];
+epicsMutexId epics_shared_mutex;
+
 int16_t* waveform[4];
+uint8_t capturing[4];
 int16_t waveform_size_actual[4];
 int16_t waveform_size_max[4];
-
+struct waveformRecord* dbRecordUpdateWaveform[4];
 static long init_record_waveform(struct waveformRecord * pwaveform)
 {
 	struct instio  *pinst;
 	struct PicoscopeData *vdp;
 	int channel_index = find_channel_index_from_record(pwaveform->name, channels); 
 
-	epics_mutex = epicsMutexCreate();
-	if (!epics_mutex) {
-		printf("Failed to create EPICS mutex\n");
-		return -1;
-	}
     if (pwaveform->inp.type != INST_IO)
 	{
 		errlogPrintf("%s: INP field type should be INST_IO\n", pwaveform->name);
@@ -919,20 +919,35 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 	pwaveform->udf = FALSE;
 
 	switch (vdp->ioType)
-	{
+	{	case START_RETRIEVE_WAVEFORM:
+			epics_channel_mutex[channel_index] = epicsMutexCreate();
+			if (epics_channel_mutex[channel_index] == NULL) {
+				fprintf(stderr, "Failed to create EPICS mutex\n");
+				return -1;
+			}
+			break;
+
 		case UPDATE_WAVEFORM:
+			dbRecordUpdateWaveform[channel_index] = pwaveform;
 			waveform[channel_index] = (int16_t*)malloc(sizeof(int16_t) * pwaveform->nelm);
 			waveform_size_max[channel_index] = pwaveform->nelm;
 			printf("channel:%s, nelm:%d\n",pwaveform->name,(int)pwaveform->nelm);
 			if (waveform[channel_index] == NULL) {
 				// Handle memory allocation failure
 				fprintf(stderr, "Memory allocation failed\n");
-				free(waveform[channel_index]);
 				return -1;
 			}
     		memset(waveform[channel_index], 0, sizeof(int16_t) * pwaveform->nelm);
 			break;
-			
+
+		case STOP_RETRIEVE_WAVEFORM:
+			epics_shared_mutex = epicsMutexCreate();
+			if (epics_shared_mutex == NULL) {
+				fprintf(stderr, "Failed to create EPICS mutex\n");
+				return -1;
+			}
+			break;
+
 		default:
 			return 0;
 	}
@@ -948,23 +963,29 @@ read_waveform(struct waveformRecord *pwaveform){
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
 	switch (vdp->ioType)
     {
-		case RETRIEVE_WAVEFORM:	
-			if (epicsMutexLock(epics_mutex) == epicsMutexLockTimeout) {
-				// Handle error: mutex lock failed
+		case START_RETRIEVE_WAVEFORM:
+
+			if (epicsMutexLock(epics_shared_mutex) == epicsMutexLockTimeout) {
+				fprintf(stderr, "Failed to lock mutex\n");
+				return -1;
+			}
+			struct SampleConfigs* sample_configurations_local;
+			sample_configurations_local = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
+			epicsMutexUnlock(epics_shared_mutex);
+
+			if (epicsMutexLock(epics_channel_mutex[channel_index]) == epicsMutexLockTimeout) {
 				fprintf(stderr, "Failed to lock mutex\n");
 				return -1;
 			}
 			// Make local copies of configurations, make sure the PV changes when processing won't cause error 
 			struct ChannelConfigs* channel_configurations_local;
-			struct SampleConfigs* sample_configurations_local;
 			channel_configurations_local = (struct ChannelConfigs*)malloc(sizeof(struct ChannelConfigs));
-			sample_configurations_local = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
 
 			if (!channel_configurations_local || !sample_configurations_local) {
 				fprintf(stderr, "Memory allocation failed\n");
 				free(channel_configurations_local);
                 free(sample_configurations_local);
-				epicsMutexUnlock(epics_mutex);
+				epicsMutexUnlock(epics_channel_mutex[channel_index]);
 				return -1;
 			}
 
@@ -981,42 +1002,50 @@ read_waveform(struct waveformRecord *pwaveform){
 				sample_configurations_local->num_samples = waveform_size_max[channel_index];
 			}
 			struct TriggerConfigs trigger_config = {
-				.channel = 1001,
-				.thresholdMode = 0,
+				.channel = TRIGGER_AUX,
+				.thresholdMode = LEVEL,
 				.thresholdUpper = 0,
 				.thresholdLower = 0,
-				.thresholdDirection = 2
+				.thresholdDirection = RISING
 			};
 			status = setup_picoscope(waveform[channel_index], channel_configurations_local, sample_configurations_local, &trigger_config);
 			if (status != 0) {
 				fprintf(stderr, "setup_picoscope Error with code: %d \n",status);
 				return status;
 			}
+	
+			capturing[channel_index] = 1;
+			printf("%d\n", waveform_size_actual[channel_index]);
 			while (1)
 			{
+				if(!capturing[channel_index]) break;
     			double time_indisposed_ms = 0;
-				status = run_block_capture(sample_configurations_local, &time_indisposed_ms);
+				status = run_block_capture(sample_configurations_local, &time_indisposed_ms, &capturing[channel_index]);
 				if (status != 0) {
 					fprintf(stderr, "run_block_capture Error with code: %d \n",status);
-					epicsMutexUnlock(epics_mutex);
+					epicsMutexUnlock(epics_channel_mutex[channel_index]);
 					return -1;
 				}
 				// Set the number of elements read in the waveform record, 
 				waveform_size_actual[channel_index] = sample_configurations_local->num_samples;
-
+				
+				// Process the UPDATE_WAVEFORM subroutine to update waveform without return 0
+				dbProcess(dbRecordUpdateWaveform[channel_index]);
 			}
 
 			if(status != 0){
-				fprintf(stderr, "retrieve_waveform Error with code: %d \n",status);
-				epicsMutexUnlock(epics_mutex);
+				fprintf(stderr, "start_retrieve_waveform Error with code: %d \n",status);
+				epicsMutexUnlock(epics_channel_mutex[channel_index]);
 				return -1;
 			}
 
-			epicsMutexUnlock(epics_mutex);
+			epicsMutexUnlock(epics_channel_mutex[channel_index]);
 
 			break;
 
 		case UPDATE_WAVEFORM:
+			if (!capturing[channel_index]) break;
+
 			memcpy(pwaveform->bptr, waveform[channel_index], waveform_size_actual[channel_index] * sizeof(int16_t) );
 			pwaveform->nord = waveform_size_actual[channel_index];
 
@@ -1024,14 +1053,19 @@ read_waveform(struct waveformRecord *pwaveform){
 			channel_index, waveform_size_actual[channel_index], waveform[channel_index][0], ((int16_t*)(pwaveform->bptr))[0]);
 
 			break;
+		
+		case STOP_RETRIEVE_WAVEFORM:
+			capturing[channel_index] = 0;
+			break;
 
-       	default:
+		default:
 			if (recGblSetSevr(pwaveform, READ_ALARM, INVALID_ALARM)  &&  errVerbose
 				&&  (pwaveform->stat != READ_ALARM  ||  pwaveform->sevr != INVALID_ALARM)){
 					errlogPrintf("%s: Read Error\n", pwaveform->name);
 				}
 			return -1;
-    }
+    	}
+
 	return 0;
 }
 
