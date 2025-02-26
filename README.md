@@ -13,9 +13,8 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:bandwidth`  
   - `<OSCNAME>:CH[A-D]:analogue_offset`    
 >[!Note] 
->Changes to the above PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
->To ensure the channel is ON, verify the staus with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
-  - Channel configuration PVs have corresponding feedback PVs with the same name, plus the suffix :fbk. These feedback PVs reflect the current value of the configuration when the channel is ON. However, if `<OSCNAME>:CH[A-D]:ON:fbk` is OFF, the configuration feedback PVs do not accurately reflect the channel's settings. 
+>Changes to the above PVs will turn to channel ON. Changes apply immediately and can be verified by checking the :fbk PVs.  
+>To ensure a channel is ON, verify the status with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
 
 - **Simple usage example walkthrough:**
 
@@ -283,7 +282,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:ON:fbk 
 - **Type**: `bo`
 - **Description**: The actual state of the channel.
-  - Updated when a new value set to `OSCNAME:CH[A-D]:ON`. 
+  - Updated when a new value set to `OSCNAME:CH[A-D]:ON` and when a channel configuration is changed. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-D]:ON` 
 
@@ -309,7 +308,6 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:coupling:fbk
 - **Type**: `mbbi`
 - **Description**: The actual impedance and coupling type set to a channel. 
-  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:coupling` 
@@ -350,7 +348,6 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:range:fbk
 - **Type**: `mbbi`
 - **Description**: The actual value of the voltage range set to a channel.  
-  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:range` 
@@ -379,7 +376,6 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:bandwith:fbk
 - **Type**: `mbbi`
 - **Description**: The actual value of the voltage range set to a channel.  
-  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:bandwith` 
@@ -402,7 +398,6 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:analogue_offset:fbk
 - **Type**: `ai`
 - **Description**: The actual voltage to added to the input channel before digitization. The analogue offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analogue_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
-  - Updated when `OSCNAME:CH[A-D]:ON` is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:analogue_offset` 
