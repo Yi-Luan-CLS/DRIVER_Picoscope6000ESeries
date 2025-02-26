@@ -13,7 +13,7 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:bandwidth`  
   - `<OSCNAME>:CH[A-D]:analogue_offset`    
 >[!Note] 
->Changes to the above PVs will turn to channel ON. Changes apply immediately and can be verified by checking the :fbk PVs.  
+>Changes to the above PVs will turn the channel ON. Changes apply immediately and can be verified by checking the :fbk PVs.  
 >To ensure a channel is ON, verify the status with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
 
 - **Simple usage example walkthrough:**
@@ -33,7 +33,7 @@ This document provides detailed information about the EPICS driver for the Picos
   caput OSC1022-01:timebase 156254    # Set the sample time interval to 1 ms
   caput OSC1022-01:CHB:range 10       # Set the voltage range for Channel B to +/-20V
   caput OSC1022-01:num_samples 10000  # Set the number of samples to 10,000
-  caput OSC1022-01:CHB:ON 1           # Enable and apply changes to Channel B
+  caget OSC1022-01:CHB:ON:fbk         # Check if Channel B is ON. If not, try: caput OSC1022-01:CHB:ON ON. 
   caput OSC1022-01:CHB:waveform:acquire 1 # Acquire the waveform (takes approximately 10 seconds)
   caget OSC1022-01:CHB:waveform       # when waveform is ready, get the waveform. The waveform has a maximum size of 1,000,000 elements. Only the first 10,000 elements will contain data; the rest will be zeros.
   ```
