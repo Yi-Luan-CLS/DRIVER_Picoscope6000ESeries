@@ -13,15 +13,15 @@ record(bo, "$(OSC):CH$(channel):ON") {
 record(fanout, "$(OSC):CH$(channel):fanout") {
 	field(SELM, "All")
 	field(LNK1, "$(OSC):CH$(channel):analogue_offset:fbk")
-	field(LNK2, "$(OSC):CH$(channel):ON:fbk:get")
+	field(LNK2, "$(OSC):CH$(channel):ON:set")
 	field(LNK3, "$(OSC):CH$(channel):coupling:fbk:get")
 	field(LNK4, "$(OSC):CH$(channel):range:fbk:get")
 	field(LNK5, "$(OSC):CH$(channel):bandwidth:fbk:get")
 	field(LNK6, "$(OSC):sample_interval") 
+	field(LNK7, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
-
-record(ao, "$(OSC):CH$(channel):ON:fbk:get") {
+record(ao, "$(OSC):CH$(channel):ON:set") {
 	field(DTYP, "Picoscope")
 	field(DOL, "$(OSC):CH$(channel):ON.RVAL")
 	field(SCAN, "Passive")
@@ -29,18 +29,23 @@ record(ao, "$(OSC):CH$(channel):ON:fbk:get") {
 	field(OMSL, "closed_loop")
 	field(VAL, "0")
 	field(OUT, "@L:set_channel_on")
+}
+
+record(ai, "$(OSC):CH$(channel):ON:fbk:get"){
+	field(DTYP, "Picoscope")
+
+	field(INP, "@L:get_channel_status")
 	field(FLNK, "$(OSC):CH$(channel):ON:fbk")
 }
 
-record(bo, "$(OSC):CH$(channel):ON:fbk") {
+record(bi, "$(OSC):CH$(channel):ON:fbk") {
 	field(DTYP, "Soft Channel")
 	
 	field(ZNAM, "OFF")    	
 	field(ONAM, "ON") 
 
 	field(SCAN, "Passive")
-	field(OMSL, "closed_loop")
-	field(DOL, "$(OSC):CH$(channel):ON:fbk:get")
+	field(INP, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(mbbo, "$(OSC):CH$(channel):coupling") {
@@ -57,6 +62,8 @@ record(mbbo, "$(OSC):CH$(channel):coupling") {
 record(fanout, "$(OSC):CH$(channel):coupling:fanout") {
 	field(LNK1, "$(OSC):CH$(channel):coupling:set.PROC")	
 	field(LNK2, "$(OSC):CH$(channel):analogue_offset_limits:fanout")
+	field(LNK3, "$(OSC):CH$(channel):coupling:fbk:get")
+	field(LNK4, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ao, "$(OSC):CH$(channel):coupling:set") {
@@ -115,6 +122,8 @@ record(mbbo, "$(OSC):CH$(channel):range") {
 record(fanout, "$(OSC):CH$(channel):range:fanout") {
 	field(LNK1, "$(OSC):CH$(channel):range:set.PROC")	
 	field(LNK2, "$(OSC):CH$(channel):analogue_offset_limits:fanout")
+	field(LNK3, "$(OSC):CH$(channel):range:fbk:get" )
+	field(LNK4, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ao, "$(OSC):CH$(channel):range:set") {
@@ -166,7 +175,13 @@ record(mbbo, "$(OSC):CH$(channel):bandwidth") {
 	field(TWST, "PICO_BW_200MHZ")       field(TWVL, "2")
 	
 	field(VAL, "0")
-	field(FLNK, "$(OSC):CH$(channel):bandwidth:set.PROC")	
+	field(FLNK, "$(OSC):CH$(channel):bandwidth:fanout")	
+}
+
+record(fanout, "$(OSC):CH$(channel):bandwidth:fanout") {
+	field(LNK1, "$(OSC):CH$(channel):bandwidth:set.PROC")	
+	field(LNK2, "$(OSC):CH$(channel):bandwidth:fbk:get")
+	field(LNK3, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ao, "$(OSC):CH$(channel):bandwidth:set") {
@@ -202,6 +217,12 @@ record(ao, "$(OSC):CH$(channel):analogue_offset") {
 	field(DESC, "Voltage added to input channel.")
 	field(VAL, "0.0")
 	field(OUT, "@L:set_analogue_offset")
+	field(FLNK, "$(OSC):CH$(channel):analogue:fanout")
+}
+
+record(fanout, "$(OSC):CH$(channel):analogue:fanout") {
+	field(LNK1,"$(OSC):CH$(channel):analogue_offset:fbk")
+	field(LNK2, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ai, "$(OSC):CH$(channel):analogue_offset:fbk") {

@@ -20,6 +20,8 @@ int16_t set_channel_on(struct ChannelConfigs* channel);
 
 int16_t set_channel_off(int channel);
 
+int16_t get_channel_status(int16_t channel);
+
 int16_t get_analogue_offset_limits(
     int16_t range, 
     int16_t coupling, 

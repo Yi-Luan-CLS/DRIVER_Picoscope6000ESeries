@@ -324,6 +324,36 @@ int16_t set_channel_off(int channel) {
 }
 
 /**
+ * Check if the status of the specified channel. 
+ * 
+ * @param channel The channel you wish to check the status of. 
+ *                The following values are valid: 
+ *                  - 0: Channel A
+ *                  - 1: Channel B 
+ *                  - 2: Channel C
+ *                  - 3: Channel D 
+ * 
+ * @return 1 if the channel is enabled, 0 if not, and -1 if channel does not exist
+ */
+int16_t get_channel_status(int16_t channel){ 
+    
+    if (channel == CHANNEL_A) {
+        return channel_status.channel_a;
+    }
+    if (channel == CHANNEL_B) {
+        return channel_status.channel_b;
+    }    
+    if (channel == CHANNEL_C) {
+        return channel_status.channel_c;
+    }    
+    if (channel == CHANNEL_D) {
+        return channel_status.channel_d;
+    }
+    return -1; 
+
+}
+
+/**
  * Uses the range and coupling of a specific channel to retrieve the maximum and minimum analogue offset voltages possible. 
  * 
  * @param range The voltage range set to a channel. See PICO_CONNECT_PROBE_RANGE in PicoConnectProbes.h. 
@@ -371,16 +401,19 @@ int16_t set_sample_interval(double requested_time_interval, uint32_t* timebase, 
     double time_interval_available;
 
     uint32_t enabledChannels = *(uint32_t*)&channel_status;
+    
+    // The following API call will fail if no channels are enabled, so this avoids making the call in that state. 
+    if (enabledChannels != 0) {
+        status = ps6000aNearestSampleIntervalStateless(handle, enabledChannels, requested_time_interval, resolution, &timebase_return, &time_interval_available); 
+        if (status != PICO_OK)
+        {
+            log_error("ps6000aNearestSampleIntervalStateless", status, __FILE__, __LINE__);
+            return -1;
+        }
 
-    status = ps6000aNearestSampleIntervalStateless(handle, enabledChannels, requested_time_interval, resolution, &timebase_return, &time_interval_available); 
-    if (status != PICO_OK)
-    {
-        log_error("ps6000aNearestSampleIntervalStateless", status, __FILE__, __LINE__);
-        return -1;
+        *timebase = timebase_return;
+        *available_time_interval = time_interval_available; 
     }
-
-    *timebase = timebase_return;
-    *available_time_interval = time_interval_available; 
 
     return 0; 
 } 

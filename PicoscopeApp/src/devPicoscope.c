@@ -44,6 +44,7 @@ enum ioType
   	GET_SERIAL_NUM,
   	GET_DEVICE_INFO,
 	SET_CHANNEL_ON,
+	GET_CHANNEL_STATUS,
 	SET_COUPLING,
 	GET_COUPLING,
 	SET_RANGE, 
@@ -88,6 +89,7 @@ static struct aioType
 		{"get_trigger_position_ratio", isInput, GET_TRIGGER_POSITION_RATIO, "" },
 	 	{"get_device_info", isInput, GET_DEVICE_INFO, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
+		{"get_channel_status", isInput, GET_CHANNEL_STATUS, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
 		{"get_coupling", isInput, GET_COUPLING, ""},
 		{"set_range", isOutput, SET_RANGE,   "" }, 
@@ -242,6 +244,15 @@ read_ai (struct aiRecord *pai){
 			break; 
 
 		// Channel configuration fbk
+		case GET_CHANNEL_STATUS: 
+			record_name = pai->name; 
+			channel_index = find_channel_index_from_record(record_name, channels); 
+
+			int16_t channel_status = get_channel_status(channels[channel_index]->channel); 
+			
+			pai->val = channel_status;
+			break; 
+
 		case GET_COUPLING: 
 			record_name = pai->name; 
 			channel_index = find_channel_index_from_record(record_name, channels); 
@@ -264,7 +275,6 @@ read_ai (struct aiRecord *pai){
 			break; 
 
 		case GET_ANALOGUE_OFFSET: 
-			// TODO: add call to ps6000aGetAnalogueOffsetLimits to get valid values
 			record_name = pai->name; 
 			channel_index = find_channel_index_from_record(record_name, channels); 
 
@@ -635,23 +645,46 @@ write_ao (struct aoRecord *pao)
 
        	// Following cases are specific to a channel
         case SET_COUPLING:	
+			
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
-			
+
+			int16_t previous_coupling = channels[channel_index]->coupling; 
+
 			channels[channel_index]->coupling = (int)pao->val;
+
+			result = set_channel_on(channels[channel_index]);
+			// If channel is not succesfully set on, return to previous value 
+			if (result != 0) {
+				printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+				channels[channel_index]->coupling = previous_coupling;
+				printf("Resetting to previous coupling.\n");
+			}
 			break;
 
 		case SET_RANGE:
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 			
+			int16_t previous_range = channels[channel_index]->range; 
+
 			channels[channel_index]->range = (int)pao->val;
+
+			result = set_channel_on(channels[channel_index]);
+			// If channel is not succesfully set on, return to previous value 
+			if (result != 0) {
+				printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+				channels[channel_index]->range = previous_range;
+				printf("Resetting to previous range.\n");
+			}
 			break;
 
 		case SET_ANALOGUE_OFFSET: 
 
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
+
+			int16_t previous_analog_offset = channels[channel_index]->coupling;
 
 			double max_analogue_offset = 0; 
 			double min_analogue_offset = 0; 
@@ -668,13 +701,32 @@ write_ao (struct aoRecord *pao)
 				channels[channel_index]->analogue_offset = pao->val;
 			}
 
+			result = set_channel_on(channels[channel_index]);
+
+			// If channel is not succesfully set on, return to previous value 
+			if (result != 0) {
+				printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+				channels[channel_index]->analogue_offset = previous_analog_offset;
+				printf("Resetting to previous analog offset.\n");
+			}
 			break;
 
 		case SET_BANDWIDTH: 
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 			
+			int16_t previous_bandwidth = channels[channel_index]->bandwidth;
+
 			channels[channel_index]->bandwidth= (int)pao->val;
+
+			result = set_channel_on(channels[channel_index]);
+			
+			// If channel is not succesfully set on, return to previous value 
+			if (result != 0) {
+				printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+				channels[channel_index]->bandwidth = previous_bandwidth;
+				printf("Resetting to previous bandwidth.\n");
+			}
 			break;
 
 		case SET_CHANNEL_ON:	
