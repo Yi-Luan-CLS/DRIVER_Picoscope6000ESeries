@@ -700,7 +700,7 @@ write_ao (struct aoRecord *pao)
 			else {
 				channels[channel_index]->analog_offset = pao->val;
 			}
-			printf("Here\n");
+
 			result = set_channel_on(channels[channel_index]);
 
 			// If channel is not succesfully set on, return to previous value 
