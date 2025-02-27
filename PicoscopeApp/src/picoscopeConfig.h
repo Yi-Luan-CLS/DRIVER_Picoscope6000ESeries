@@ -25,7 +25,7 @@ struct ChannelConfigs{
     enum Channel channel;
     int16_t coupling; 
     int16_t range; 
-    double analogue_offset; 
+    double analog_offset; 
     int16_t bandwidth;
 };
 

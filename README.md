@@ -11,7 +11,7 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:coupling`  
   - `<OSCNAME>:CH[A-D]:range`  
   - `<OSCNAME>:CH[A-D]:bandwidth`  
-  - `<OSCNAME>:CH[A-D]:analogue_offset`    
+  - `<OSCNAME>:CH[A-D]:analog_offset`    
 >[!Note] 
 >Changes to the above PVs will turn the channel ON. Changes apply immediately and can be verified by checking the :fbk PVs.  
 >To ensure a channel is ON, verify the status with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
@@ -380,7 +380,7 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:bandwith` 
 
-### OSCNAME:CH[A-D]:analogue_offset
+### OSCNAME:CH[A-D]:analog_offset
 - **Type**: `ao`
 - **Description**: A voltage to add to the input channel before digitization.
 - **Fields**:
@@ -388,28 +388,28 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Example**:
   ```bash
     # Set offset to 1V
-    $ caput OSC1234-01:CHA:analogueoffset 1
+    $ caput OSC1234-01:CHA:analogoffset 1
     # Set offset to 10V
-    $ caput OSC1234-01:CHA:analogueoffset 10
+    $ caput OSC1234-01:CHA:analogoffset 10
 
     # Get offset
-    $ caput OSC1234-01:CHA:analogueoffset
+    $ caput OSC1234-01:CHA:analogoffset
   ```
-### OSCNAME:CH[A-D]:analogue_offset:fbk
+### OSCNAME:CH[A-D]:analog_offset:fbk
 - **Type**: `ai`
-- **Description**: The actual voltage to added to the input channel before digitization. The analogue offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analogue_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
+- **Description**: The actual voltage to added to the input channel before digitization. The analog offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analog_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:CH[A-B]:analogue_offset` 
+  - `VAL`: See `OSCNAME:CH[A-B]:analog_offset` 
 
-### OSCNAME:CH[A-D]:analogue_offset:max 
+### OSCNAME:CH[A-D]:analog_offset:max 
 - **Type**: `ai`
-- **Description**: The maximun allowed analogue offset voltage allowed for the range. 
+- **Description**: The maximun allowed analog offset voltage allowed for the range. 
   - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
 
-### OSCNAME:CH[A-D]:analogue_offset:min
+### OSCNAME:CH[A-D]:analog_offset:min
 - **Type**: `ai`
-- **Description**: The minimum allowed analogue offset voltage allowed for the range. 
+- **Description**: The minimum allowed analog offset voltage allowed for the range. 
   - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
 
 

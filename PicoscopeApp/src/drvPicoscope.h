@@ -22,11 +22,11 @@ int16_t set_channel_off(int channel);
 
 int16_t get_channel_status(int16_t channel);
 
-int16_t get_analogue_offset_limits(
+int16_t get_analog_offset_limits(
     int16_t range, 
     int16_t coupling, 
-    double* max_analogue_offset,
-    double* min_analogue_offset);
+    double* max_analog_offset,
+    double* min_analog_offset);
 
 int16_t set_sample_interval(
     double requested_time_interval, 

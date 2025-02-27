@@ -249,17 +249,17 @@ EnabledChannelFlags channel_status = {0};
 
 /**
  * Enables a specified channel on the connected Picocope with the given configurations. 
- * Setting the channels coupling, range, analogue offset, and bandwidth. 
+ * Setting the channels coupling, range, analog offset, and bandwidth. 
  * 
  * @param channel A pointer to a `ChannelConfigs` structure that contains the configuration 
- *                to be activated. The structure holds the coupling type, voltage range, analogue
+ *                to be activated. The structure holds the coupling type, voltage range, analog
  *                offset, and bandwidth to configure the channel. 
  * 
  * @return 0 if the channel is succesfully set on, or -1 if an error occurs. 
 */
 int16_t set_channel_on(struct ChannelConfigs* channel) {
     
-    status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analogue_offset, channel->bandwidth);
+    status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analog_offset, channel->bandwidth);
     if (status != PICO_OK) 
     {
         log_error("ps6000aSetChannelOn", status, __FILE__, __LINE__);
@@ -354,16 +354,16 @@ int16_t get_channel_status(int16_t channel){
 }
 
 /**
- * Uses the range and coupling of a specific channel to retrieve the maximum and minimum analogue offset voltages possible. 
+ * Uses the range and coupling of a specific channel to retrieve the maximum and minimum analog offset voltages possible. 
  * 
  * @param range The voltage range set to a channel. See PICO_CONNECT_PROBE_RANGE in PicoConnectProbes.h. 
  *        coupling The coupling set to a channel. See PICO_COUPLING in PicoDeviceEnums.h.
- *        max_analogue_offset On exit, the max analogue offset voltage allowed for the range. 
- *        min_analogue_offset On exit, the min analogue offset voltage allowed for the range. 
+ *        max_analog_offset On exit, the max analog offset voltage allowed for the range. 
+ *        min_analog_offset On exit, the min analog offset voltage allowed for the range. 
  * 
- * @return 0 if the analogue offset limits are succesfully retrieved, or -1 if an error occurs. 
+ * @return 0 if the analog offset limits are succesfully retrieved, or -1 if an error occurs. 
  */
-int16_t get_analogue_offset_limits(int16_t range, int16_t coupling, double* max_analogue_offset, double* min_analogue_offset){
+int16_t get_analog_offset_limits(int16_t range, int16_t coupling, double* max_analog_offset, double* min_analog_offset){
 
     double maximum_voltage; 
     double minimum_voltage;
@@ -375,8 +375,8 @@ int16_t get_analogue_offset_limits(int16_t range, int16_t coupling, double* max_
         return -1;
     }
 
-    *max_analogue_offset = maximum_voltage;
-    *min_analogue_offset = minimum_voltage;
+    *max_analog_offset = maximum_voltage;
+    *min_analog_offset = minimum_voltage;
 
     return 0; 
 }
