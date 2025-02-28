@@ -4,6 +4,8 @@
 #ifndef PICOSCOPE_CONFIG
 #define PICOSCOPE_CONFIG
 
+#define CHANNEL_NUM 4
+
 enum Channel{
     CHANNEL_A = 0,
     CHANNEL_B = 1,
@@ -11,7 +13,6 @@ enum Channel{
     CHANNEL_D = 3,
     TRIGGER_AUX = 1001
 };
-
 enum ThresholdDirection
 {
   ABOVE = 0, //using upper threshold
