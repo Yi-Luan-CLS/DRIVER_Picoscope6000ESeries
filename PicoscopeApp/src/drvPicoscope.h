@@ -25,9 +25,11 @@ int16_t set_channel_off(int channel);
 //     struct SampleConfigs* sample_configurations,
 //     int16_t* waveform);
 
+uint32_t is_Channel_On(enum Channel channel);
+
 int16_t setup_picoscope(
-    int16_t* waveform_buffer,
-    struct ChannelConfigs* channel_config,
+    int16_t* waveform_buffer[CHANNEL_NUM],
+    struct ChannelConfigs* channel_config[CHANNEL_NUM],
     struct SampleConfigs* sample_config,
     struct TriggerConfigs* trigger_config
     );

@@ -69,7 +69,7 @@ int16_t ping_count = 0;
 int16_t ping_picoscope(){ 
     
     status = ps6000aPingUnit(handle); 
-    if (status != PICO_OK) {
+    if (status != PICO_OK && status != PICO_DRIVER_FUNCTION) {
         log_error("ps6000aPingUnit. Cannot ping device.", status, __FILE__, __LINE__);
         
         // If another call to the driver is made at the same time as this, the error code
@@ -390,9 +390,9 @@ typedef struct {
     int dataReady; // Flag to indicate data is ready
     PICO_STATUS callbackStatus; // Status from the callback
 } BlockCaptureState;
-PICO_STATUS setup_picoscope(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config);
+PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config);
 PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms, uint8_t* capturing);
-PICO_STATUS set_data_buffer(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config);
+PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config);
 PICO_STATUS set_AUX_trigger(struct TriggerConfigs* trigger_config);
 PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms);
 PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uint8_t* capturing);
@@ -440,17 +440,9 @@ BlockCaptureState* callback_state;
  * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
  * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS setup_picoscope(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config) {
+PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config) {
 
     PICO_STATUS status = 0;
-    if (callback_state == NULL) {
-        callback_state = (BlockCaptureState*)malloc(sizeof(BlockCaptureState));
-        if (callback_state == NULL) {
-            log_error("BlockCaptureState malloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
-            return PICO_MEMORY_FAIL;
-        }
-        memset(callback_state, 0, sizeof(BlockCaptureState)); // Initialize to zero
-    }
 
     status = set_AUX_trigger(trigger_config);
     if (status != PICO_OK) {
@@ -523,6 +515,27 @@ PICO_STATUS set_trigger_properties(struct TriggerConfigs* trigger_config) {
     return status;
 }
 
+uint32_t is_Channel_On(enum Channel channel){
+
+    switch (channel)
+    {
+    case CHANNEL_A:
+        return channel_status.channel_a;
+        break;
+    case CHANNEL_B:
+        return channel_status.channel_b;
+        break;
+    case CHANNEL_C:
+        return channel_status.channel_c;
+        break;
+    case CHANNEL_D:
+        return channel_status.channel_d;
+        break;
+    default:
+        return -1;
+    }
+}
+
 /**
  * Configures the data buffer for the specified channel on the Picoscope device.
  * 
@@ -531,29 +544,35 @@ PICO_STATUS set_trigger_properties(struct TriggerConfigs* trigger_config) {
  * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS set_data_buffer(int16_t* waveform_buffer, struct ChannelConfigs* channel_config, struct SampleConfigs* sample_config) {
+PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config) {
     PICO_STATUS status = ps6000aSetDataBuffer(
-        handle, channel_config->channel, NULL, 0, PICO_INT16_T, 0, 0, 
+        handle, (PICO_CHANNEL)NULL, NULL, 0, PICO_INT16_T, 0, 0, 
         PICO_CLEAR_ALL      // Clear buffer in Picoscope buffer list
     );
-    if (status != PICO_OK) {
-        log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
+    for (size_t i = 0; i < CHANNEL_NUM; i++)
+    {
+        if (status != PICO_OK) {
+            log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
+        }
+        if (is_Channel_On(channel_config[i]->channel))
+        {
+            status = ps6000aSetDataBuffer(
+                handle, 
+                channel_config[i]->channel, 
+                waveform_buffer[i], 
+                sample_config->num_samples, 
+                PICO_INT16_T, 
+                0, 
+                sample_config->down_sample_ratio_mode, 
+                PICO_ADD
+            );
+            
+            if (status != PICO_OK) {
+                log_error("ps6000aSetDataBuffer PICO_ADD", status, __FILE__, __LINE__);
+            }
+        }
     }
-
-    status = ps6000aSetDataBuffer(
-        handle, 
-        channel_config->channel, 
-        waveform_buffer, 
-        sample_config->num_samples, 
-        PICO_INT16_T, 
-        0, 
-        sample_config->down_sample_ratio_mode, 
-        PICO_ADD
-    );
-
-    if (status != PICO_OK) {
-        log_error("ps6000aSetDataBuffer PICO_ADD", status, __FILE__, __LINE__);
-    }
+    
 
     return status;
 }
@@ -614,10 +633,15 @@ void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, void *pParame
 PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms) {
     uint64_t pre_trigger_samples = (uint64_t)sample_config->num_samples * sample_config->trigger_position_ratio;
     uint64_t post_trigger_samples = sample_config->num_samples - pre_trigger_samples;
-    if (!callback_state)
-    {
+
+    free(callback_state);
+    callback_state = (BlockCaptureState*)malloc(sizeof(BlockCaptureState));
+    if (callback_state == NULL) {
+        log_error("BlockCaptureState malloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
         return PICO_MEMORY_FAIL;
     }
+        memset(callback_state, 0, sizeof(BlockCaptureState)); // Initialize to zero
+
     PICO_STATUS status = ps6000aRunBlock(
         handle,
         pre_trigger_samples,    
@@ -625,9 +649,8 @@ PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* tim
         sample_config->timebase,
         time_indisposed_ms,
         0,
-        // ps6000aBlockReadyCallback, 
-        // (void*) callback_state
-        NULL,NULL
+        ps6000aBlockReadyCallback, 
+        (void*) callback_state
     );
     if (status != PICO_OK) {
         log_error("ps6000aRunBlock", status, __FILE__, __LINE__);
@@ -637,72 +660,75 @@ PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* tim
 }
 
 
-// /**
-//  * Waits for the block capture to complete by polling the Picoscope device.
-//  * 
-//  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
-//  */
-// PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uint8_t* capturing)
-// {
-//     PICO_STATUS status = 0;
-
-//     while (!callback_state->dataReady)
-//     {
-//         if (!*capturing) {
-//             ps6000aStop(handle);
-//             sample_config->num_samples = 0;
-//             printf("Capture stopped.\n");     
-//             return status;
-//         }
-//         usleep(1000); // Sleep 1 ms to avoid busy-waiting
-//     }
-
-//     if (callback_state->callbackStatus != PICO_OK)
-//     {
-//         log_error("wait_for_capture_completion", status, __FILE__, __LINE__);
-//         return status;
-//     }
-
-//     printf("Capture finished.\n");
-
-//     status = retrieve_waveform_data(sample_config);
-//     if (status != PICO_OK) {
-//         return status;
-//     }  
-
-//     return callback_state->callbackStatus;
-// }
-
-PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uint8_t* capturing) {
+/**
+ * Waits for the block capture to complete by polling the Picoscope device.
+ * 
+ * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
+PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uint8_t* capturing)
+{
     PICO_STATUS status = 0;
-    int16_t trigger_status = 0;
-    while (1) {
-        status = ps6000aIsReady(handle, &trigger_status);
-        if (status != PICO_OK) {
-            log_error("ps6000aIsReady", status, __FILE__, __LINE__);
-            return status;
-        }
 
-        if (trigger_status == 1) {
-            printf("Capture finished.\n");
-
-            status = retrieve_waveform_data(sample_config);
-            if (status != PICO_OK) {
-                return status;
-            }
-            break;
-        }
+    while (!callback_state->dataReady)
+    {
         if (!*capturing) {
             ps6000aStop(handle);
             sample_config->num_samples = 0;
             printf("Capture stopped.\n");     
-            break;
+            return status;
         }
-        usleep(10000);
+        printf("%d",status);
+        usleep(1000); // Sleep 1 ms to avoid busy-waiting
     }
 
-    return status;
+    ps6000aStop(handle);
+
+    if (callback_state->callbackStatus != PICO_OK)
+    {
+        log_error("wait_for_capture_completion", status, __FILE__, __LINE__);
+        return status;
+    }
+
+    printf("Capture finished.\n");
+
+    status = retrieve_waveform_data(sample_config);
+    if (status != PICO_OK) {
+        return status;
+    }  
+
+    return callback_state->callbackStatus;
 }
+
+// PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uint8_t* capturing) {
+//     PICO_STATUS status = 0;
+//     int16_t trigger_status = 0;
+//     while (1) {
+//         status = ps6000aIsReady(handle, &trigger_status);
+//         if (status != PICO_OK) {
+//             log_error("ps6000aIsReady", status, __FILE__, __LINE__);
+//             return status;
+//         }
+
+//         if (trigger_status == 1) {
+//             printf("Capture finished.\n");
+
+//             status = retrieve_waveform_data(sample_config);
+//             if (status != PICO_OK) {
+//                 return status;
+//             }
+//             break;
+//         }
+//         if (!*capturing) {
+//             ps6000aStop(handle);
+//             sample_config->num_samples = 0;
+//             printf("Capture stopped.\n");     
+//             break;
+//         }
+//         usleep(10000);
+//     }
+
+//     return status;
+// }
 
 /**
  * Retrieves the captured waveform data from the Picoscope device and stores it in the provided buffer.
