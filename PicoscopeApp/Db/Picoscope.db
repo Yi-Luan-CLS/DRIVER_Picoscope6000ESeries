@@ -13,9 +13,9 @@ record(mbbo, "$(OSC):resolution"){
     field(DTYP, "Soft Channel")
     field(DESC, "Sampling resolution of device.")
 
-	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
-	field(ONST, "PICO_DR_10BIT")       field(ONVL, "10")
-	field(TWST, "PICO_DR_12BIT")       field(TWVL, "1")
+	field(ZRST, "8BIT")        field(ZRVL, "0")
+	field(ONST, "10BIT")       field(ONVL, "10")
+	field(TWST, "12BIT")       field(TWVL, "1")
     field(VAL,  "1")
 	field(FLNK, "$(OSC):resolution:fanout")
 }
@@ -47,9 +47,9 @@ record(ai, "$(OSC):resolution:fbk:get") {
 record(mbbi, "$(OSC):resolution:fbk") {
 	field(DTYP, "Soft Channel")
 
-	field(ZRST, "PICO_DR_8BIT")        field(ZRVL, "0")
-	field(ONST, "PICO_DR_10BIT")       field(ONVL, "10")
-	field(TWST, "PICO_DR_12BIT")       field(TWVL, "1")
+	field(ZRST, "8BIT")        field(ZRVL, "0")
+	field(ONST, "10BIT")       field(ONVL, "10")
+	field(TWST, "12BIT")       field(TWVL, "1")
 
 	field(VAL, "10")
 	field(SCAN, "Passive")
