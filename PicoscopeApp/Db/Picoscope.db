@@ -203,6 +203,7 @@ record(ai, "$(OSC):trigger_position_ratio:fbk"){
 record(ao, "$(OSC):sample_interval"){ 
 	field(DTYP, "Picoscope")
 	field(DESC, "Requested sample interval in seconds.")
+	field(EGU, "seconds")
 	field(OUT, "@L:set_sample_interval")
 	field(FLNK, "$(OSC):sample_interval:fanout")
 }
@@ -215,6 +216,7 @@ record(fanout, "$(OSC):sample_interval:fanout") {
 record(ai, "$(OSC):sample_interval:fbk"){ 
 	field(DTYP, "Picoscope")
 	field(DESC, "Actual sample interval in seconds.")
+	field(EGU, "seconds")
 	field(INP, "@L:get_sample_interval")
 }
 
