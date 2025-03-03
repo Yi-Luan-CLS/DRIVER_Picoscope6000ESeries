@@ -250,62 +250,6 @@ record(ai, "$(OSC):CH$(channel):analog_offset:min"){
 	field(INP, "@L:get_min_analog_offset")
 }
 
-record(bo, "$(OSC):CH$(channel):waveform:start") {
-	field(DTYP, "Raw Soft Channel")
-	field(VAL,  "0")
-	field(ZNAM, "NOT ACQUIRING")    	
-	field(ONAM, "ACQUIRING")
-	field(HIGH, "1")
-	field(FLNK, "$(OSC):CH$(channel):waveform:start:fanout")	
-}
-
-record(fanout, "$(OSC):CH$(channel):waveform:start:fanout") {
-	field(LNK1, "$(OSC):CH$(channel):waveform:start:calcout.PROC")	
-	field(LNK2, "$(OSC):num_samples:fbk")
-	field(LNK3, "$(OSC):down_sample_ratio:fbk")
-	field(LNK4, "$(OSC):down_sample_ratio_mode:fbk:get")
-	field(LNK5, "$(OSC):trigger_position_ratio:fbk")
-	field(LNK6, "$(OSC):timebase:fbk")
-}
-
-record(calcout, "$(OSC):CH$(channel):waveform:start:calcout") {
-    field(SCAN, "Passive")
-    field(CALC, "A")
-	field(INPA, "$(OSC):CH$(channel):waveform:start")
-	field(OOPT, "Transition To Non-zero")
-	field(OUT, "$(OSC):CH$(channel):waveform:start:call.PROC PP")
-}
-
-record(waveform, "$(OSC):CH$(channel):waveform:start:call"){
-    field(DTYP, "Picoscope")
-	field(SCAN, "Passive")
-	field(FTVL, "SHORT")
-    field(INP, "@L:start_retrieve_waveform")
-}
-
-record(bo, "$(OSC):CH$(channel):waveform:stop") {
-	field(DTYP, "Raw Soft Channel")
-	field(VAL,  "0")
-	field(ONAM, "STOP")
-	field(HIGH, "1")
-	field(FLNK, "$(OSC):CH$(channel):waveform:stop:calcout")	
-}
-
-record(calcout, "$(OSC):CH$(channel):waveform:stop:calcout") {
-    field(SCAN, "Passive")
-    field(CALC, "A")
-	field(INPA, "$(OSC):CH$(channel):waveform:stop")
-	field(OOPT, "Transition To Non-zero")
-	field(OUT, "$(OSC):CH$(channel):waveform:stop:call.PROC PP")
-}
-
-record(waveform, "$(OSC):CH$(channel):waveform:stop:call"){
-    field(DTYP, "Picoscope")
-	field(SCAN, "Passive")
-	field(FTVL, "SHORT")
-    field(INP, "@L:stop_retrieve_waveform")
-}
-
 record(ai, "$(OSC):CH$(channel):waveform:scan"){
     field(DTYP, "Soft Channel")
 	field(SCAN, "Passive")
