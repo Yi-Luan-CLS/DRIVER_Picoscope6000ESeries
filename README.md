@@ -11,11 +11,10 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:coupling`  
   - `<OSCNAME>:CH[A-D]:range`  
   - `<OSCNAME>:CH[A-D]:bandwidth`  
-  - `<OSCNAME>:CH[A-D]:analogue_offset`    
+  - `<OSCNAME>:CH[A-D]:analog_offset`    
 >[!Note] 
->Changes to the above PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
->To ensure the channel is ON, verify the staus with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
-  - Channel configuration PVs have corresponding feedback PVs with the same name, plus the suffix :fbk. These feedback PVs reflect the current value of the configuration when the channel is ON. However, if `<OSCNAME>:CH[A-D]:ON:fbk` is OFF, the configuration feedback PVs do not accurately reflect the channel's settings. 
+>Changes to the above PVs will turn the channel ON. Changes apply immediately and can be verified by checking the :fbk PVs.  
+>To ensure a channel is ON, verify the status with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
 
 - **Simple usage example walkthrough:**
 
@@ -32,11 +31,11 @@ This document provides detailed information about the EPICS driver for the Picos
 
   # On another terminal
   caput OSC1022-01:CHB:range 10       # Set the voltage range for Channel B to +/-20V
-  caput OSC1022-01:num_samples 1000  # Set the number of samples to 1,000
-  caput OSC1022-01:CHB:ON 1           # Enable and apply changes to Channel B
+  caput OSC1022-01:num_samples 1000   # Set the number of samples to 1,000
+  caget OSC1022-01:CHB:ON:fbk         # Check if Channel B is ON. If not, try: caput OSC1022-01:CHB:ON ON. 
   caput OSC1022-11:sample_interval 0.001    # Set the sample time interval to 1 ms
   caput OSC1022-01:CHB:waveform:start 1 # Start the waveform capturing (Use external triggering)
-  caget OSC1022-01:CHB:waveform       # when waveform is ready, get the waveform. The waveform has a maximum size of 1,000,000 elements. Only the first 10,000 elements will contain data; the rest will be zeros.
+  caget OSC1022-01:CHB:waveform         # when waveform is ready, get the waveform. The waveform has a maximum size of 1,000,000 elements. Only the first 10,000 elements will contain data; the rest will be zeros.
   ```
   All details of these configurations can be found in this document.
 
@@ -283,7 +282,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:ON:fbk 
 - **Type**: `bo`
 - **Description**: The actual state of the channel.
-  - Updated when a new value set to `OSCNAME:CH[A-D]:ON`. 
+  - Updated when a new value set to `OSCNAME:CH[A-D]:ON` and when a channel configuration is changed. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-D]:ON` 
 
@@ -309,7 +308,6 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:coupling:fbk
 - **Type**: `mbbi`
 - **Description**: The actual impedance and coupling type set to a channel. 
-  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:coupling` 
@@ -350,7 +348,6 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:range:fbk
 - **Type**: `mbbi`
 - **Description**: The actual value of the voltage range set to a channel.  
-  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:range` 
@@ -379,12 +376,11 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:bandwith:fbk
 - **Type**: `mbbi`
 - **Description**: The actual value of the voltage range set to a channel.  
-  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:bandwith` 
 
-### OSCNAME:CH[A-D]:analogue_offset
+### OSCNAME:CH[A-D]:analog_offset
 - **Type**: `ao`
 - **Description**: A voltage to add to the input channel before digitization.
 - **Fields**:
@@ -392,29 +388,28 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Example**:
   ```bash
     # Set offset to 1V
-    $ caput OSC1234-01:CHA:analogueoffset 1
+    $ caput OSC1234-01:CHA:analogoffset 1
     # Set offset to 10V
-    $ caput OSC1234-01:CHA:analogueoffset 10
+    $ caput OSC1234-01:CHA:analogoffset 10
 
     # Get offset
-    $ caput OSC1234-01:CHA:analogueoffset
+    $ caput OSC1234-01:CHA:analogoffset
   ```
-### OSCNAME:CH[A-D]:analogue_offset:fbk
+### OSCNAME:CH[A-D]:analog_offset:fbk
 - **Type**: `ai`
-- **Description**: The actual voltage to added to the input channel before digitization. The analogue offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analogue_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
-  - Updated when `OSCNAME:CH[A-D]:ON` is set to ON. 
+- **Description**: The actual voltage to added to the input channel before digitization. The analog offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analog_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:CH[A-B]:analogue_offset` 
+  - `VAL`: See `OSCNAME:CH[A-B]:analog_offset` 
 
-### OSCNAME:CH[A-D]:analogue_offset:max 
+### OSCNAME:CH[A-D]:analog_offset:max 
 - **Type**: `ai`
-- **Description**: The maximun allowed analogue offset voltage allowed for the range. 
+- **Description**: The maximun allowed analog offset voltage allowed for the range. 
   - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
 
-### OSCNAME:CH[A-D]:analogue_offset:min
+### OSCNAME:CH[A-D]:analog_offset:min
 - **Type**: `ai`
-- **Description**: The minimum allowed analogue offset voltage allowed for the range. 
+- **Description**: The minimum allowed analog offset voltage allowed for the range. 
   - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
 
 

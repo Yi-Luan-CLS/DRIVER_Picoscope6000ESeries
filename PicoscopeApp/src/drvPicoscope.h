@@ -20,10 +20,13 @@ int16_t set_channel_on(struct ChannelConfigs* channel);
 
 int16_t set_channel_off(int channel);
 
-// int16_t retrieve_waveform(
-//     struct ChannelConfigs* channel_configuration,
-//     struct SampleConfigs* sample_configurations,
-//     int16_t* waveform);
+int16_t get_channel_status(int16_t channel);
+
+int16_t get_analog_offset_limits(
+    int16_t range, 
+    int16_t coupling, 
+    double* max_analog_offset,
+    double* min_analog_offset);
 
 uint32_t is_Channel_On(enum Channel channel);
 

@@ -45,14 +45,15 @@ enum ioType
   	GET_SERIAL_NUM,
   	GET_DEVICE_INFO,
 	SET_CHANNEL_ON,
+	GET_CHANNEL_STATUS,
 	SET_COUPLING,
 	GET_COUPLING,
 	SET_RANGE, 
 	GET_RANGE,
-	SET_ANALOGUE_OFFSET,
-	GET_ANALOGUE_OFFSET,
-	GET_MAX_ANALOGUE_OFFSET,
-	GET_MIN_ANALOGUE_OFFSET,
+	SET_ANALOG_OFFSET,
+	GET_ANALOG_OFFSET,
+	GET_MAX_ANALOG_OFFSET,
+	GET_MIN_ANALOG_OFFSET,
 	SET_BANDWIDTH, 
 	GET_BANDWIDTH,
 	START_RETRIEVE_WAVEFORM,
@@ -92,14 +93,15 @@ static struct aioType
 		{"get_trigger_position_ratio", isInput, GET_TRIGGER_POSITION_RATIO, "" },
 	 	{"get_device_info", isInput, GET_DEVICE_INFO, "" },
 		{"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
+		{"get_channel_status", isInput, GET_CHANNEL_STATUS, ""}, 
 		{"set_coupling", isOutput, SET_COUPLING, "" },
 		{"get_coupling", isInput, GET_COUPLING, ""},
 		{"set_range", isOutput, SET_RANGE,   "" }, 
 		{"get_range", isInput, GET_RANGE, ""},
-		{"set_analogue_offset", isOutput, SET_ANALOGUE_OFFSET, ""},
-		{"get_analogue_offset", isInput, GET_ANALOGUE_OFFSET, ""},
-		{"get_max_analogue_offset", isInput, GET_MAX_ANALOGUE_OFFSET, ""},
-		{"get_min_analogue_offset", isInput, GET_MIN_ANALOGUE_OFFSET, ""},
+		{"set_analog_offset", isOutput, SET_ANALOG_OFFSET, ""},
+		{"get_analog_offset", isInput, GET_ANALOG_OFFSET, ""},
+		{"get_max_analog_offset", isInput, GET_MAX_ANALOG_OFFSET, ""},
+		{"get_min_analog_offset", isInput, GET_MIN_ANALOG_OFFSET, ""},
 		{"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
 		{"get_bandwidth", isInput, GET_BANDWIDTH, "" }, 
 		{"start_retrieve_waveform", isInput, START_RETRIEVE_WAVEFORM, "" },
@@ -153,8 +155,8 @@ struct SampleConfigs* sample_configurations = NULL; // Configurations for data c
 char* record_name; 
 int channel_index; 
 
-double max_analogue_offset; 
-double min_analogue_offset; 
+double max_analog_offset; 
+double min_analog_offset; 
 
 /****************************************************************************************
  * AI Record
@@ -242,10 +244,22 @@ read_ai (struct aiRecord *pai){
 
 		case GET_RESOLUTION: 
 			result = get_resolution(&resolution);
-			pai->val = resolution;  
+
+			int16_t pv_enum_val = translate_resolution(resolution);
+
+			pai->val = pv_enum_val;  
 			break; 
 
 		// Channel configuration fbk
+		case GET_CHANNEL_STATUS: 
+			record_name = pai->name; 
+			channel_index = find_channel_index_from_record(record_name, channels); 
+
+			int16_t channel_status = get_channel_status(channels[channel_index]->channel); 
+			
+			pai->val = channel_status;
+			break; 
+
 		case GET_COUPLING: 
 			record_name = pai->name; 
 			channel_index = find_channel_index_from_record(record_name, channels); 
@@ -272,30 +286,29 @@ read_ai (struct aiRecord *pai){
 			pai->val = channels[channel_index]->bandwidth; 
 			break; 
 
-		case GET_ANALOGUE_OFFSET: 
-			// TODO: add call to ps6000aGetAnalogueOffsetLimits to get valid values
+		case GET_ANALOG_OFFSET: 
 			record_name = pai->name; 
 			channel_index = find_channel_index_from_record(record_name, channels); 
 
-			pai->val = channels[channel_index]->analogue_offset; 
+			pai->val = channels[channel_index]->analog_offset; 
 			break; 
 
-		case GET_MAX_ANALOGUE_OFFSET: 
+		case GET_MAX_ANALOG_OFFSET: 
 			record_name = pai->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 
-			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
+			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
 
-			pai->val = max_analogue_offset; 
+			pai->val = max_analog_offset; 
 			break;
 
-		case GET_MIN_ANALOGUE_OFFSET: 
+		case GET_MIN_ANALOG_OFFSET: 
 			record_name = pai->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 
-			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
+			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
 
-			pai->val = min_analogue_offset; 
+			pai->val = min_analog_offset; 
 			break;
 
 		// Data configuration fbk 
@@ -331,6 +344,32 @@ read_ai (struct aiRecord *pai){
 
 }	
 
+#define PICO_DR_8BIT   0
+#define PICO_DR_10BIT  1
+#define PICO_DR_12BIT  2
+
+/**
+ * Match device resolution values from the Picoscope API to the corresponding 
+ * value in the EPICS mbbo record $(OSC):resolution:fbk. 
+ * 
+ * @param mode The mode value as defined by the Picoscope API.
+ * 
+ * @return The value of the mode in the mbbi fbk PV, or -1 if mode does not exist.
+ */
+int16_t translate_resolution(int mode){
+	if (mode == 0) {
+		return PICO_DR_8BIT;
+	}
+	if (mode == 10){
+		return PICO_DR_10BIT;
+	}	
+	if (mode == 1) {
+		return PICO_DR_12BIT;
+	}	
+	return -1;
+}
+
+
 #define AGGREGATE      0
 #define DECIMATE       1
 #define AVERAGE        2
@@ -344,7 +383,7 @@ read_ai (struct aiRecord *pai){
  * 
  * @param mode The mode value as defined by the Picoscope API
  * 
- * @return The value of the mode in the mbbo PV, or -1 if mode does not exist.
+ * @return The value of the mode in the mbbi fbk PV, or -1 if mode does not exist.
  */
 int16_t translate_down_sample_ratio_mode(int mode){
 	if (mode == 1) {
@@ -508,23 +547,23 @@ init_record_ao (struct aoRecord *pao)
 			channels[channel_index]->range = (int)pao->val;
 			break;
 
-		case SET_ANALOGUE_OFFSET: 
+		case SET_ANALOG_OFFSET: 
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 			
-			double max_analogue_offset = 0; 
-			double min_analogue_offset = 0; 
-			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
+			double max_analog_offset = 0; 
+			double min_analog_offset = 0; 
+			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
 
-			// If PV val is outside of the analogue offset limits, use the limit instead. 
-			if (pao->val > max_analogue_offset) {
-				channels[channel_index]->analogue_offset = max_analogue_offset;
+			// If PV val is outside of the analog offset limits, use the limit instead. 
+			if (pao->val > max_analog_offset) {
+				channels[channel_index]->analog_offset = max_analog_offset;
 			}
-			else if (pao->val < min_analogue_offset){ 
-				channels[channel_index]->analogue_offset = min_analogue_offset; 
+			else if (pao->val < min_analog_offset){ 
+				channels[channel_index]->analog_offset = min_analog_offset; 
 			} 
 			else {
-				channels[channel_index]->analogue_offset = pao->val;
+				channels[channel_index]->analog_offset = pao->val;
 			}
 			break;
 
@@ -627,46 +666,88 @@ write_ao (struct aoRecord *pao)
 
        	// Following cases are specific to a channel
         case SET_COUPLING:	
+			
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
-			
+
+			int16_t previous_coupling = channels[channel_index]->coupling; 
+
 			channels[channel_index]->coupling = (int)pao->val;
+
+			result = set_channel_on(channels[channel_index]);
+			// If channel is not succesfully set on, return to previous value 
+			if (result != 0) {
+				printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+				channels[channel_index]->coupling = previous_coupling;
+				printf("Resetting to previous coupling.\n");
+			}
 			break;
 
 		case SET_RANGE:
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 			
+			int16_t previous_range = channels[channel_index]->range; 
+
 			channels[channel_index]->range = (int)pao->val;
+
+			result = set_channel_on(channels[channel_index]);
+			// If channel is not succesfully set on, return to previous value 
+			if (result != 0) {
+				printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+				channels[channel_index]->range = previous_range;
+				printf("Resetting to previous range.\n");
+			}
 			break;
 
-		case SET_ANALOGUE_OFFSET: 
+		case SET_ANALOG_OFFSET: 
 
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 
-			double max_analogue_offset = 0; 
-			double min_analogue_offset = 0; 
-			result = get_analogue_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analogue_offset, &min_analogue_offset);
+			int16_t previous_analog_offset = channels[channel_index]->coupling;
+
+			double max_analog_offset = 0; 
+			double min_analog_offset = 0; 
+			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
 			
-			// If PV val is outside of the analogue offset limits, use the limit instead. 
-			if (pao->val > max_analogue_offset) {
-				channels[channel_index]->analogue_offset = max_analogue_offset;
+			// If PV val is outside of the analog offset limits, use the limit instead. 
+			if (pao->val > max_analog_offset) {
+				channels[channel_index]->analog_offset = max_analog_offset;
 			}
-			else if (pao->val < min_analogue_offset){ 
-				channels[channel_index]->analogue_offset = min_analogue_offset; 
+			else if (pao->val < min_analog_offset){ 
+				channels[channel_index]->analog_offset = min_analog_offset; 
 			} 
 			else {
-				channels[channel_index]->analogue_offset = pao->val;
+				channels[channel_index]->analog_offset = pao->val;
 			}
 
+			result = set_channel_on(channels[channel_index]);
+
+			// If channel is not succesfully set on, return to previous value 
+			if (result != 0) {
+				printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+				channels[channel_index]->analog_offset = previous_analog_offset;
+				printf("Resetting to previous analog offset.\n");
+			}
 			break;
 
 		case SET_BANDWIDTH: 
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 			
+			int16_t previous_bandwidth = channels[channel_index]->bandwidth;
+
 			channels[channel_index]->bandwidth= (int)pao->val;
+
+			result = set_channel_on(channels[channel_index]);
+			
+			// If channel is not succesfully set on, return to previous value 
+			if (result != 0) {
+				printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+				channels[channel_index]->bandwidth = previous_bandwidth;
+				printf("Resetting to previous bandwidth.\n");
+			}
 			break;
 
 		case SET_CHANNEL_ON:	

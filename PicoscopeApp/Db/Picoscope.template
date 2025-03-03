@@ -12,16 +12,16 @@ record(bo, "$(OSC):CH$(channel):ON") {
 
 record(fanout, "$(OSC):CH$(channel):fanout") {
 	field(SELM, "All")
-	field(LNK1, "$(OSC):CH$(channel):analogue_offset:fbk")
-	field(LNK2, "$(OSC):CH$(channel):ON:fbk:get")
+	field(LNK1, "$(OSC):CH$(channel):analog_offset:fbk")
+	field(LNK2, "$(OSC):CH$(channel):ON:set")
 	field(LNK3, "$(OSC):CH$(channel):coupling:fbk:get")
 	field(LNK4, "$(OSC):CH$(channel):range:fbk:get")
 	field(LNK5, "$(OSC):CH$(channel):bandwidth:fbk:get")
 	field(LNK6, "$(OSC):sample_interval") 
+	field(LNK7, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
-
-record(ao, "$(OSC):CH$(channel):ON:fbk:get") {
+record(ao, "$(OSC):CH$(channel):ON:set") {
 	field(DTYP, "Picoscope")
 	field(DOL, "$(OSC):CH$(channel):ON.RVAL")
 	field(SCAN, "Passive")
@@ -29,27 +29,32 @@ record(ao, "$(OSC):CH$(channel):ON:fbk:get") {
 	field(OMSL, "closed_loop")
 	field(VAL, "0")
 	field(OUT, "@L:set_channel_on")
+}
+
+record(ai, "$(OSC):CH$(channel):ON:fbk:get"){
+	field(DTYP, "Picoscope")
+
+	field(INP, "@L:get_channel_status")
 	field(FLNK, "$(OSC):CH$(channel):ON:fbk")
 }
 
-record(bo, "$(OSC):CH$(channel):ON:fbk") {
+record(bi, "$(OSC):CH$(channel):ON:fbk") {
 	field(DTYP, "Soft Channel")
 	
 	field(ZNAM, "OFF")    	
 	field(ONAM, "ON") 
 
 	field(SCAN, "Passive")
-	field(OMSL, "closed_loop")
-	field(DOL, "$(OSC):CH$(channel):ON:fbk:get")
+	field(INP, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(mbbo, "$(OSC):CH$(channel):coupling") {
     field(DTYP, "Soft Channel")
     field(DESC, "Impedance and coupling type.")
 
-    field(ZRST, "PICO_AC")            field(ZRVL, "0")
-    field(ONST, "PICO_DC")            field(ONVL, "1")
-    field(TWST, "PICO_DC_50_OHM")     field(TWVL, "50")
+    field(ZRST, "AC")            field(ZRVL, "0")
+    field(ONST, "DC")            field(ONVL, "1")
+    field(TWST, "DC_50_OHM")     field(TWVL, "50")
     
     field(VAL, "1")
     field(FLNK, "$(OSC):CH$(channel):coupling:fanout")	
@@ -57,7 +62,9 @@ record(mbbo, "$(OSC):CH$(channel):coupling") {
 
 record(fanout, "$(OSC):CH$(channel):coupling:fanout") {
 	field(LNK1, "$(OSC):CH$(channel):coupling:set.PROC")	
-	field(LNK2, "$(OSC):CH$(channel):analogue_offset_limits:fanout")
+	field(LNK2, "$(OSC):CH$(channel):analog_offset_limits:fanout")
+	field(LNK3, "$(OSC):CH$(channel):coupling:fbk:get")
+	field(LNK4, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ao, "$(OSC):CH$(channel):coupling:set") {
@@ -80,9 +87,9 @@ record(mbbi, "$(OSC):CH$(channel):coupling:fbk") {
 	field(DTYP, "Soft Channel")
 	field(DESC, "Actual coupling type set to channel $(channel)")
 
-    field(ZRST, "PICO_AC")            field(ZRVL, "0")
-    field(ONST, "PICO_DC")            field(ONVL, "1")
-    field(TWST, "PICO_DC_50_OHM")     field(TWVL, "50")
+    field(ZRST, "AC")            field(ZRVL, "0")
+    field(ONST, "DC")            field(ONVL, "1")
+    field(TWST, "DC_50_OHM")     field(TWVL, "50")
 
 	field(SCAN, "Passive")
 	field(INP, "$(OSC):CH$(channel):coupling:fbk:get")
@@ -93,22 +100,22 @@ record(mbbo, "$(OSC):CH$(channel):range") {
 	field(DTYP, "Soft Channel")
     field(DESC, "Input voltage range.")
 
-	field(ZRST, "PICO_X1_PROBE_10MV")  field(ZRVL, "0")
-	field(ONST, "PICO_X1_PROBE_20MV")  field(ONVL, "1")
-	field(TWST, "PICO_X1_PROBE_50MV")  field(TWVL, "2")
-    field(THST, "PICO_X1_PROBE_100MV") field(THVL, "3")
-    field(FRST, "PICO_X1_PROBE_200MV") field(FRVL, "4")
-    field(FVST, "PICO_X1_PROBE_500MV") field(FVVL, "5")
-    field(SXST, "PICO_X1_PROBE_1V")    field(SXVL, "6")
-    field(SVST, "PICO_X1_PROBE_2V")    field(SVVL, "7")
-    field(EIST, "PICO_X1_PROBE_5V")    field(EIVL, "8")
-    field(NIST, "PICO_X1_PROBE_10V")   field(NIVL, "9")
-    field(TEST, "PICO_X1_PROBE_20V")   field(TEVL, "10")
-    field(ELST, "PICO_X1_PROBE_50V")   field(ELVL, "11")
-    field(TVST, "PICO_X1_PROBE_100V")  field(TVVL, "12")
-    field(TTST, "PICO_X1_PROBE_200V")  field(TTVL, "13")
-    field(FTST, "PICO_X1_PROBE_500V")  field(FTVL, "14")
-    field(FFST, "PICO_X1_PROBE_1KV")   field(FFVL, "15")
+	field(ZRST, "10MV")  field(ZRVL, "0")
+	field(ONST, "20MV")  field(ONVL, "1")
+	field(TWST, "50MV")  field(TWVL, "2")
+    field(THST, "100MV") field(THVL, "3")
+    field(FRST, "200MV") field(FRVL, "4")
+    field(FVST, "500MV") field(FVVL, "5")
+    field(SXST, "1V")    field(SXVL, "6")
+    field(SVST, "2V")    field(SVVL, "7")
+    field(EIST, "5V")    field(EIVL, "8")
+    field(NIST, "10V")   field(NIVL, "9")
+    field(TEST, "20V")   field(TEVL, "10")
+    field(ELST, "50V")   field(ELVL, "11")
+    field(TVST, "100V")  field(TVVL, "12")
+    field(TTST, "200V")  field(TTVL, "13")
+    field(FTST, "500V")  field(FTVL, "14")
+    field(FFST, "1KV")   field(FFVL, "15")
 
 	field(VAL, "0")
 	field(FLNK, "$(OSC):CH$(channel):range:fanout")	
@@ -116,7 +123,9 @@ record(mbbo, "$(OSC):CH$(channel):range") {
 
 record(fanout, "$(OSC):CH$(channel):range:fanout") {
 	field(LNK1, "$(OSC):CH$(channel):range:set.PROC")	
-	field(LNK2, "$(OSC):CH$(channel):analogue_offset_limits:fanout")
+	field(LNK2, "$(OSC):CH$(channel):analog_offset_limits:fanout")
+	field(LNK3, "$(OSC):CH$(channel):range:fbk:get" )
+	field(LNK4, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ao, "$(OSC):CH$(channel):range:set") {
@@ -138,22 +147,22 @@ record(mbbi, "$(OSC):CH$(channel):range:fbk") {
 	field(DTYP, "Soft Channel")
 	field(DESC, "Actual voltage range set to channel $(channel)")
 	
-	field(ZRST, "PICO_X1_PROBE_10MV")  field(ZRVL, "0")
-	field(ONST, "PICO_X1_PROBE_20MV")  field(ONVL, "1")
-	field(TWST, "PICO_X1_PROBE_50MV")  field(TWVL, "2")
-    field(THST, "PICO_X1_PROBE_100MV") field(THVL, "3")
-    field(FRST, "PICO_X1_PROBE_200MV") field(FRVL, "4")
-    field(FVST, "PICO_X1_PROBE_500MV") field(FVVL, "5")
-    field(SXST, "PICO_X1_PROBE_1V")    field(SXVL, "6")
-    field(SVST, "PICO_X1_PROBE_2V")    field(SVVL, "7")
-    field(EIST, "PICO_X1_PROBE_5V")    field(EIVL, "8")
-    field(NIST, "PICO_X1_PROBE_10V")   field(NIVL, "9")
-    field(TEST, "PICO_X1_PROBE_20V")   field(TEVL, "10")
-    field(ELST, "PICO_X1_PROBE_50V")   field(ELVL, "11")
-    field(TVST, "PICO_X1_PROBE_100V")  field(TVVL, "12")
-    field(TTST, "PICO_X1_PROBE_200V")  field(TTVL, "13")
-    field(FTST, "PICO_X1_PROBE_500V")  field(FTVL, "14")
-    field(FFST, "PICO_X1_PROBE_1KV")   field(FFVL, "15")
+	field(ZRST, "10MV")  field(ZRVL, "0")
+	field(ONST, "20MV")  field(ONVL, "1")
+	field(TWST, "50MV")  field(TWVL, "2")
+    field(THST, "100MV") field(THVL, "3")
+    field(FRST, "200MV") field(FRVL, "4")
+    field(FVST, "500MV") field(FVVL, "5")
+    field(SXST, "1V")    field(SXVL, "6")
+    field(SVST, "2V")    field(SVVL, "7")
+    field(EIST, "5V")    field(EIVL, "8")
+    field(NIST, "10V")   field(NIVL, "9")
+    field(TEST, "20V")   field(TEVL, "10")
+    field(ELST, "50V")   field(ELVL, "11")
+    field(TVST, "100V")  field(TVVL, "12")
+    field(TTST, "200V")  field(TTVL, "13")
+    field(FTST, "500V")  field(FTVL, "14")
+    field(FFST, "1KV")   field(FFVL, "15")
 
 	field(SCAN, "Passive")
 	field(INP, "$(OSC):CH$(channel):range:fbk:get")
@@ -163,12 +172,18 @@ record(mbbo, "$(OSC):CH$(channel):bandwidth") {
     field(DTYP, "Soft Channel")
     field(DESC, "Bandwidth limiter setting.")
 
-	field(ZRST, "PICO_BW_FULL")       	field(ZRVL, "0")
-	field(ONST, "PICO_BW_20MHZ")       	field(ONVL, "1")
-	field(TWST, "PICO_BW_200MHZ")       field(TWVL, "2")
+	field(ZRST, "BW_FULL")       	field(ZRVL, "0")
+	field(ONST, "BW_20MHZ")       	field(ONVL, "1")
+	field(TWST, "BW_200MHZ")       field(TWVL, "2")
 	
 	field(VAL, "0")
-	field(FLNK, "$(OSC):CH$(channel):bandwidth:set.PROC")	
+	field(FLNK, "$(OSC):CH$(channel):bandwidth:fanout")	
+}
+
+record(fanout, "$(OSC):CH$(channel):bandwidth:fanout") {
+	field(LNK1, "$(OSC):CH$(channel):bandwidth:set.PROC")	
+	field(LNK2, "$(OSC):CH$(channel):bandwidth:fbk:get")
+	field(LNK3, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ao, "$(OSC):CH$(channel):bandwidth:set") {
@@ -191,42 +206,48 @@ record(mbbi, "$(OSC):CH$(channel):bandwidth:fbk") {
 	field(DTYP, "Soft Channel")
 	field(DESC, "Actual bandwidth set to channel $(channel)")
 	
-	field(ZRST, "PICO_BW_FULL")       	field(ZRVL, "0")
-	field(ONST, "PICO_BW_20MHZ")       	field(ONVL, "1")
-	field(TWST, "PICO_BW_200MHZ")       field(TWVL, "2")
+	field(ZRST, "BW_FULL")       	field(ZRVL, "0")
+	field(ONST, "BW_20MHZ")       	field(ONVL, "1")
+	field(TWST, "BW_200MHZ")       field(TWVL, "2")
 	
 	field(SCAN, "Passive")
 	field(INP, "$(OSC):CH$(channel):bandwidth:fbk:get")
 }
 
-record(ao, "$(OSC):CH$(channel):analogue_offset") {
+record(ao, "$(OSC):CH$(channel):analog_offset") {
 	field(DTYP, "Picoscope")
 	field(DESC, "Voltage added to input channel.")
 	field(VAL, "0.0")
-	field(OUT, "@L:set_analogue_offset")
+	field(OUT, "@L:set_analog_offset")
+	field(FLNK, "$(OSC):CH$(channel):analog:fanout")
 }
 
-record(ai, "$(OSC):CH$(channel):analogue_offset:fbk") {
+record(fanout, "$(OSC):CH$(channel):analog:fanout") {
+	field(LNK1,"$(OSC):CH$(channel):analog_offset:fbk")
+	field(LNK2, "$(OSC):CH$(channel):ON:fbk:get")
+}
+
+record(ai, "$(OSC):CH$(channel):analog_offset:fbk") {
 	field(DTYP, "Picoscope")
 	field(DESC, "Actual voltage added to input channel.")
-	field(INP, "@L:get_analogue_offset")
+	field(INP, "@L:get_analog_offset")
 }
 
-record(fanout, "$(OSC):CH$(channel):analogue_offset_limits:fanout") {
-	field(LNK1,"$(OSC):CH$(channel):analogue_offset:max")
-	field(LNK2,"$(OSC):CH$(channel):analogue_offset:min")
+record(fanout, "$(OSC):CH$(channel):analog_offset_limits:fanout") {
+	field(LNK1,"$(OSC):CH$(channel):analog_offset:max")
+	field(LNK2,"$(OSC):CH$(channel):analog_offset:min")
 }
 
-record(ai, "$(OSC):CH$(channel):analogue_offset:max"){ 
+record(ai, "$(OSC):CH$(channel):analog_offset:max"){ 
 	field(DTYP, "Picoscope")
-	field(DESC, "Max analogue offset voltage allowed.")
-	field(INP, "@L:get_max_analogue_offset")
+	field(DESC, "Max analog offset voltage allowed.")
+	field(INP, "@L:get_max_analog_offset")
 }
 
-record(ai, "$(OSC):CH$(channel):analogue_offset:min"){ 
+record(ai, "$(OSC):CH$(channel):analog_offset:min"){ 
 	field(DTYP, "Picoscope")
-	field(DESC, "Min analogue offset voltage allowed.")
-	field(INP, "@L:get_min_analogue_offset")
+	field(DESC, "Min analog offset voltage allowed.")
+	field(INP, "@L:get_min_analog_offset")
 }
 
 record(bo, "$(OSC):CH$(channel):waveform:start") {
