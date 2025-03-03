@@ -4,11 +4,44 @@
 #ifndef PICOSCOPE_CONFIG
 #define PICOSCOPE_CONFIG
 
+#define CHANNEL_NUM 4
+
 enum Channel{
     CHANNEL_A = 0,
     CHANNEL_B = 1,
     CHANNEL_C = 2,
     CHANNEL_D = 3,
+    TRIGGER_AUX = 1001
+};
+enum ThresholdDirection
+{
+  ABOVE = 0, //using upper threshold
+  BELOW = 1, //using upper threshold
+  RISING = 2, // using upper threshold
+  FALLING = 3, // using upper threshold
+  RISING_OR_FALLING = 4, // using both thresholds
+  ABOVE_LOWER = 5, // using lower threshold
+  BELOW_LOWER = 6, // using lower threshold
+  RISING_LOWER = 7, // using lower threshold
+  FALLING_LOWER = 8, // using lower threshold
+
+  // Windowing using both thresholds
+  INSIDE = ABOVE,
+  OUTSIDE = BELOW,
+  ENTER = RISING,
+  EXIT = FALLING,
+  ENTER_OR_EXIT = RISING_OR_FALLING,
+  POSITIVE_RUNT = 9,
+  NEGATIVE_RUNT,
+
+  // no trigger set
+  NONE = RISING
+};
+
+enum ThresholdMode
+{
+  LEVEL = 0,
+  WINDOW = 1
 };
 
 enum RatioMode {
@@ -37,6 +70,16 @@ struct SampleConfigs{
     float trigger_position_ratio;
     uint64_t down_sample_ratio;
     enum RatioMode down_sample_ratio_mode; 
+};
+
+/** Structure for data trigger configurations*/
+struct TriggerConfigs{ 
+    enum Channel channel;
+    enum ThresholdDirection thresholdDirection;
+    enum ThresholdMode thresholdMode;
+    int16_t thresholdUpper;
+    int16_t thresholdLower;
+    uint32_t autoTriggerMicroSeconds;
 };
 
 /** Get the channel from the record formatted "OSCXXXX-XX:CH[A-B]:" and return index in channels array */
