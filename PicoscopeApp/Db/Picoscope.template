@@ -18,6 +18,7 @@ record(fanout, "$(OSC):CH$(channel):fanout") {
 	field(LNK4, "$(OSC):CH$(channel):range:fbk:get")
 	field(LNK5, "$(OSC):CH$(channel):bandwidth:fbk:get")
 	field(LNK6, "$(OSC):CH$(channel):ON:fbk:get")
+	field(LNK7, "$(OSC):timebase:fbk:fanout")
 }
 
 record(ao, "$(OSC):CH$(channel):ON:set") {

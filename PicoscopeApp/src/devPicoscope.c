@@ -826,6 +826,18 @@ write_ao (struct aoRecord *pao)
 					pao->val = 0; 
 				}
 			}	
+
+			// Update timebase configs that are affected by the number of channels on. 
+			result = set_up_timebase(
+				sample_configurations->timebase_configs, 
+				sample_configurations->num_samples,
+				&sample_interval, 
+				&timebase, 
+				&sample_rate
+			); 
+			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
+			sample_configurations->timebase_configs.timebase = timebase;
+			sample_configurations->timebase_configs.sample_rate = sample_rate;  
 			break;
 
 		case SET_TRIGGER_DIRECTION:
