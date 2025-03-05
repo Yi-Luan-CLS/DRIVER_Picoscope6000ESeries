@@ -1119,7 +1119,6 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 static long
 read_waveform(struct waveformRecord *pwaveform){
     int16_t status;
-	int channel_index = find_channel_index_from_record(pwaveform->name, channels); 
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
 	struct ChannelConfigs* channel_configurations_local[CHANNEL_NUM] = {NULL};
 	struct SampleConfigs* sample_configurations_local = NULL;
@@ -1221,6 +1220,8 @@ read_waveform(struct waveformRecord *pwaveform){
 			break;
 
 		case UPDATE_WAVEFORM:
+			int channel_index = find_channel_index_from_record(pwaveform->name, channels); 
+
 			if (!capturing) break;
 
 			memcpy(pwaveform->bptr, waveform[channel_index], waveform_size_actual * sizeof(int16_t) );

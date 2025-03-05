@@ -202,7 +202,7 @@ record(ai, "$(OSC):trigger_position_ratio:fbk"){
     field(INP, "@L:get_trigger_position_ratio")
 }
 
-
+### Timebase configurations and return values
 record(mbbo, "$(OSC):time_per_division:unit") {
 	field(DESC, "Time unit per division.")
 	field(DTYP, "Soft Channel")
@@ -320,7 +320,6 @@ record(ai, "$(OSC):num_divisons:fbk"){
 	field(INP, "@L:get_num_divisions")
 }
 
-# Timebase return values 
 record(ai, "$(OSC):sample_interval:fbk"){ 
 	field(DTYP, "Picoscope")
 	field(DESC, "Actual sample interval in seconds.")
@@ -349,4 +348,61 @@ record(fanout, "$(OSC):timebase:fbk:fanout"){
 	field(LNK5, "$(OSC):time_per_division:fbk:get")
 	field(LNK6, "$(OSC):num_divisons:fbk")
 	field(LNK7, "$(OSC):num_samples:fbk")
+}
+
+### Waveform retrieval PVs 
+record(bo, "$(OSC):waveform:start") {
+	field(DTYP, "Raw Soft Channel")
+	field(VAL,  "0")
+	field(ZNAM, "NOT ACQUIRING")    	
+	field(ONAM, "ACQUIRING")
+	field(HIGH, "1")
+	field(FLNK, "$(OSC):waveform:start:fanout")	
+}
+
+record(fanout, "$(OSC):waveform:start:fanout") {
+	field(LNK1, "$(OSC):waveform:start:calcout.PROC")	
+	field(LNK2, "$(OSC):num_samples:fbk")
+	field(LNK3, "$(OSC):down_sample_ratio:fbk")
+	field(LNK4, "$(OSC):down_sample_ratio_mode:fbk:get")
+	field(LNK5, "$(OSC):trigger_position_ratio:fbk")
+	field(LNK6, "$(OSC):timebase:fbk")
+}
+
+record(calcout, "$(OSC):waveform:start:calcout") {
+    field(SCAN, "Passive")
+    field(CALC, "A")
+	field(INPA, "$(OSC):waveform:start")
+	field(OOPT, "Transition To Non-zero")
+	field(OUT, "$(OSC):waveform:start:call.PROC PP")
+}
+
+record(waveform, "$(OSC):waveform:start:call"){
+    field(DTYP, "Picoscope")
+	field(SCAN, "Passive")
+	field(FTVL, "SHORT")
+    field(INP, "@L:start_retrieve_waveform")
+}
+
+record(bo, "$(OSC):waveform:stop") {
+	field(DTYP, "Raw Soft Channel")
+	field(VAL,  "0")
+	field(ONAM, "STOP")
+	field(HIGH, "1")
+	field(FLNK, "$(OSC):waveform:stop:calcout")	
+}
+
+record(calcout, "$(OSC):waveform:stop:calcout") {
+    field(SCAN, "Passive")
+    field(CALC, "A")
+	field(INPA, "$(OSC):waveform:stop")
+	field(OOPT, "Transition To Non-zero")
+	field(OUT, "$(OSC):waveform:stop:call.PROC PP")
+}
+
+record(waveform, "$(OSC):waveform:stop:call"){
+    field(DTYP, "Picoscope")
+	field(SCAN, "Passive")
+	field(FTVL, "SHORT")
+    field(INP, "@L:stop_retrieve_waveform")
 }
