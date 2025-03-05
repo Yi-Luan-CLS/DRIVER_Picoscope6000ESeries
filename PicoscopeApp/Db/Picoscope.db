@@ -45,7 +45,7 @@ record(ai, "$(OSC):resolution:fbk:get") {
 }
 
 record(mbbi, "$(OSC):resolution:fbk") {
-	field(DTYP, "Soft Channel")
+	field(DTYP, "Raw Soft Channel")
 
 	field(ZRST, "8BIT")        field(ZRVL, "0")
 	field(ONST, "10BIT")       field(ONVL, "10")
@@ -118,6 +118,8 @@ record(ao, "$(OSC):num_samples"){
 	field(DRVH, "1000000")
 	field(DRVL, "1") 
     field(OUT, "@L:set_num_samples")
+	
+	field(FLNK, "$(OSC):timebase:fbk:fanout")
 }
 
 record(ai, "$(OSC):num_samples:fbk") {
@@ -171,7 +173,7 @@ record(ai, "$(OSC):down_sample_ratio_mode:fbk:get") {
 }
 
 record(mbbi, "$(OSC):down_sample_ratio_mode:fbk") {
-	field(DTYP, "Soft Channel")
+	field(DTYP, "Raw Soft Channel")
     field(DESC, "Data reduction/downsampling method set.")
 	
     field(ZRST, "AGGREGATE")                field(ZRVL, "1")
@@ -200,19 +202,125 @@ record(ai, "$(OSC):trigger_position_ratio:fbk"){
     field(INP, "@L:get_trigger_position_ratio")
 }
 
-record(ao, "$(OSC):sample_interval"){ 
+
+record(mbbo, "$(OSC):time_per_division:unit") {
+	field(DESC, "Time unit per division.")
+	field(DTYP, "Soft Channel")
+	field(ZRST, "ns/div")        field(ZRVL, "0")
+	field(ONST, "us/div")        field(ONVL, "1")
+	field(TWST, "ms/div")        field(TWVL, "2")
+	field(THST, "s/div")      	 field(THVL, "3")
+
+	field(FLNK, "$(OSC):time_per_division:unit:set.PROC")
+}
+
+record(ao, "$(OSC):time_per_division:unit:set") {
 	field(DTYP, "Picoscope")
-	field(DESC, "Requested sample interval in seconds.")
-	field(EGU, "seconds")
-	field(OUT, "@L:set_sample_interval")
-	field(FLNK, "$(OSC):sample_interval:fanout")
+	field(DOL, "$(OSC):time_per_division:unit.RVAL")
+
+	field(VAL, "1")
+
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:set_time_per_division_unit")
+	field(FLNK, "$(OSC):timebase:fbk:fanout")
 }
 
-record(fanout, "$(OSC):sample_interval:fanout") {
-	field(LNK1, "$(OSC):sample_interval:fbk")
-	field(LNK2, "$(OSC):timebase:fbk")
+record(ai, "$(OSC):time_per_division:unit:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_time_per_division_unit")
+	field(FLNK, "$(OSC):time_per_division:unit:fbk")
 }
 
+record(mbbi, "$(OSC):time_per_division:unit:fbk") {
+	field(DESC, "Time unit per division.")
+	field(DTYP, "Soft Channel")
+	field(ZRST, "ns/div")        field(ZRVL, "0")
+	field(ONST, "us/div")        field(ONVL, "1")
+	field(TWST, "ms/div")        field(TWVL, "2")
+	field(THST, "s/div")      	 field(THVL, "3")
+
+	field(SCAN, "Passive")
+	field(INP, "$(OSC):time_per_division:unit:fbk:get")
+} 
+
+record(mbbo, "$(OSC):time_per_division") {
+	field(DESC, "Time per division.")
+	field(DTYP, "Soft Channel")
+
+	field(ZRST, "1")        field(ZRVL, "1")
+	field(ONST, "2")        field(ONVL, "2")
+	field(TWST, "5")        field(TWVL, "5")
+	field(THST, "10")       field(THVL, "10")
+	field(FRST, "20")       field(FRVL, "20")
+	field(FVST, "50")       field(FVVL, "50")
+	field(SXST, "100")      field(SXVL, "100")
+	field(SVST, "200")      field(SVVL, "200")
+	field(EIST, "500")      field(EIVL, "500")
+	field(NIST, "1000")     field(NIVL, "1000")
+	field(TEST, "2000")     field(TEVL, "2000")
+	field(ELST, "5000")     field(ELVL, "5000")
+
+	field(FLNK, "$(OSC):time_per_division:set.PROC")
+}
+
+record(ao, "$(OSC):time_per_division:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):time_per_division.RVAL")
+
+	field(VAL, "1")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(OUT, "@L:set_time_per_division")
+	
+	field(FLNK, "$(OSC):timebase:fbk:fanout")
+}
+
+record(ai, "$(OSC):time_per_division:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_time_per_division")
+	field(FLNK, "$(OSC):time_per_division:fbk")
+}
+
+record(mbbi, "$(OSC):time_per_division:fbk") {
+	field(DESC, "Time per division.")
+	field(DTYP, "Raw Soft Channel")
+
+	field(ZRST, "1")        field(ZRVL, "1")
+	field(ONST, "2")        field(ONVL, "2")
+	field(TWST, "5")        field(TWVL, "5")
+	field(THST, "10")       field(THVL, "10")
+	field(FRST, "20")       field(FRVL, "20")
+	field(FVST, "50")       field(FVVL, "50")
+	field(SXST, "100")      field(SXVL, "100")
+	field(SVST, "200")      field(SVVL, "200")
+	field(EIST, "500")      field(EIVL, "500")
+	field(NIST, "1000")     field(NIVL, "1000")
+	field(TEST, "2000")     field(TEVL, "2000")
+	field(ELST, "5000")     field(ELVL, "5000")
+
+	field(SCAN, "Passive")
+	field(INP, "$(OSC):time_per_division:fbk:get.VAL")
+} 
+
+record(ao, "$(OSC):num_divisions"){ 
+	field(DTYP, "Picoscope")
+	field(DESC, "Number of divisions.")
+	field(VAL, "10")
+	field(OUT, "@L:set_num_divisions")
+	
+	field(FLNK, "$(OSC):timebase:fbk:fanout")
+}
+
+record(ai, "$(OSC):num_divisons:fbk"){
+	field(DTYP, "Picoscope")
+	field(DESC, "Number of divisions.")
+	field(INP, "@L:get_num_divisions")
+}
+
+# Timebase return values 
 record(ai, "$(OSC):sample_interval:fbk"){ 
 	field(DTYP, "Picoscope")
 	field(DESC, "Actual sample interval in seconds.")
@@ -224,4 +332,21 @@ record(ai, "$(OSC):timebase:fbk"){
     field(DESC, "Actual timebase")
     field(DTYP, "Picoscope")
     field(INP, "@L:get_timebase")
+}
+
+record(ai, "$(OSC):sample_rate:fbk") {
+	field(DESC, "Samples per second.")
+	field(DTYP, "Picoscope")
+	field(EGU, "S/s")
+	field(INP, "@L:get_sample_rate")
+}
+
+record(fanout, "$(OSC):timebase:fbk:fanout"){ 
+	field(LNK1, "$(OSC):sample_interval:fbk")
+	field(LNK2, "$(OSC):timebase:fbk")
+	field(LNK3, "$(OSC):sample_rate:fbk")
+	field(LNK4, "$(OSC):time_per_division:unit:fbk:get")
+	field(LNK5, "$(OSC):time_per_division:fbk:get")
+	field(LNK6, "$(OSC):num_divisons:fbk")
+	field(LNK7, "$(OSC):num_samples:fbk")
 }

@@ -17,8 +17,7 @@ record(fanout, "$(OSC):CH$(channel):fanout") {
 	field(LNK3, "$(OSC):CH$(channel):coupling:fbk:get")
 	field(LNK4, "$(OSC):CH$(channel):range:fbk:get")
 	field(LNK5, "$(OSC):CH$(channel):bandwidth:fbk:get")
-	field(LNK6, "$(OSC):sample_interval") 
-	field(LNK7, "$(OSC):CH$(channel):ON:fbk:get")
+	field(LNK6, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ao, "$(OSC):CH$(channel):ON:set") {
@@ -84,7 +83,7 @@ record(ai, "$(OSC):CH$(channel):coupling:fbk:get") {
 }
 
 record(mbbi, "$(OSC):CH$(channel):coupling:fbk") {
-	field(DTYP, "Soft Channel")
+	field(DTYP, "Raw Soft Channel")
 	field(DESC, "Actual coupling type set to channel $(channel)")
 
     field(ZRST, "AC")            field(ZRVL, "0")
