@@ -17,8 +17,8 @@ record(fanout, "$(OSC):CH$(channel):fanout") {
 	field(LNK3, "$(OSC):CH$(channel):coupling:fbk:get")
 	field(LNK4, "$(OSC):CH$(channel):range:fbk:get")
 	field(LNK5, "$(OSC):CH$(channel):bandwidth:fbk:get")
-	field(LNK6, "$(OSC):sample_interval") 
-	field(LNK7, "$(OSC):CH$(channel):ON:fbk:get")
+	field(LNK6, "$(OSC):CH$(channel):ON:fbk:get")
+	field(LNK7, "$(OSC):timebase:fbk:fanout")
 }
 
 record(ao, "$(OSC):CH$(channel):ON:set") {
@@ -84,7 +84,7 @@ record(ai, "$(OSC):CH$(channel):coupling:fbk:get") {
 }
 
 record(mbbi, "$(OSC):CH$(channel):coupling:fbk") {
-	field(DTYP, "Soft Channel")
+	field(DTYP, "Raw Soft Channel")
 	field(DESC, "Actual coupling type set to channel $(channel)")
 
     field(ZRST, "AC")            field(ZRVL, "0")
@@ -217,6 +217,7 @@ record(mbbi, "$(OSC):CH$(channel):bandwidth:fbk") {
 record(ao, "$(OSC):CH$(channel):analog_offset") {
 	field(DTYP, "Picoscope")
 	field(DESC, "Voltage added to input channel.")
+	field(EGU, "Volts")
 	field(VAL, "0.0")
 	field(OUT, "@L:set_analog_offset")
 	field(FLNK, "$(OSC):CH$(channel):analog:fanout")
@@ -230,6 +231,7 @@ record(fanout, "$(OSC):CH$(channel):analog:fanout") {
 record(ai, "$(OSC):CH$(channel):analog_offset:fbk") {
 	field(DTYP, "Picoscope")
 	field(DESC, "Actual voltage added to input channel.")
+	field(EGU, "Volts")
 	field(INP, "@L:get_analog_offset")
 }
 
@@ -241,12 +243,14 @@ record(fanout, "$(OSC):CH$(channel):analog_offset_limits:fanout") {
 record(ai, "$(OSC):CH$(channel):analog_offset:max"){ 
 	field(DTYP, "Picoscope")
 	field(DESC, "Max analog offset voltage allowed.")
+	field(EGU, "Volts")
 	field(INP, "@L:get_max_analog_offset")
 }
 
 record(ai, "$(OSC):CH$(channel):analog_offset:min"){ 
 	field(DTYP, "Picoscope")
 	field(DESC, "Min analog offset voltage allowed.")
+	field(EGU, "Volts")
 	field(INP, "@L:get_min_analog_offset")
 }
 

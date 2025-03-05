@@ -35,7 +35,6 @@ enum ioType
 	GET_RESOLUTION,
 	SET_NUM_SAMPLES,
 	GET_NUM_SAMPLES,
-	GET_TIMEBASE,
 	SET_DOWN_SAMPLE_RATIO,
 	GET_DOWN_SAMPLE_RATIO,
 	SET_DOWN_SAMPLE_RATIO_MODE,
@@ -59,10 +58,18 @@ enum ioType
 	START_RETRIEVE_WAVEFORM,
 	STOP_RETRIEVE_WAVEFORM,
 	UPDATE_WAVEFORM,
-	SET_SAMPLE_INTERVAL, 
-	GET_SAMPLE_INTERVAL,
 	DEVICE_TO_OPEN,
-	SET_TRIGGER_DIRECTION
+	SET_TRIGGER_DIRECTION, 
+	GET_SAMPLE_INTERVAL,
+	SET_TIME_PER_DIVISION_UNIT, 
+	GET_TIME_PER_DIVISION_UNIT, 
+	SET_TIME_PER_DIVISION, 
+	GET_TIME_PER_DIVISION, 
+	SET_NUM_DIVISIONS,
+	GET_NUM_DIVISIONS, 
+	GET_SAMPLE_RATE, 
+	GET_TIMEBASE,
+
 	};
 
 enum ioFlag
@@ -107,10 +114,17 @@ static struct aioType
 		{"start_retrieve_waveform", isInput, START_RETRIEVE_WAVEFORM, "" },
 		{"stop_retrieve_waveform", isInput, STOP_RETRIEVE_WAVEFORM, "" },
 		{"update_waveform", isInput, UPDATE_WAVEFORM, "" },
-		{"set_sample_interval", isOutput, SET_SAMPLE_INTERVAL, "" },
-		{"get_sample_interval", isInput, GET_SAMPLE_INTERVAL, "" },
 		{"device_to_open", isOutput, DEVICE_TO_OPEN, ""},
-		{"set_trigger_direction", isOutput, SET_TRIGGER_DIRECTION, ""}
+		{"set_trigger_direction", isOutput, SET_TRIGGER_DIRECTION, ""}, 
+		{"get_sample_interval", isInput, GET_SAMPLE_INTERVAL, "" },
+		{"get_sample_rate", isInput, GET_SAMPLE_RATE, ""},
+		{"set_time_per_division_unit", isOutput, SET_TIME_PER_DIVISION_UNIT, ""},
+		{"get_time_per_division_unit", isInput, GET_TIME_PER_DIVISION_UNIT, ""},
+		{"set_time_per_division", isOutput, SET_TIME_PER_DIVISION, ""},
+		{"get_time_per_division", isInput, GET_TIME_PER_DIVISION, ""},
+		{"set_num_divisions", isOutput, SET_NUM_DIVISIONS, ""},
+		{"get_num_divisions", isInput, GET_NUM_DIVISIONS, ""},
+
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -155,9 +169,6 @@ struct SampleConfigs* sample_configurations = NULL; // Configurations for data c
 char* record_name; 
 int channel_index; 
 
-double max_analog_offset; 
-double min_analog_offset; 
-
 /****************************************************************************************
  * AI Record
  ****************************************************************************************/
@@ -196,7 +207,7 @@ int16_t resolution;
 
 static long
 init_record_ai (struct aiRecord *pai)
-{
+{	
     struct instio  *pinst;
 	struct PicoscopeData *vdp;
 
@@ -233,7 +244,12 @@ init_record_ai (struct aiRecord *pai)
 
 static long
 read_ai (struct aiRecord *pai){
+
+	double max_analog_offset; 
+	double min_analog_offset; 
+
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pai->dpvt;
+
 	switch (vdp->ioType)
 	{
 		// Device configuration fbk
@@ -245,9 +261,7 @@ read_ai (struct aiRecord *pai){
 		case GET_RESOLUTION: 
 			result = get_resolution(&resolution);
 
-			int16_t pv_enum_val = translate_resolution(resolution);
-
-			pai->val = pv_enum_val;  
+			pai->val = resolution;  
 			break; 
 
 		// Channel configuration fbk
@@ -263,13 +277,8 @@ read_ai (struct aiRecord *pai){
 		case GET_COUPLING: 
 			record_name = pai->name; 
 			channel_index = find_channel_index_from_record(record_name, channels); 
-			int coupling = channels[channel_index]->coupling;
-			if (coupling == 50)
-			{
-				coupling = 2;
-			}
-			
-			pai->val = coupling; 
+
+			pai->val = channels[channel_index]->coupling;
 			break; 
 
 		case GET_RANGE: 
@@ -321,19 +330,36 @@ read_ai (struct aiRecord *pai){
 			break; 
 
 		case GET_DOWN_SAMPLE_RATIO_MODE: 
-			pai->val = translate_down_sample_ratio_mode(sample_configurations->down_sample_ratio_mode);
+			pai->val = sample_configurations->down_sample_ratio_mode; 
+			
 			break;
 
 		case GET_TRIGGER_POSITION_RATIO: 
 			pai->val = sample_configurations->trigger_position_ratio;
 			break; 
+
+		case GET_NUM_DIVISIONS: 
+			pai->val = sample_configurations->timebase_configs.timebase;
+			break; 
+		
+		case GET_TIME_PER_DIVISION: 
+			pai->val = sample_configurations->timebase_configs.time_per_division; 
+			break; 
+		
+		case GET_TIME_PER_DIVISION_UNIT: 
+			pai->val = sample_configurations->timebase_configs.time_per_division_unit; 
+			break;
+		
+		case GET_SAMPLE_RATE: 
+			pai->val = sample_configurations->timebase_configs.sample_rate; 
+			break;
 			
 		case GET_TIMEBASE: 
-			pai->val = sample_configurations->timebase; 
+			pai->val = sample_configurations->timebase_configs.timebase; 
 			break; 
 		
 		case GET_SAMPLE_INTERVAL: 
-			pai->val = sample_configurations->time_interval_secs; 
+			pai->val = sample_configurations->timebase_configs.sample_interval_secs; 
 			break; 
 
 		default:
@@ -343,69 +369,6 @@ read_ai (struct aiRecord *pai){
 	return 2;
 
 }	
-
-#define PICO_DR_8BIT   0
-#define PICO_DR_10BIT  1
-#define PICO_DR_12BIT  2
-
-/**
- * Match device resolution values from the Picoscope API to the corresponding 
- * value in the EPICS mbbo record $(OSC):resolution:fbk. 
- * 
- * @param mode The mode value as defined by the Picoscope API.
- * 
- * @return The value of the mode in the mbbi fbk PV, or -1 if mode does not exist.
- */
-int16_t translate_resolution(int mode){
-	if (mode == 0) {
-		return PICO_DR_8BIT;
-	}
-	if (mode == 10){
-		return PICO_DR_10BIT;
-	}	
-	if (mode == 1) {
-		return PICO_DR_12BIT;
-	}	
-	return -1;
-}
-
-
-#define AGGREGATE      0
-#define DECIMATE       1
-#define AVERAGE        2
-#define TRIG_DATA      3
-#define TRIGGER        4
-#define RAW            5
-
-/**
- * Match downsample ratio mode values from the Picoscope API to the corresponding 
- * value in the EPICS mbbo record $(OSC):down_sample_ratio_mode:fbk. 
- * 
- * @param mode The mode value as defined by the Picoscope API
- * 
- * @return The value of the mode in the mbbi fbk PV, or -1 if mode does not exist.
- */
-int16_t translate_down_sample_ratio_mode(int mode){
-	if (mode == 1) {
-		return AGGREGATE;
-	}
-	if (mode == 2){
-		return DECIMATE;
-	}	
-	if (mode == 4) {
-		return AVERAGE;
-	}	
-	if (mode & 268435456) {
-		return TRIG_DATA;
-	}
-	if (mode & 1073741824) {
-		return TRIGGER;
-	}	
-	if (mode == -2147483648) {
-		return RAW;
-	}
-	return -1;
-}
 
 /****************************************************************************************
  * AO Record
@@ -523,6 +486,23 @@ init_record_ao (struct aoRecord *pao)
 			sample_configurations->trigger_position_ratio = (float)pao->val;
 			break;
 
+		case SET_NUM_DIVISIONS: 
+			sample_configurations->timebase_configs.num_divisions = (int) pao->val; 
+
+			// Initialize timebase feedback only information to 0. 
+			sample_configurations->timebase_configs.timebase = 0; 
+			sample_configurations->timebase_configs.sample_interval_secs = 0; 
+			sample_configurations->timebase_configs.sample_rate = 0; 
+			break; 
+
+		case SET_TIME_PER_DIVISION_UNIT: 
+			sample_configurations->timebase_configs.time_per_division_unit = (int) pao->val; 
+			break;
+
+		case SET_TIME_PER_DIVISION: 
+			sample_configurations->timebase_configs.time_per_division = (int) pao->val; 
+			break; 
+
 		case OPEN_PICOSCOPE: 
 			// On initialization open picoscope with default resolution. 
 			result = open_picoscope(resolution, device_serial_number);
@@ -602,13 +582,17 @@ init_record_ao (struct aoRecord *pao)
 static long
 write_ao (struct aoRecord *pao)
 {	
+	uint32_t timebase = 0; 
+	double sample_interval = 0; 
+	double sample_rate = 0; 
+
 	struct PicoscopeData *vdp;
 	int returnState = 0;
 
     vdp = (struct PicoscopeData *)pao->dpvt;
 
 	switch (vdp->ioType)
-    {	
+    {		
 		case SET_RESOLUTION: 
 			resolution = (int)pao->val; 
 			result = set_device_resolution(resolution); 
@@ -617,24 +601,94 @@ write_ao (struct aoRecord *pao)
 			}
 			break;
 		
-		case SET_SAMPLE_INTERVAL: 
-			uint32_t timebase; 
-			double available_time_interval; 
-			double requested_time_interval = pao->val;
+		case SET_TIME_PER_DIVISION_UNIT: 
+			int16_t previous_time_per_division_unit = sample_configurations->timebase_configs.time_per_division_unit;
+			sample_configurations->timebase_configs.time_per_division_unit = (int) pao->val; 
 
-			result = set_sample_interval(requested_time_interval, &timebase, &available_time_interval);
+			result = get_valid_timebase_configs(
+				sample_configurations->timebase_configs, 
+				sample_configurations->num_samples,
+				&sample_interval, 
+				&timebase, 
+				&sample_rate
+			); 
+
 			if (result != 0) {
-				printf("Error setting picoscope time interval.\n");
-				break;
+				sample_configurations->timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
+				break; 
 			}
-			// Add returned values to sample configurations for next waveform acquired. 
-			sample_configurations->time_interval_secs = available_time_interval; 
-			sample_configurations->timebase = timebase;
-			break;
-
-		case SET_NUM_SAMPLES: 
-			sample_configurations->num_samples = (int)pao->val; 
+			
+			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
+			sample_configurations->timebase_configs.timebase = timebase;
+			sample_configurations->timebase_configs.sample_rate = sample_rate;  
 			break; 
+
+		case SET_TIME_PER_DIVISION: 
+			double previous_time_per_division = sample_configurations->timebase_configs.time_per_division; 
+			sample_configurations->timebase_configs.time_per_division = (int) pao->val; 
+
+			result = get_valid_timebase_configs(
+				sample_configurations->timebase_configs, 
+				sample_configurations->num_samples,
+				&sample_interval, 
+				&timebase, 
+				&sample_rate
+			); 
+			
+			if (result != 0) {
+				sample_configurations->timebase_configs.time_per_division = previous_time_per_division; 
+				break; 
+			}
+
+			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
+			sample_configurations->timebase_configs.timebase = timebase;
+			sample_configurations->timebase_configs.sample_rate = sample_rate;  
+			break; 
+
+		case SET_NUM_DIVISIONS: 
+			int16_t previous_num_divisions = sample_configurations->timebase_configs.num_divisions; 
+			sample_configurations->timebase_configs.num_divisions = (int) pao->val; 
+
+			result = get_valid_timebase_configs(
+				sample_configurations->timebase_configs, 
+				sample_configurations->num_samples,
+				&sample_interval, 
+				&timebase, 
+				&sample_rate
+			); 
+
+			if (result != 0) {
+				sample_configurations->timebase_configs.num_divisions = previous_num_divisions; 
+				break; 
+			}
+
+			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
+			sample_configurations->timebase_configs.timebase = timebase;
+			sample_configurations->timebase_configs.sample_rate = sample_rate;  
+			break; 
+
+		case SET_NUM_SAMPLES:
+
+			uint64_t previous_num_samples = sample_configurations->num_samples; 
+			sample_configurations->num_samples = (int) pao->val; 
+ 
+ 			result = get_valid_timebase_configs(
+				sample_configurations->timebase_configs, 
+				sample_configurations->num_samples,
+				&sample_interval, 
+				&timebase, 
+				&sample_rate
+			); 
+
+			if (result != 0) {
+				sample_configurations->num_samples = previous_num_samples; 
+				break; 
+			}
+
+			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
+			sample_configurations->timebase_configs.timebase = timebase;
+			sample_configurations->timebase_configs.sample_rate = sample_rate;  
+			break;  
 			
 		case SET_DOWN_SAMPLE_RATIO: 
 			sample_configurations->down_sample_ratio = (int)pao->val; 
@@ -772,6 +826,18 @@ write_ao (struct aoRecord *pao)
 					pao->val = 0; 
 				}
 			}	
+
+			// Update timebase configs that are affected by the number of channels on. 
+			result = get_valid_timebase_configs(
+				sample_configurations->timebase_configs, 
+				sample_configurations->num_samples,
+				&sample_interval, 
+				&timebase, 
+				&sample_rate
+			); 
+			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
+			sample_configurations->timebase_configs.timebase = timebase;
+			sample_configurations->timebase_configs.sample_rate = sample_rate;  
 			break;
 
 		case SET_TRIGGER_DIRECTION:

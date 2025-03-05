@@ -393,7 +393,9 @@ int16_t get_analog_offset_limits(int16_t range, int16_t coupling, double* max_an
  * 
  * @return 0 if the call is successful, or -1 if an error occurs. 
  */
-int16_t set_sample_interval(double requested_time_interval, uint32_t* timebase, double* available_time_interval){
+int16_t validate_sample_interval(double requested_time_interval, uint32_t* timebase, double* available_time_interval){
+
+    uint32_t enabledChannels = *(uint32_t*)&channel_status;
 
     int16_t resolution = 0; 
     status = get_resolution(&resolution);
@@ -401,23 +403,100 @@ int16_t set_sample_interval(double requested_time_interval, uint32_t* timebase, 
     uint32_t timebase_return; 
     double time_interval_available;
 
-    uint32_t enabledChannels = *(uint32_t*)&channel_status;
+    status = ps6000aNearestSampleIntervalStateless(handle, enabledChannels, requested_time_interval, resolution, &timebase_return, &time_interval_available); 
     
-    // The following API call will fail if no channels are enabled, so this avoids making the call in that state. 
-    if (enabledChannels != 0) {
-        status = ps6000aNearestSampleIntervalStateless(handle, enabledChannels, requested_time_interval, resolution, &timebase_return, &time_interval_available); 
-        if (status != PICO_OK)
-        {
-            log_error("ps6000aNearestSampleIntervalStateless", status, __FILE__, __LINE__);
-            return -1;
-        }
-
-        *timebase = timebase_return;
-        *available_time_interval = time_interval_available; 
+    if (status == PICO_NO_CHANNELS_OR_PORTS_ENABLED) {
+        log_error("ps6000aNearestSampleIntervalStateless. No channels enabled.", status, __FILE__, __LINE__);
+        return -1;
     }
+    if (status != PICO_OK)
+    {
+        log_error("ps6000aNearestSampleIntervalStateless", status, __FILE__, __LINE__);
+        return -1;
+    }
+
+    *timebase = timebase_return;
+    *available_time_interval = time_interval_available; 
+
 
     return 0; 
 } 
+
+
+/** 
+ * Converts a time in some unit to seconds. 
+ * 
+ * @params time An amount of time. 
+ *         unit The unit used for time.  
+ * 
+ * @returns The time converted to seconds, or -1 if conversion failed. 
+*/
+double convert_to_seconds(double time, enum UnitPerDiv unit) {
+    switch (unit)
+    {
+        case ns_per_div:
+            return time / 1000000000; 
+
+        case us_per_div:
+            return time / 1000000; 
+
+        case ms_per_div:
+            
+            return time / 1000; 
+
+        case s_per_div:
+            return time; 
+
+        default:
+            return -1; 
+    }
+}
+
+double calculate_samples_per_division(uint64_t num_samples, int16_t num_division) {
+    return (double) num_samples / num_division;       
+}
+
+double calculate_sample_interval(double secs_per_div, double samples_per_div){ 
+    return secs_per_div / samples_per_div;    
+}
+
+double calculate_sample_rate(double secs_per_div, double samples_per_div) {
+    return samples_per_div / secs_per_div; 
+}
+
+/**
+ *  Gets the valid timebase configs given the requested time per division, number of divisions, and number of samples. 
+ * 
+ * @param timebase_configs TimebaseConfigs structure containing timebase settings. 
+ *        num_samples The number of requested samples.  
+ *        sample_interval On exit, the interval at which samples will be taken in seconds. 
+ *        timebase On exit, the timebase for the requested time per division. 
+ *        sample_rate On exit, the sample rate for the request time per division. 
+ * 
+ * @return 0 if successful, otherwise -1. 
+ */
+int16_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uint64_t num_samples, double* sample_interval, uint32_t* timebase, double* sample_rate) { 
+
+    double secs_per_div = convert_to_seconds(timebase_configs.time_per_division, timebase_configs.time_per_division_unit); 
+    double samples_per_division = calculate_samples_per_division(num_samples, timebase_configs.num_divisions);
+
+    double requested_sample_interval = calculate_sample_interval(secs_per_div, samples_per_division); 
+
+    *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
+
+	uint32_t available_timebase; 
+	double available_sample_interval; 
+
+	int16_t result = validate_sample_interval(requested_sample_interval, &available_timebase, &available_sample_interval);
+	if (result != 0) {
+        return -1; 
+	} 
+    *sample_interval = available_sample_interval; 
+    *timebase = available_timebase;
+
+    return 0;
+}
+
 
 typedef struct {
     int dataReady; // Flag to indicate data is ready
@@ -679,7 +758,7 @@ PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* tim
         handle,
         pre_trigger_samples,    
         post_trigger_samples,
-        sample_config->timebase,
+        sample_config->timebase_configs.timebase,
         time_indisposed_ms,
         0,
         ps6000aBlockReadyCallback, 
