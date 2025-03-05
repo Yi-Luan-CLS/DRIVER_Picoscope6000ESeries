@@ -453,29 +453,29 @@ double convert_to_seconds(double time, enum UnitPerDiv unit) {
 }
 
 double calculate_samples_per_division(uint64_t num_samples, int16_t num_division) {
-    printf("samples per division = %ld / %d \n", num_samples, num_division); 
-
-    return (double) num_samples / num_division;   
-    
+    return (double) num_samples / num_division;       
 }
 
 double calculate_sample_interval(double secs_per_div, double samples_per_div){ 
-    printf("sample interval = %f / %f \n", secs_per_div, samples_per_div); 
-
     return secs_per_div / samples_per_div;    
-    
 }
 
 double calculate_sample_rate(double secs_per_div, double samples_per_div) {
-    printf("sample rate = %f / %f \n", samples_per_div, secs_per_div); 
-    
     return samples_per_div / secs_per_div; 
-
 }
 
-
-// return available_sample_interval, timebase, sample_rate 
-int16_t set_up_timebase(struct TimebaseConfigs timebase_configs, uint64_t num_samples, double* sample_interval, uint32_t* timebase, double* sample_rate) { 
+/**
+ *  Gets the valid timebase configs given the requested time per division, number of divisions, and number of samples. 
+ * 
+ * @param timebase_configs TimebaseConfigs structure containing timebase settings. 
+ *        num_samples The number of requested samples.  
+ *        sample_interval On exit, the interval at which samples will be taken in seconds. 
+ *        timebase On exit, the timebase for the requested time per division. 
+ *        sample_rate On exit, the sample rate for the request time per division. 
+ * 
+ * @return 0 if successful, otherwise -1. 
+ */
+int16_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uint64_t num_samples, double* sample_interval, uint32_t* timebase, double* sample_rate) { 
 
     double secs_per_div = convert_to_seconds(timebase_configs.time_per_division, timebase_configs.time_per_division_unit); 
     double samples_per_division = calculate_samples_per_division(num_samples, timebase_configs.num_divisions);

@@ -23,7 +23,7 @@ int16_t set_channel_off(int channel);
 int16_t get_channel_status(int16_t channel);
 
 
-int16_t set_up_timebase(
+int16_t get_valid_timebase_configs(
     struct TimebaseConfigs timebase_configs, 
     uint64_t num_samples,   
     double* sample_interval,

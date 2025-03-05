@@ -605,7 +605,7 @@ write_ao (struct aoRecord *pao)
 			int16_t previous_time_per_division_unit = sample_configurations->timebase_configs.time_per_division_unit;
 			sample_configurations->timebase_configs.time_per_division_unit = (int) pao->val; 
 
-			result = set_up_timebase(
+			result = get_valid_timebase_configs(
 				sample_configurations->timebase_configs, 
 				sample_configurations->num_samples,
 				&sample_interval, 
@@ -627,7 +627,7 @@ write_ao (struct aoRecord *pao)
 			double previous_time_per_division = sample_configurations->timebase_configs.time_per_division; 
 			sample_configurations->timebase_configs.time_per_division = (int) pao->val; 
 
-			result = set_up_timebase(
+			result = get_valid_timebase_configs(
 				sample_configurations->timebase_configs, 
 				sample_configurations->num_samples,
 				&sample_interval, 
@@ -649,7 +649,7 @@ write_ao (struct aoRecord *pao)
 			int16_t previous_num_divisions = sample_configurations->timebase_configs.num_divisions; 
 			sample_configurations->timebase_configs.num_divisions = (int) pao->val; 
 
-			result = set_up_timebase(
+			result = get_valid_timebase_configs(
 				sample_configurations->timebase_configs, 
 				sample_configurations->num_samples,
 				&sample_interval, 
@@ -672,7 +672,7 @@ write_ao (struct aoRecord *pao)
 			uint64_t previous_num_samples = sample_configurations->num_samples; 
 			sample_configurations->num_samples = (int) pao->val; 
  
- 			result = set_up_timebase(
+ 			result = get_valid_timebase_configs(
 				sample_configurations->timebase_configs, 
 				sample_configurations->num_samples,
 				&sample_interval, 
@@ -828,7 +828,7 @@ write_ao (struct aoRecord *pao)
 			}	
 
 			// Update timebase configs that are affected by the number of channels on. 
-			result = set_up_timebase(
+			result = get_valid_timebase_configs(
 				sample_configurations->timebase_configs, 
 				sample_configurations->num_samples,
 				&sample_interval, 
