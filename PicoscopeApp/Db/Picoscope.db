@@ -191,6 +191,7 @@ record(ao, "$(OSC):trigger_position_ratio") {
     field(DESC, "The position of the trigger point.")
     field(DTYP, "Picoscope")
     field(VAL, "0.5")
+	field(EGU, "%")
 	field(DRVH, "1")
 	field(DRVL, "0") 
     field(OUT, "@L:set_trigger_position_ratio")
@@ -199,6 +200,7 @@ record(ao, "$(OSC):trigger_position_ratio") {
 record(ai, "$(OSC):trigger_position_ratio:fbk"){ 
     field(DESC, "Actual position of the trigger point.")
     field(DTYP, "Picoscope")
+	field(EGU, "%")
     field(INP, "@L:get_trigger_position_ratio")
 }
 
