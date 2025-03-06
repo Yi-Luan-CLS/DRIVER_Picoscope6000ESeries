@@ -69,7 +69,6 @@ enum ioType
 	GET_NUM_DIVISIONS, 
 	GET_SAMPLE_RATE, 
 	GET_TIMEBASE,
-
 	};
 
 enum ioFlag
@@ -339,7 +338,7 @@ read_ai (struct aiRecord *pai){
 			break; 
 
 		case GET_NUM_DIVISIONS: 
-			pai->val = sample_configurations->timebase_configs.timebase;
+			pai->val = sample_configurations->timebase_configs.num_divisions;
 			break; 
 		
 		case GET_TIME_PER_DIVISION: 
@@ -534,7 +533,9 @@ init_record_ao (struct aoRecord *pao)
 			double max_analog_offset = 0; 
 			double min_analog_offset = 0; 
 			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
-
+			
+			pao->hopr = max_analog_offset;
+			pao->lopr = min_analog_offset; 
 			// If PV val is outside of the analog offset limits, use the limit instead. 
 			if (pao->val > max_analog_offset) {
 				channels[channel_index]->analog_offset = max_analog_offset;
@@ -764,6 +765,9 @@ write_ao (struct aoRecord *pao)
 			double max_analog_offset = 0; 
 			double min_analog_offset = 0; 
 			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
+			
+			pao->hopr = max_analog_offset;
+			pao->lopr = min_analog_offset; 
 			
 			// If PV val is outside of the analog offset limits, use the limit instead. 
 			if (pao->val > max_analog_offset) {

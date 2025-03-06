@@ -314,7 +314,7 @@ record(ao, "$(OSC):num_divisions"){
 	field(FLNK, "$(OSC):timebase:fbk:fanout")
 }
 
-record(ai, "$(OSC):num_divisons:fbk"){
+record(ai, "$(OSC):num_divisions:fbk"){
 	field(DTYP, "Picoscope")
 	field(DESC, "Number of divisions.")
 	field(INP, "@L:get_num_divisions")
@@ -346,7 +346,7 @@ record(fanout, "$(OSC):timebase:fbk:fanout"){
 	field(LNK3, "$(OSC):sample_rate:fbk")
 	field(LNK4, "$(OSC):time_per_division:unit:fbk:get")
 	field(LNK5, "$(OSC):time_per_division:fbk:get")
-	field(LNK6, "$(OSC):num_divisons:fbk")
+	field(LNK6, "$(OSC):num_divisions:fbk")
 	field(LNK7, "$(OSC):num_samples:fbk")
 }
 
