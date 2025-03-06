@@ -17,8 +17,7 @@ record(fanout, "$(OSC):CH$(channel):fanout") {
 	field(LNK3, "$(OSC):CH$(channel):coupling:fbk:get")
 	field(LNK4, "$(OSC):CH$(channel):range:fbk:get")
 	field(LNK5, "$(OSC):CH$(channel):bandwidth:fbk:get")
-	field(LNK6, "$(OSC):CH$(channel):ON:fbk:get")
-	field(LNK7, "$(OSC):timebase:fbk:fanout")
+	field(LNK6, "$(OSC):timebase:fbk:fanout")
 }
 
 record(ao, "$(OSC):CH$(channel):ON:set") {
@@ -29,6 +28,7 @@ record(ao, "$(OSC):CH$(channel):ON:set") {
 	field(OMSL, "closed_loop")
 	field(VAL, "0")
 	field(OUT, "@L:set_channel_on")
+	field(FLNK, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ai, "$(OSC):CH$(channel):ON:fbk:get"){
@@ -57,14 +57,14 @@ record(mbbo, "$(OSC):CH$(channel):coupling") {
     field(TWST, "DC_50_OHM")     field(TWVL, "50")
     
     field(VAL, "1")
+    field(FLNK, "$(OSC):CH$(channel):coupling")	
+   
     field(FLNK, "$(OSC):CH$(channel):coupling:fanout")	
 }
 
 record(fanout, "$(OSC):CH$(channel):coupling:fanout") {
-	field(LNK1, "$(OSC):CH$(channel):coupling:set.PROC")	
-	field(LNK2, "$(OSC):CH$(channel):analog_offset_limits:fanout")
-	field(LNK3, "$(OSC):CH$(channel):coupling:fbk:get")
-	field(LNK4, "$(OSC):CH$(channel):ON:fbk:get")
+	field(LNK1, "$(OSC):CH$(channel):coupling:set")	
+	field(LNK2, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ao, "$(OSC):CH$(channel):coupling:set") {
@@ -75,6 +75,8 @@ record(ao, "$(OSC):CH$(channel):coupling:set") {
 	field(OMSL, "closed_loop")
 	field(VAL, "1")
 	field(OUT, "@L:set_coupling")
+	field(FLNK, "$(OSC):CH$(channel):coupling:fbk:get")
+
 }
 
 record(ai, "$(OSC):CH$(channel):coupling:fbk:get") {
@@ -111,11 +113,6 @@ record(mbbo, "$(OSC):CH$(channel):range") {
     field(EIST, "5V")    field(EIVL, "8")
     field(NIST, "10V")   field(NIVL, "9")
     field(TEST, "20V")   field(TEVL, "10")
-    field(ELST, "50V")   field(ELVL, "11")
-    field(TVST, "100V")  field(TVVL, "12")
-    field(TTST, "200V")  field(TTVL, "13")
-    field(FTST, "500V")  field(FTVL, "14")
-    field(FFST, "1KV")   field(FFVL, "15")
 
 	field(VAL, "0")
 	field(FLNK, "$(OSC):CH$(channel):range:fanout")	
@@ -123,9 +120,7 @@ record(mbbo, "$(OSC):CH$(channel):range") {
 
 record(fanout, "$(OSC):CH$(channel):range:fanout") {
 	field(LNK1, "$(OSC):CH$(channel):range:set.PROC")	
-	field(LNK2, "$(OSC):CH$(channel):analog_offset_limits:fanout")
-	field(LNK3, "$(OSC):CH$(channel):range:fbk:get" )
-	field(LNK4, "$(OSC):CH$(channel):ON:fbk:get")
+	field(LNK2, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
 record(ao, "$(OSC):CH$(channel):range:set") {
@@ -135,6 +130,7 @@ record(ao, "$(OSC):CH$(channel):range:set") {
 	field(OIF, "Full")
 	field(OMSL, "closed_loop")
 	field(OUT, "@L:set_range")
+	field(FLNK, "$(OSC):CH$(channel):range:fbk:get" )
 }
 
 record(ai, "$(OSC):CH$(channel):range:fbk:get") {
@@ -158,11 +154,6 @@ record(mbbi, "$(OSC):CH$(channel):range:fbk") {
     field(EIST, "5V")    field(EIVL, "8")
     field(NIST, "10V")   field(NIVL, "9")
     field(TEST, "20V")   field(TEVL, "10")
-    field(ELST, "50V")   field(ELVL, "11")
-    field(TVST, "100V")  field(TVVL, "12")
-    field(TTST, "200V")  field(TTVL, "13")
-    field(FTST, "500V")  field(FTVL, "14")
-    field(FFST, "1KV")   field(FFVL, "15")
 
 	field(SCAN, "Passive")
 	field(INP, "$(OSC):CH$(channel):range:fbk:get")
@@ -182,7 +173,6 @@ record(mbbo, "$(OSC):CH$(channel):bandwidth") {
 
 record(fanout, "$(OSC):CH$(channel):bandwidth:fanout") {
 	field(LNK1, "$(OSC):CH$(channel):bandwidth:set.PROC")	
-	field(LNK2, "$(OSC):CH$(channel):bandwidth:fbk:get")
 	field(LNK3, "$(OSC):CH$(channel):ON:fbk:get")
 }
 
@@ -194,6 +184,9 @@ record(ao, "$(OSC):CH$(channel):bandwidth:set") {
 	field(OMSL, "closed_loop")
 	field(VAL, "0")
 	field(OUT, "@L:set_bandwidth")
+
+	field(FLNK, "$(OSC):CH$(channel):bandwidth:fbk:get")
+
 }
 
 record(ai, "$(OSC):CH$(channel):bandwidth:fbk:get") {
@@ -220,12 +213,7 @@ record(ao, "$(OSC):CH$(channel):analog_offset") {
 	field(EGU, "Volts")
 	field(VAL, "0.0")
 	field(OUT, "@L:set_analog_offset")
-	field(FLNK, "$(OSC):CH$(channel):analog:fanout")
-}
-
-record(fanout, "$(OSC):CH$(channel):analog:fanout") {
-	field(LNK1,"$(OSC):CH$(channel):analog_offset:fbk")
-	field(LNK2, "$(OSC):CH$(channel):ON:fbk:get")
+	field(FLNK,"$(OSC):CH$(channel):analog_offset:fbk")
 }
 
 record(ai, "$(OSC):CH$(channel):analog_offset:fbk") {
@@ -233,25 +221,6 @@ record(ai, "$(OSC):CH$(channel):analog_offset:fbk") {
 	field(DESC, "Actual voltage added to input channel.")
 	field(EGU, "Volts")
 	field(INP, "@L:get_analog_offset")
-}
-
-record(fanout, "$(OSC):CH$(channel):analog_offset_limits:fanout") {
-	field(LNK1,"$(OSC):CH$(channel):analog_offset:max")
-	field(LNK2,"$(OSC):CH$(channel):analog_offset:min")
-}
-
-record(ai, "$(OSC):CH$(channel):analog_offset:max"){ 
-	field(DTYP, "Picoscope")
-	field(DESC, "Max analog offset voltage allowed.")
-	field(EGU, "Volts")
-	field(INP, "@L:get_max_analog_offset")
-}
-
-record(ai, "$(OSC):CH$(channel):analog_offset:min"){ 
-	field(DTYP, "Picoscope")
-	field(DESC, "Min analog offset voltage allowed.")
-	field(EGU, "Volts")
-	field(INP, "@L:get_min_analog_offset")
 }
 
 record(ai, "$(OSC):CH$(channel):waveform:scan"){
@@ -264,7 +233,7 @@ record(waveform, "$(OSC):CH$(channel):waveform"){
     field(DTYP, "Picoscope")
 	field(SCAN,"Passive")
 #	field(NELM, "1073741696")
-	field(NELM, "1000")
+	field(NELM, "1000000")
 	field(FTVL, "SHORT")
     field(INP, "@L:update_waveform")
 }
