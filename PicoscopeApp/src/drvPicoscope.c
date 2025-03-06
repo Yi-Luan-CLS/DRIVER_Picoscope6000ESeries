@@ -511,6 +511,9 @@ PICO_STATUS set_trigger_conditions(struct TriggerConfigs* trigger_config) {
 PICO_STATUS set_trigger_directions(struct TriggerConfigs* trigger_config) {
     int16_t nDirections = 1;    // Only support one now 
     PICO_STATUS status = 0;
+    if(trigger_config->thresholdDirection == 10){
+        trigger_config->thresholdDirection = PICO_NEGATIVE_RUNT;
+    }
     PICO_DIRECTION direction = {
         .channel = trigger_config->channel,
         .direction = trigger_config->thresholdDirection,

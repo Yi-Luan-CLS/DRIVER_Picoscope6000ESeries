@@ -259,35 +259,9 @@ record(ai, "$(OSC):CH$(channel):waveform:scan"){
 record(waveform, "$(OSC):CH$(channel):waveform"){
     field(DTYP, "Picoscope")
 	field(SCAN,"Passive")
+	field(MPST, "1")
 #	field(NELM, "1073741696")
 	field(NELM, "1000")
 	field(FTVL, "SHORT")
     field(INP, "@L:update_waveform")
-}
-
-record(mbbo, "$(OSC):CH$(channel):trigger:direction") {
-    field(DTYP, "Soft Channel")
-    field(DESC, "Set Trigger Direction.")
-
-    field(ZRST, "ABOVE")			 field(ZRVL, "0")
-	field(ONST, "BELOW")			 field(ONVL, "1")
-	field(TWST, "RISING")			 field(TWST, "2")		
-	field(THST, "FALLING")			 field(THST, "3")		
-	field(FRST, "RISING_OR_FALLING") field(FRST, "4")		
-	field(FVST, "ABOVE_LOWER")		 field(FVST, "5")		
-	field(SXST, "BELOW_LOWER")		 field(SXST, "6")		
-	field(SVST, "RISING_LOWER")		 field(SVST, "7")		
-	field(EIST, "FALLING_LOWER")	 field(EIST, "8")
-    field(VAL, "2")
-	field(FLNK, "$(OSC):CH$(channel):trigger:direction:set.PROC")	
-}
-
-record(ao, "$(OSC):CH$(channel):trigger:direction:set") {
-	field(DTYP, "Picoscope")
-	field(DOL, "$(OSC):CH$(channel):trigger:direction.RVAL")
-	field(SCAN, "Passive")
-	field(OIF, "Full")
-	field(OMSL, "closed_loop")
-	field(VAL, "2")
-	field(OUT, "@L:set_trigger_direction")
 }

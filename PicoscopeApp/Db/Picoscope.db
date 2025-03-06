@@ -234,12 +234,14 @@ record(bo, "$(OSC):waveform:start") {
 }
 
 record(fanout, "$(OSC):waveform:start:fanout") {
-	field(LNK1, "$(OSC):waveform:start:calcout.PROC")	
+	field(LNK1, "$(OSC):trigger:channel:fbk:get")
 	field(LNK2, "$(OSC):num_samples:fbk")
 	field(LNK3, "$(OSC):down_sample_ratio:fbk")
 	field(LNK4, "$(OSC):down_sample_ratio_mode:fbk:get")
 	field(LNK5, "$(OSC):trigger_position_ratio:fbk")
 	field(LNK6, "$(OSC):timebase:fbk")
+	field(LNK7, "$(OSC):trigger:direction:fbk:get")
+	field(LNK8, "$(OSC):waveform:start:calcout.PROC")
 }
 
 record(calcout, "$(OSC):waveform:start:calcout") {
@@ -278,4 +280,112 @@ record(waveform, "$(OSC):waveform:stop:call"){
 	field(SCAN, "Passive")
 	field(FTVL, "SHORT")
     field(INP, "@L:stop_retrieve_waveform")
+}
+
+record(mbbo, "$(OSC):trigger:channel") {
+    field(DTYP, "Soft Channel")
+    field(DESC, "Set Trigger Source Channel.")
+
+    field(ZRST, "CHANNEL_A")			 field(ZRVL, "0")
+	field(ONST, "CHANNEL_B")			 field(ONVL, "1")
+	field(TWST, "CHANNEL_C")			 field(TWVL, "2")		
+	field(THST, "CHANNEL_D")			 field(THVL, "3")		
+	field(FRST, "TRIGGER_AUX") 			 field(FRVL, "1001")		
+    field(VAL, "4")
+	field(FLNK, "$(OSC):trigger:channel:set.PROC")	
+}
+
+record(ao, "$(OSC):trigger:channel:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):trigger:channel.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(VAL, "1001")
+	field(OUT, "@L:set_trigger_channel")
+}
+
+record(ai, "$(OSC):trigger:channel:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_trigger_channel")
+	field(FLNK, "$(OSC):trigger:channel:fbk")
+}
+
+record(mbbi, "$(OSC):trigger:channel:fbk") {
+	field(DTYP, "Soft Channel")
+    field(DESC, "Get Trigger Source Channel.")
+	
+    field(ZRST, "CHANNEL_A")			 field(ZRVL, "0")
+	field(ONST, "CHANNEL_B")			 field(ONVL, "1")
+	field(TWST, "CHANNEL_C")			 field(TWVL, "2")		
+	field(THST, "CHANNEL_D")			 field(THVL, "3")		
+	field(FRST, "TRIGGER_AUX") 			 field(FRVL, "1001")		
+	
+	field(SCAN, "Passive")
+	field(INP, "$(OSC):trigger:channel:fbk:get")
+}
+
+record(mbbo, "$(OSC):trigger:direction") {
+    field(DTYP, "Soft Channel")
+    field(DESC, "Set Trigger Direction.")
+    field(ZRST, "ABOVE")			 field(ZRVL, "0")
+	field(ONST, "BELOW")			 field(ONVL, "1")
+	field(TWST, "RISING")			 field(TWVL, "2")		
+	field(THST, "FALLING")			 field(THVL, "3")		
+	field(FRST, "RISING_FALLING") field(FRVL, "4")		
+	field(FVST, "ABOVE_LOWER")		 field(FVVL, "5")		
+	field(SXST, "BELOW_LOWER")		 field(SXVL, "6")		
+	field(SVST, "RISING_LOWER")		 field(SVVL, "7")		
+	field(EIST, "FALLING_LOWER")	 field(EIVL, "8")
+	field(NIST, "WINDOW_POSITIVE_RUNT")	 field(NIVL, "9")
+	field(TEST, "WINDOW_NEGATIVE_RUNT")	 field(TEVL, "10")
+	field(ELST, "WINDOW_INSIDE")	 field(ELVL, "0")
+	field(TVST, "WINDOW_OUTSIDE")	 field(TVVL, "1")
+	field(TTST, "WINDOW_ENTER")	 field(TTVL, "2")
+	field(FTST, "WINDOW_EXIT")	 field(FTVL, "3")
+	field(FFST, "WINDOW_ENTER_EXIT")	 field(FFVL, "4")
+
+    field(VAL, "2")
+	field(FLNK, "$(OSC):trigger:direction:set.PROC")	
+}
+
+record(ao, "$(OSC):trigger:direction:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):trigger:direction.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(VAL, "2")
+	field(OUT, "@L:set_trigger_direction")
+}
+
+record(ai, "$(OSC):trigger:direction:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_trigger_direction")
+	field(FLNK, "$(OSC):trigger:direction:fbk")
+}
+
+record(mbbi, "$(OSC):trigger:direction:fbk") {
+	field(DTYP, "Soft Channel")
+    field(DESC, "Get Trigger Direction.")
+	
+    field(ZRST, "ABOVE")			 field(ZRVL, "0")
+	field(ONST, "BELOW")			 field(ONVL, "1")
+	field(TWST, "RISING")			 field(TWVL, "2")		
+	field(THST, "FALLING")			 field(THVL, "3")		
+	field(FRST, "RISING_FALLING") field(FRVL, "4")		
+	field(FVST, "ABOVE_LOWER")		 field(FVVL, "5")		
+	field(SXST, "BELOW_LOWER")		 field(SXVL, "6")		
+	field(SVST, "RISING_LOWER")		 field(SVVL, "7")		
+	field(EIST, "FALLING_LOWER")	 field(EIVL, "8")
+	field(NIST, "WINDOW_POSITIVE_RUNT")	 field(NIVL, "9")
+	field(TEST, "WINDOW_NEGATIVE_RUNT")	 field(TEVL, "10")
+	field(ELST, "WINDOW_INSIDE")	 field(ELVL, "0")
+	field(TVST, "WINDOW_OUTSIDE")	 field(TVVL, "1")
+	field(TTST, "WINDOW_ENTER")	 field(TTVL, "2")
+	field(FTST, "WINDOW_EXIT")	 field(FTVL, "3")
+	field(FFST, "WINDOW_ENTER_EXIT")	 field(FFVL, "4")
+
+	field(SCAN, "Passive")
+	field(INP, "$(OSC):trigger:direction:fbk:get")
 }

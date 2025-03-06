@@ -32,7 +32,7 @@ enum ThresholdDirection
   EXIT = FALLING,
   ENTER_OR_EXIT = RISING_OR_FALLING,
   POSITIVE_RUNT = 9,
-  NEGATIVE_RUNT,
+  NEGATIVE_RUNT = 10,
 
   // no trigger set
   NONE = RISING

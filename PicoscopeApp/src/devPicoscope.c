@@ -62,7 +62,10 @@ enum ioType
 	SET_SAMPLE_INTERVAL, 
 	GET_SAMPLE_INTERVAL,
 	DEVICE_TO_OPEN,
-	SET_TRIGGER_DIRECTION
+	SET_TRIGGER_DIRECTION,
+	GET_TRIGGER_DIRECTION,
+	SET_TRIGGER_CHANNEL,
+	GET_TRIGGER_CHANNEL
 	};
 
 enum ioFlag
@@ -110,7 +113,10 @@ static struct aioType
 		{"set_sample_interval", isOutput, SET_SAMPLE_INTERVAL, "" },
 		{"get_sample_interval", isInput, GET_SAMPLE_INTERVAL, "" },
 		{"device_to_open", isOutput, DEVICE_TO_OPEN, ""},
-		{"set_trigger_direction", isOutput, SET_TRIGGER_DIRECTION, ""}
+		{"set_trigger_direction", isOutput, SET_TRIGGER_DIRECTION, ""},
+		{"get_trigger_direction", isInput, GET_TRIGGER_DIRECTION, ""},
+		{"set_trigger_channel", isOutput, SET_TRIGGER_CHANNEL, ""},
+		{"get_trigger_channel", isInput, GET_TRIGGER_CHANNEL, ""}
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -149,7 +155,7 @@ format_device_support_function(char *string, char *paramName)
 
 
 struct ChannelConfigs* channels[4] = {NULL}; // List of Picoscope channels and their configurations
-struct TriggerConfigs* trigger_config[4] = {NULL};
+struct TriggerConfigs* trigger_config = {NULL};
 struct SampleConfigs* sample_configurations = NULL; // Configurations for data capture
 
 char* record_name; 
@@ -336,6 +342,49 @@ read_ai (struct aiRecord *pai){
 			pai->val = sample_configurations->time_interval_secs; 
 			break; 
 
+		case GET_TRIGGER_DIRECTION:
+			float direction_value;
+			// Handle window mode
+			if (trigger_config->thresholdMode == WINDOW) {
+			    switch (trigger_config->thresholdDirection) {
+			        case INSIDE:
+			            direction_value = 11;
+			            break;
+			        case OUTSIDE:
+			            direction_value = 12;
+			            break;
+			        case ENTER:
+			            direction_value = 13;
+			            break;
+			        case EXIT:
+			            direction_value = 14;
+			            break;
+			        case ENTER_OR_EXIT:
+			            direction_value = 15;
+			            break;
+			        default:
+			            direction_value = trigger_config->thresholdDirection;
+			            break;
+			    }
+			} else {
+			    direction_value = trigger_config->thresholdDirection;
+			}
+			
+			pai->val = direction_value;
+			printf("Trigger direction GET: %f\n", pai->val);
+			
+			break;
+			
+		case GET_TRIGGER_CHANNEL: 
+			printf("triggrt channel GET:%f\n",pai->val);
+
+			if(trigger_config->channel == TRIGGER_AUX){
+				pai->val = 4;
+			}else{
+
+				pai->val = trigger_config->channel;
+			}
+			break;
 		default:
 			return 2;
 
@@ -450,8 +499,8 @@ init_record_ao (struct aoRecord *pao)
 		if (channels[i] == NULL) {
 			channels[i] = (struct ChannelConfigs*)malloc(sizeof(struct ChannelConfigs));
 		}
-		if (trigger_config[i] == NULL) {
-			trigger_config[i] = (struct TriggerConfigs*)malloc(sizeof(struct TriggerConfigs));
+		if (trigger_config == NULL) {
+			trigger_config = (struct TriggerConfigs*)malloc(sizeof(struct TriggerConfigs));
 		}
 	}
 	channels[0]->channel = CHANNEL_A;
@@ -587,9 +636,14 @@ init_record_ao (struct aoRecord *pao)
 			break;
 
 		case SET_TRIGGER_DIRECTION:
-			record_name = pao->name;
-			channel_index = find_channel_index_from_record(record_name, channels); 
-			trigger_config[channel_index]->thresholdDirection = (enum ThresholdDirection) pao->val;
+			printf("triggrt direction init:%f\n",pao->val);
+			trigger_config->thresholdDirection = (enum ThresholdDirection) pao->val;
+			break;
+
+		case SET_TRIGGER_CHANNEL:
+			printf("triggrt channel init:%f\n",pao->val);
+			trigger_config->channel = (enum Channel) pao->val;
+			 
 			break;
 
 		default:
@@ -775,11 +829,14 @@ write_ao (struct aoRecord *pao)
 			break;
 
 		case SET_TRIGGER_DIRECTION:
-			record_name = pao->name;
-			channel_index = find_channel_index_from_record(record_name, channels); 	
-			trigger_config[channel_index]->thresholdDirection = (enum ThresholdDirection) pao->val;
+			printf("triggrt direction set:%f\n",pao->val);
+			trigger_config->thresholdDirection = (enum ThresholdDirection) pao->val;
 			break;
 
+		case SET_TRIGGER_CHANNEL:
+			printf("triggrt channel set:%f\n",pao->val);
+			trigger_config->channel = (enum Channel) pao->val;
+			break;
         default:
                 returnState = -1;
 	}
