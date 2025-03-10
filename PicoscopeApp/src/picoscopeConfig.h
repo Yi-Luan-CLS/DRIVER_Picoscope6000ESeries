@@ -53,6 +53,13 @@ enum RatioMode {
     RATIO_MODE_RAW = 0x80000000
 };
 
+enum UnitPerDiv {
+    ns_per_div = 0, 
+    us_per_div = 1, 
+    ms_per_div = 2, 
+    s_per_div = 3
+};
+
 /** Structure for channel configurations  */
 struct ChannelConfigs{
     enum Channel channel;
@@ -62,14 +69,22 @@ struct ChannelConfigs{
     int16_t bandwidth;
 };
 
+
 /** Structure for data capture configurations*/
 struct SampleConfigs{ 
-    uint32_t timebase;
-    double time_interval_secs;
     uint64_t num_samples; 
     float trigger_position_ratio;
     uint64_t down_sample_ratio;
     enum RatioMode down_sample_ratio_mode; 
+    
+    struct TimebaseConfigs {
+        int16_t num_divisions;
+        enum UnitPerDiv time_per_division_unit; 
+        double time_per_division;
+        uint32_t timebase;
+        double sample_interval_secs;
+        double sample_rate; 
+    } timebase_configs; 
 };
 
 /** Structure for data trigger configurations*/

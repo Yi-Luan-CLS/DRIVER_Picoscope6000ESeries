@@ -227,24 +227,74 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger_position_ratio`. 
 
-### OSCNAME:sample_interval 
-- **Type**: `ao`
-- **Description**: The requested sample interval in seconds. 
-- **Fields**: 
-  - `VAL`: The sample interval in seconds you would like to obtain. 
+### OSCNAME:time_per_division
+- **Type**: `mbbo` 
+- **Description**: The time per division. 
+- **Fields**:
+  - `VAL`
+    | VAL   | Description    |
+    |-------|----------------|
+    | 0     | 1    time/div  |
+    | 1     | 2    time/div  | 
+    | 2     | 5    time/div  |  
+    | 3     | 10   time/div  | 
+    | 4     | 20   time/div  | 
+    | 5     | 50   time/div  | 
+    | 6     | 100  time/div  | 
+    | 7     | 200  time/div  | 
+    | 8     | 500  time/div  | 
+    | 9     | 1000 time/div  | 
+    | 10    | 2000 time/div  | 
+    | 11    | 5000 time/div  | 
+
+### OSCNAME:time_per_division:fbk
+- **Type**: `mbbi` 
+- **Description**: The currently set time per division. 
+- **Fields**:
+  - `VAL`: See `OSCNAME:time_per_division`
+
+### OSCNAME:time_per_division:unit 
+- **Type**: `mbbo` 
+- **Description**: The time unit used per division. 
+- **Fields**:
+  - `VAL`
+    | VAL   | Description |
+    |-------|-------------|
+    | 0     | ns/div      |
+    | 1     | us/div      |
+    | 2     | ms/div      | 
+    | 3     | s/div       |
+
+### OSCNAME:time_per_division:unit:fbk
+- **Type**: `mbbi` 
+- **Description**: The currently set time unit used per division. 
+- **Fields**:
+  - `VAL`: See `OSCNAME:time_per_division:unit`
+
+### OSCNAME:num_divisions 
+- **Type**: `ao` 
+- **Description**: The number of divisions. 
+
+### OSCNAME:num_divisions:fbk
+- **Type**: `ai` 
+- **Description**: The currently set number of divisions. 
 
 ### OSCNAME:sample_interval:fbk
 - **Type**: `ai`
-- **Description**: The actual sample interval in seconds that will be applied when capturing data.
-  - Updated with a new value put to `OSCNAME:sample_interval` or when any channel is turned ON/OFF. 
+- **Description**: The sample interval in seconds that will be applied when capturing data.
+  - The value returned is based on the value of `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
 - **Fields**: 
-  - `VAL`: The actual sample interval appliead in seconds. 
+  - `VAL`: The actual sample interval applied in seconds. 
 
+### OSCNAME:sample_rate:fbk 
+- **Type**: `ai`
+- **Description**: The sample rate in samples/second (S/s).
+  - The value returned is based on the value of `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
+ 
 ### OSCNAME:timebase:fbk
 - **Type**: `ai`
 - **Description**: The time scale used to determine time per division when capturing data. 
-  - The value returned is based on the value of `OSCNAME:sample_interval:fbk`. 
-  - This value will update when a new value is put to `OSCNAME:sample_interval` or when any channel is turned ON/OFF.
+  - The value returned is based on the value of `OSCNAME:time_per_division:fbk` and     `OSCNAME:time_per_division:unit:fbk`. 
 - **Fields**:
   - `VAL`: Timebase
   ![image](https://github.lightsource.ca/cid/DRIVER_Picoscope6000ESeries/assets/209/a348ee4f-d014-44ec-a948-070051ce5d46)
