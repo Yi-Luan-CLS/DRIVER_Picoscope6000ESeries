@@ -261,7 +261,7 @@ record(waveform, "$(OSC):CH$(channel):waveform"){
 	field(SCAN,"Passive")
 	field(MPST, "1")
 #	field(NELM, "1073741696")
-	field(NELM, "1000")
+	field(NELM, "10000")
 	field(FTVL, "SHORT")
     field(INP, "@L:update_waveform")
 }

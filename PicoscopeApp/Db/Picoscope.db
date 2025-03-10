@@ -188,15 +188,17 @@ record(mbbi, "$(OSC):down_sample_ratio_mode:fbk") {
 record(ao, "$(OSC):trigger_position_ratio") {
     field(DESC, "The position of the trigger point.")
     field(DTYP, "Picoscope")
-    field(VAL, "0.5")
-	field(DRVH, "1")
-	field(DRVL, "0") 
+    field(VAL, "50")
+	field(DRVH, "100")
+	field(DRVL, "0")
+	field(EGU, "%")
     field(OUT, "@L:set_trigger_position_ratio")
 }
 
 record(ai, "$(OSC):trigger_position_ratio:fbk"){ 
     field(DESC, "Actual position of the trigger point.")
     field(DTYP, "Picoscope")
+	field(EGU, "%")
     field(INP, "@L:get_trigger_position_ratio")
 }
 
@@ -241,7 +243,10 @@ record(fanout, "$(OSC):waveform:start:fanout") {
 	field(LNK5, "$(OSC):trigger_position_ratio:fbk")
 	field(LNK6, "$(OSC):timebase:fbk")
 	field(LNK7, "$(OSC):trigger:direction:fbk:get")
-	field(LNK8, "$(OSC):waveform:start:calcout.PROC")
+	field(LNK8, "$(OSC):trigger:mode:fbk:get")
+	field(LNK9, "$(OSC):trigger:upper:fbk")
+	field(LNKA, "$(OSC):trigger:lower:fbk")
+	field(LNKB, "$(OSC):waveform:start:calcout.PROC")
 }
 
 record(calcout, "$(OSC):waveform:start:calcout") {
@@ -328,11 +333,11 @@ record(mbbi, "$(OSC):trigger:channel:fbk") {
 record(mbbo, "$(OSC):trigger:direction") {
     field(DTYP, "Soft Channel")
     field(DESC, "Set Trigger Direction.")
-    field(ZRST, "ABOVE")			 field(ZRVL, "0")
-	field(ONST, "BELOW")			 field(ONVL, "1")
-	field(TWST, "RISING")			 field(TWVL, "2")		
-	field(THST, "FALLING")			 field(THVL, "3")		
-	field(FRST, "RISING_FALLING") field(FRVL, "4")		
+    field(ZRST, "ABOVE_UPPER")		 field(ZRVL, "0")
+	field(ONST, "BELOW_UPPER")		 field(ONVL, "1")
+	field(TWST, "RISING_UPPER")		 field(TWVL, "2")		
+	field(THST, "FALLING_UPPER")	 field(THVL, "3")		
+	field(FRST, "RISING_LOW/FALLING_UP") field(FRVL, "4")		
 	field(FVST, "ABOVE_LOWER")		 field(FVVL, "5")		
 	field(SXST, "BELOW_LOWER")		 field(SXVL, "6")		
 	field(SVST, "RISING_LOWER")		 field(SVVL, "7")		
@@ -341,9 +346,9 @@ record(mbbo, "$(OSC):trigger:direction") {
 	field(TEST, "WINDOW_NEGATIVE_RUNT")	 field(TEVL, "10")
 	field(ELST, "WINDOW_INSIDE")	 field(ELVL, "0")
 	field(TVST, "WINDOW_OUTSIDE")	 field(TVVL, "1")
-	field(TTST, "WINDOW_ENTER")	 field(TTVL, "2")
-	field(FTST, "WINDOW_EXIT")	 field(FTVL, "3")
-	field(FFST, "WINDOW_ENTER_EXIT")	 field(FFVL, "4")
+	field(TTST, "WINDOW_ENTER")	 	 field(TTVL, "2")
+	field(FTST, "WINDOW_EXIT")	 	 field(FTVL, "3")
+	field(FFST, "WINDOW_ENTER_EXIT") field(FFVL, "4")
 
     field(VAL, "2")
 	field(FLNK, "$(OSC):trigger:direction:set.PROC")	
@@ -369,11 +374,11 @@ record(mbbi, "$(OSC):trigger:direction:fbk") {
 	field(DTYP, "Soft Channel")
     field(DESC, "Get Trigger Direction.")
 	
-    field(ZRST, "ABOVE")			 field(ZRVL, "0")
-	field(ONST, "BELOW")			 field(ONVL, "1")
-	field(TWST, "RISING")			 field(TWVL, "2")		
-	field(THST, "FALLING")			 field(THVL, "3")		
-	field(FRST, "RISING_FALLING") field(FRVL, "4")		
+    field(ZRST, "ABOVE_UPPER")		 field(ZRVL, "0")
+	field(ONST, "BELOW_UPPER")		 field(ONVL, "1")
+	field(TWST, "RISING_UPPER")		 field(TWVL, "2")		
+	field(THST, "FALLING_UPPER")	 field(THVL, "3")		
+	field(FRST, "RISING_LOW/FALLING_UP") field(FRVL, "4")		
 	field(FVST, "ABOVE_LOWER")		 field(FVVL, "5")		
 	field(SXST, "BELOW_LOWER")		 field(SXVL, "6")		
 	field(SVST, "RISING_LOWER")		 field(SVVL, "7")		
@@ -382,10 +387,70 @@ record(mbbi, "$(OSC):trigger:direction:fbk") {
 	field(TEST, "WINDOW_NEGATIVE_RUNT")	 field(TEVL, "10")
 	field(ELST, "WINDOW_INSIDE")	 field(ELVL, "0")
 	field(TVST, "WINDOW_OUTSIDE")	 field(TVVL, "1")
-	field(TTST, "WINDOW_ENTER")	 field(TTVL, "2")
-	field(FTST, "WINDOW_EXIT")	 field(FTVL, "3")
-	field(FFST, "WINDOW_ENTER_EXIT")	 field(FFVL, "4")
+	field(TTST, "WINDOW_ENTER")	 	 field(TTVL, "2")
+	field(FTST, "WINDOW_EXIT")	 	 field(FTVL, "3")
+	field(FFST, "WINDOW_ENTER_EXIT") field(FFVL, "4")
 
 	field(SCAN, "Passive")
 	field(INP, "$(OSC):trigger:direction:fbk:get")
+}
+
+record(mbbo, "$(OSC):trigger:mode") {
+    field(DTYP, "Soft Channel")
+    field(DESC, "Set Trigger Mode.")
+
+    field(ZRST, "LEVEL")			 field(ZRVL, "0")
+	field(ONST, "WINDOW")			 field(ONVL, "1")
+    field(VAL, "0")
+	field(FLNK, "$(OSC):trigger:mode:set.PROC")	
+}
+
+record(ao, "$(OSC):trigger:mode:set") {
+	field(DTYP, "Picoscope")
+	field(DOL, "$(OSC):trigger:mode.RVAL")
+	field(SCAN, "Passive")
+	field(OIF, "Full")
+	field(OMSL, "closed_loop")
+	field(VAL, "0")
+	field(OUT, "@L:set_trigger_mode")
+}
+
+record(ai, "$(OSC):trigger:mode:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_trigger_mode")
+	field(FLNK, "$(OSC):trigger:mode:fbk")
+}
+
+record(mbbi, "$(OSC):trigger:mode:fbk") {
+	field(DTYP, "Soft Channel")
+    field(DESC, "Get Trigger Mode.")
+	
+    field(ZRST, "LEVEL")			 field(ZRVL, "0")
+	field(ONST, "WINDOW")			 field(ONVL, "1")
+	field(SCAN, "Passive")
+	field(INP, "$(OSC):trigger:mode:fbk:get")
+}
+
+record(ao, "$(OSC):trigger:upper") {
+	field(DTYP, "Picoscope")
+	field(VAL, "0")
+	field(OUT, "@L:set_trigger_upper")
+}
+
+record(ai, "$(OSC):trigger:upper:fbk") {
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_trigger_upper")
+	field(FLNK, "$(OSC):trigger:upper:fbk")
+}
+
+record(ao, "$(OSC):trigger:lower") {
+	field(DTYP, "Picoscope")
+	field(VAL, "0")
+	field(OUT, "@L:set_trigger_lower")
+}
+
+record(ai, "$(OSC):trigger:lower:fbk") {
+	field(DTYP, "Picoscope")
+	field(INP, "@L:get_trigger_lower")
+	field(FLNK, "$(OSC):trigger:lower:fbk")
 }

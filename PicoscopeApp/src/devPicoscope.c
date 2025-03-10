@@ -65,9 +65,14 @@ enum ioType
 	SET_TRIGGER_DIRECTION,
 	GET_TRIGGER_DIRECTION,
 	SET_TRIGGER_CHANNEL,
-	GET_TRIGGER_CHANNEL
+	GET_TRIGGER_CHANNEL,
+	SET_TRIGGER_MODE,
+	GET_TRIGGER_MODE,
+	SET_TRIGGER_UPPER,
+	GET_TRIGGER_UPPER,
+	SET_TRIGGER_LOWER,
+	GET_TRIGGER_LOWER,
 	};
-
 enum ioFlag
 	{
 	isOutput = 0,
@@ -116,7 +121,13 @@ static struct aioType
 		{"set_trigger_direction", isOutput, SET_TRIGGER_DIRECTION, ""},
 		{"get_trigger_direction", isInput, GET_TRIGGER_DIRECTION, ""},
 		{"set_trigger_channel", isOutput, SET_TRIGGER_CHANNEL, ""},
-		{"get_trigger_channel", isInput, GET_TRIGGER_CHANNEL, ""}
+		{"get_trigger_channel", isInput, GET_TRIGGER_CHANNEL, ""},
+		{"set_trigger_mode", isOutput, SET_TRIGGER_MODE, ""},
+		{"get_trigger_mode", isInput, GET_TRIGGER_MODE, ""},
+		{"set_trigger_upper", isOutput, SET_TRIGGER_UPPER, ""},
+		{"get_trigger_upper", isInput, GET_TRIGGER_UPPER, ""},
+		{"set_trigger_lower", isOutput, SET_TRIGGER_LOWER, ""},
+		{"get_trigger_lower", isInput, GET_TRIGGER_LOWER, ""},
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -371,13 +382,10 @@ read_ai (struct aiRecord *pai){
 			}
 			
 			pai->val = direction_value;
-			printf("Trigger direction GET: %f\n", pai->val);
 			
 			break;
 			
 		case GET_TRIGGER_CHANNEL: 
-			printf("triggrt channel GET:%f\n",pai->val);
-
 			if(trigger_config->channel == TRIGGER_AUX){
 				pai->val = 4;
 			}else{
@@ -385,6 +393,19 @@ read_ai (struct aiRecord *pai){
 				pai->val = trigger_config->channel;
 			}
 			break;
+
+		case GET_TRIGGER_MODE:
+			pai->val = trigger_config->thresholdMode;
+			break;
+
+		case GET_TRIGGER_UPPER:
+			pai->val = trigger_config->thresholdUpper;
+			break;
+
+		case GET_TRIGGER_LOWER:
+			pai->val = trigger_config->thresholdLower;
+			break;
+
 		default:
 			return 2;
 
@@ -489,7 +510,7 @@ struct
 epicsExportAddress(dset, devPicoscopeAo);
 
 int8_t* device_serial_number; 
-
+aoRecord* trigger_pao[3] = {NULL};
 static long
 init_record_ao (struct aoRecord *pao)
 {	
@@ -569,7 +590,7 @@ init_record_ao (struct aoRecord *pao)
 			break; 
 
 		case SET_TRIGGER_POSITION_RATIO:
-			sample_configurations->trigger_position_ratio = (float)pao->val;
+			sample_configurations->trigger_position_ratio = (int)pao->val;
 			break;
 
 		case OPEN_PICOSCOPE: 
@@ -636,16 +657,28 @@ init_record_ao (struct aoRecord *pao)
 			break;
 
 		case SET_TRIGGER_DIRECTION:
-			printf("triggrt direction init:%f\n",pao->val);
 			trigger_config->thresholdDirection = (enum ThresholdDirection) pao->val;
 			break;
 
 		case SET_TRIGGER_CHANNEL:
-			printf("triggrt channel init:%f\n",pao->val);
 			trigger_config->channel = (enum Channel) pao->val;
 			 
 			break;
 
+		case SET_TRIGGER_MODE:
+			trigger_config->thresholdMode = (enum ThresholdMode) pao->val;
+			trigger_pao[0] = pao;
+			break;
+
+		case SET_TRIGGER_UPPER:
+			trigger_config->thresholdUpper = (int16_t) pao->val;
+			trigger_pao[1] = pao;
+			break;
+
+		case SET_TRIGGER_LOWER:
+			trigger_config->thresholdLower = (int16_t) pao->val;
+			trigger_pao[2] = pao;
+			break;
 		default:
             return 0;
     }
@@ -829,14 +862,33 @@ write_ao (struct aoRecord *pao)
 			break;
 
 		case SET_TRIGGER_DIRECTION:
-			printf("triggrt direction set:%f\n",pao->val);
 			trigger_config->thresholdDirection = (enum ThresholdDirection) pao->val;
 			break;
 
 		case SET_TRIGGER_CHANNEL:
-			printf("triggrt channel set:%f\n",pao->val);
 			trigger_config->channel = (enum Channel) pao->val;
+			if (trigger_config->channel == TRIGGER_AUX)
+			{
+				for (size_t i = 0; i < 3; i++)
+				{
+					trigger_pao[i]->val = 0;
+					dbProcess((struct dbCommon *)trigger_pao[i]);
+				}
+			}
 			break;
+
+		case SET_TRIGGER_MODE:
+			trigger_config->thresholdMode = (enum ThresholdMode) pao->val;
+			break;
+
+		case SET_TRIGGER_UPPER:
+			trigger_config->thresholdUpper = (int16_t) pao->val;
+			break;
+
+		case SET_TRIGGER_LOWER:
+			trigger_config->thresholdLower = (int16_t) pao->val;
+			break;
+
         default:
                 returnState = -1;
 	}
@@ -1046,7 +1098,6 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 {
 	struct instio  *pinst;
 	struct PicoscopeData *vdp;
-	int channel_index = find_channel_index_from_record(pwaveform->name, channels); 
 
     if (pwaveform->inp.type != INST_IO)
 	{
@@ -1080,10 +1131,11 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 	switch (vdp->ioType)
 	{	
 		case UPDATE_WAVEFORM:
+			int channel_index = find_channel_index_from_record(pwaveform->name, channels); 
 			pRecordUpdateWaveform[channel_index] = pwaveform;
 			waveform[channel_index] = (int16_t*)malloc(sizeof(int16_t) * pwaveform->nelm);
 			waveform_size_max = pwaveform->nelm;
-			printf("channel:%s, nelm:%d\n",pwaveform->name,(int)pwaveform->nelm);
+			// printf("channel:%s, nelm:%d\n",pwaveform->name,(int)pwaveform->nelm);
 			if (waveform[channel_index] == NULL) {
 				// Handle memory allocation failure
 				fprintf(stderr, "Memory allocation failed\n");
@@ -1113,6 +1165,7 @@ read_waveform(struct waveformRecord *pwaveform){
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
 	struct ChannelConfigs* channel_configurations_local[CHANNEL_NUM] = {NULL};
 	struct SampleConfigs* sample_configurations_local = NULL;
+	struct TriggerConfigs* trigger_configurations_local = NULL;
 
 	switch (vdp->ioType)
     {
@@ -1124,24 +1177,8 @@ read_waveform(struct waveformRecord *pwaveform){
 			}
 			free(sample_configurations_local);
 			sample_configurations_local = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
-
-			// Make local copies of configurations, make sure the PV changes when processing won't cause error 
-			for (size_t i = 0; i < CHANNEL_NUM; i++)
-			{
-				free(channel_configurations_local[i]);
-				channel_configurations_local[i] = (struct ChannelConfigs*)malloc(sizeof(struct ChannelConfigs));
-				if (!channel_configurations_local[i]) {
-					fprintf(stderr, "Memory allocation failed\n");
-					free(channel_configurations_local[i]);
-					epicsMutexUnlock(epics_shared_mutex);;
-					return -1;
-				}
-	        	// Copy channel configurations to the local structure
-				*channel_configurations_local[i] = *channels[i];
-			}
-			
 			if (!sample_configurations_local) {
-				fprintf(stderr, "Memory allocation failed\n");
+				fprintf(stderr, "sample_configurations_local Memory allocation failed\n");
                 free(sample_configurations_local);
 				epicsMutexUnlock(epics_shared_mutex);;
 				return -1;
@@ -1150,6 +1187,22 @@ read_waveform(struct waveformRecord *pwaveform){
 	        // Copy sample configurations to the local structure
     		*sample_configurations_local = *sample_configurations;
 			
+			// Make local copies of configurations, make sure the PV changes when processing won't cause error 
+			for (size_t i = 0; i < CHANNEL_NUM; i++)
+			{
+				free(channel_configurations_local[i]);
+				channel_configurations_local[i] = (struct ChannelConfigs*)malloc(sizeof(struct ChannelConfigs));
+				if (!channel_configurations_local[i]) {
+					fprintf(stderr, "channel_configurations_local Memory allocation failed\n");
+					free(channel_configurations_local[i]);
+					epicsMutexUnlock(epics_shared_mutex);;
+					return -1;
+				}
+	        	// Copy channel configurations to the local structure
+				*channel_configurations_local[i] = *channels[i];
+			}
+
+
 			// Ensure the number of samples does not exceed the maximum allowed by the waveform buffer
 			if(sample_configurations_local->num_samples > waveform_size_max){
 				printf("Sample size (%ld) exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n", 
@@ -1157,21 +1210,23 @@ read_waveform(struct waveformRecord *pwaveform){
 				sample_configurations_local->num_samples = waveform_size_max;
 			}
 
-			struct TriggerConfigs trigger_config = {
-				.channel = TRIGGER_AUX,
-				.thresholdMode = LEVEL,
-				.thresholdUpper = 0,
-				.thresholdLower = 0,
-				.thresholdDirection = RISING
-			};
-			status = setup_picoscope(waveform, channel_configurations_local, sample_configurations_local, &trigger_config);
+			free(trigger_configurations_local);
+			trigger_configurations_local = (struct TriggerConfigs*)malloc(sizeof(struct TriggerConfigs));
+			if (!trigger_configurations_local) {
+				fprintf(stderr, "trigger_configurations_local Memory allocation failed\n");
+                free(trigger_configurations_local);
+				epicsMutexUnlock(epics_shared_mutex);;
+				return -1;
+			}
+    		*trigger_configurations_local = *trigger_config;
+			
+			status = setup_picoscope(waveform, channel_configurations_local, sample_configurations_local, trigger_configurations_local);
 			if (status != 0) {
 				fprintf(stderr, "setup_picoscope Error with code: %d \n",status);
+				epicsMutexUnlock(epics_shared_mutex);;
 				return status;
 			}
-	
 			capturing = 1;
-			printf("%d\n", waveform_size_actual);
 			while (1)
 			{
 				if(!capturing) break;
@@ -1185,7 +1240,6 @@ read_waveform(struct waveformRecord *pwaveform){
 				}
 				// Set the number of elements read in the waveform record, 
 				waveform_size_actual = sample_configurations_local->num_samples;
-				
 				// Process the UPDATE_WAVEFORM subroutine to update waveform without return 0
 				for (size_t i = 0; i < CHANNEL_NUM; i++)
 				{
@@ -1218,8 +1272,8 @@ read_waveform(struct waveformRecord *pwaveform){
 			memcpy(pwaveform->bptr, waveform[channel_index], waveform_size_actual * sizeof(int16_t) );
 			pwaveform->nord = waveform_size_actual;
 
-			printf("channel:%d, size:%d, wf:%d, bptr:%d\n",
-			channel_index, waveform_size_actual, waveform[channel_index][0], ((int16_t*)(pwaveform->bptr))[0]);
+			// printf("channel:%d, size:%d, wf:%d, bptr:%d\n",
+			// channel_index, waveform_size_actual, waveform[channel_index][0], ((int16_t*)(pwaveform->bptr))[0]);
 
 			break;
 		
