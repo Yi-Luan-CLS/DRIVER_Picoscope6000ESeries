@@ -536,18 +536,11 @@ init_record_ao (struct aoRecord *pao)
 			double min_analog_offset = 0; 
 			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
 			
+			pao->drvh = max_analog_offset; 
 			pao->hopr = max_analog_offset;
+
+			pao->drvl = min_analog_offset;
 			pao->lopr = min_analog_offset; 
-			// If PV val is outside of the analog offset limits, use the limit instead. 
-			if (pao->val > max_analog_offset) {
-				channels[channel_index]->analog_offset = max_analog_offset;
-			}
-			else if (pao->val < min_analog_offset){ 
-				channels[channel_index]->analog_offset = min_analog_offset; 
-			} 
-			else {
-				channels[channel_index]->analog_offset = pao->val;
-			}
 			break;
 
 		case SET_BANDWIDTH: 
@@ -778,19 +771,14 @@ write_ao (struct aoRecord *pao)
 			double min_analog_offset = 0; 
 			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
 			
+			pao->drvh = max_analog_offset; 
 			pao->hopr = max_analog_offset;
-			pao->lopr = min_analog_offset; 
-			// If PV val is outside of the analog offset limits, use the limit instead. 
-			if (pao->val > max_analog_offset) {
-				channels[channel_index]->analog_offset = max_analog_offset;
-			}
-			else if (pao->val < min_analog_offset){ 
-				channels[channel_index]->analog_offset = min_analog_offset; 
-			} 
-			else {
-				channels[channel_index]->analog_offset = pao->val;
-			}
 
+			pao->drvl = min_analog_offset;
+			pao->lopr = min_analog_offset; 
+
+			channels[channel_index]->analog_offset = pao->val; 
+			
 			channel_status = get_channel_status(channels[channel_index]->channel); 
 			if (channel_status == 1) {
 				result = set_channel_on(channels[channel_index]);
