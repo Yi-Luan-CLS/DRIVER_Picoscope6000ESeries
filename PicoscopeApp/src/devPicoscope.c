@@ -547,7 +547,7 @@ init_record_ao (struct aoRecord *pao)
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 
-			channels[channel_index]->bandwidth= (int)pao->val;
+			channels[channel_index]->bandwidth = (int)pao->val;
 			break;
 
 		case SET_CHANNEL_ON:	
@@ -797,7 +797,7 @@ write_ao (struct aoRecord *pao)
 			
 			int16_t previous_bandwidth = channels[channel_index]->bandwidth;
 
-			channels[channel_index]->bandwidth= (int)pao->val;
+			channels[channel_index]->bandwidth = (int)pao->val;
 
 			channel_status = get_channel_status(channels[channel_index]->channel); 
 			if (channel_status == 1) {

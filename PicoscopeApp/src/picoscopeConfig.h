@@ -66,7 +66,7 @@ struct ChannelConfigs{
     int16_t coupling; 
     int16_t range; 
     double analog_offset; 
-    int16_t bandwidth;
+    int32_t bandwidth;
 };
 
 

@@ -56,15 +56,8 @@ record(mbbo, "$(OSC):CH$(channel):coupling") {
     field(ONST, "DC")            field(ONVL, "1")
     field(TWST, "DC_50_OHM")     field(TWVL, "50")
     
-    field(VAL, "1")
-    field(FLNK, "$(OSC):CH$(channel):coupling")	
-   
-    field(FLNK, "$(OSC):CH$(channel):coupling:fanout")	
-}
-
-record(fanout, "$(OSC):CH$(channel):coupling:fanout") {
-	field(LNK1, "$(OSC):CH$(channel):coupling:set")	
-	field(LNK2, "$(OSC):CH$(channel):ON:fbk:get")
+    field(VAL, "1")   
+    field(FLNK, "$(OSC):CH$(channel):coupling:set")	
 }
 
 record(ao, "$(OSC):CH$(channel):coupling:set") {
@@ -115,12 +108,7 @@ record(mbbo, "$(OSC):CH$(channel):range") {
     field(TEST, "20V")   field(TEVL, "10")
 
 	field(VAL, "0")
-	field(FLNK, "$(OSC):CH$(channel):range:fanout")	
-}
-
-record(fanout, "$(OSC):CH$(channel):range:fanout") {
-	field(LNK1, "$(OSC):CH$(channel):range:set.PROC")	
-	field(LNK2, "$(OSC):CH$(channel):ON:fbk:get")
+	field(FLNK, "$(OSC):CH$(channel):range:set")	
 }
 
 record(ao, "$(OSC):CH$(channel):range:set") {
@@ -163,17 +151,11 @@ record(mbbo, "$(OSC):CH$(channel):bandwidth") {
     field(DTYP, "Soft Channel")
     field(DESC, "Bandwidth limiter setting.")
 
-	field(ZRST, "BW_FULL")       	field(ZRVL, "0")
-	field(ONST, "BW_20MHZ")       	field(ONVL, "1")
-	field(TWST, "BW_200MHZ")       field(TWVL, "2")
+	field(ZRST, "BW_FULL")        field(ZRVL, "0")
+	field(ONST, "BW_20MHZ")       field(ONVL, "20000000")
 	
 	field(VAL, "0")
-	field(FLNK, "$(OSC):CH$(channel):bandwidth:fanout")	
-}
-
-record(fanout, "$(OSC):CH$(channel):bandwidth:fanout") {
-	field(LNK1, "$(OSC):CH$(channel):bandwidth:set.PROC")	
-	field(LNK3, "$(OSC):CH$(channel):ON:fbk:get")
+	field(FLNK, "$(OSC):CH$(channel):bandwidth:set")	
 }
 
 record(ao, "$(OSC):CH$(channel):bandwidth:set") {
@@ -196,12 +178,11 @@ record(ai, "$(OSC):CH$(channel):bandwidth:fbk:get") {
 }
 
 record(mbbi, "$(OSC):CH$(channel):bandwidth:fbk") {
-	field(DTYP, "Soft Channel")
+	field(DTYP, "Raw Soft Channel")
 	field(DESC, "Actual bandwidth set to channel $(channel)")
-	
-	field(ZRST, "BW_FULL")       	field(ZRVL, "0")
-	field(ONST, "BW_20MHZ")       	field(ONVL, "1")
-	field(TWST, "BW_200MHZ")       field(TWVL, "2")
+
+	field(ZRST, "BW_FULL")        field(ZRVL, "0")
+	field(ONST, "BW_20MHZ")       field(ONVL, "20000000")
 	
 	field(SCAN, "Passive")
 	field(INP, "$(OSC):CH$(channel):bandwidth:fbk:get")
@@ -223,17 +204,11 @@ record(ai, "$(OSC):CH$(channel):analog_offset:fbk") {
 	field(INP, "@L:get_analog_offset")
 }
 
-record(ai, "$(OSC):CH$(channel):waveform:scan"){
-    field(DTYP, "Soft Channel")
-	field(SCAN, "Passive")
-    field(FLNK, "$(OSC):CH$(channel):waveform")
-}
-
 record(waveform, "$(OSC):CH$(channel):waveform"){
     field(DTYP, "Picoscope")
 	field(SCAN,"Passive")
 #	field(NELM, "1073741696")
-	field(NELM, "1000000")
+	field(NELM, "1000")
 	field(FTVL, "SHORT")
     field(INP, "@L:update_waveform")
 }
@@ -252,7 +227,7 @@ record(mbbo, "$(OSC):CH$(channel):trigger:direction") {
 	field(SVST, "RISING_LOWER")		 field(SVST, "7")		
 	field(EIST, "FALLING_LOWER")	 field(EIST, "8")
     field(VAL, "2")
-	field(FLNK, "$(OSC):CH$(channel):trigger:direction:set.PROC")	
+	field(FLNK, "$(OSC):CH$(channel):trigger:direction:set")	
 }
 
 record(ao, "$(OSC):CH$(channel):trigger:direction:set") {

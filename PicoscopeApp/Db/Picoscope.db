@@ -17,14 +17,7 @@ record(mbbo, "$(OSC):resolution"){
 	field(ONST, "10BIT")       field(ONVL, "10")
 	field(TWST, "12BIT")       field(TWVL, "1")
     field(VAL,  "1")
-	field(FLNK, "$(OSC):resolution:fanout")
-}
-
-record(fanout, "$(OSC):resolution:fanout") {
-	field(SELM, "All")
-	field(LNK1, "$(OSC):resolution:set")
-	field(LNK2, "$(OSC):resolution:fbk:get")
-	field(LNK3, "$(OSC):resolution:fbk")
+	field(FLNK, "$(OSC):resolution:set")
 }
 
 record(ao, "$(OSC):resolution:set") {
@@ -36,12 +29,14 @@ record(ao, "$(OSC):resolution:set") {
 
     field(VAL,  "10")
 	field(OUT, "@L:set_resolution")
+	field(FLNK, "$(OSC):resolution:fbk:get")
 }
 
 record(ai, "$(OSC):resolution:fbk:get") {
 	field(DTYP, "Picoscope")
 	field(SCAN, "Passive")
 	field(INP, "@L:get_resolution")
+	field(FLNK, "$(OSC):resolution:fbk")
 }
 
 record(mbbi, "$(OSC):resolution:fbk") {
@@ -204,7 +199,9 @@ record(ai, "$(OSC):trigger_position_ratio:fbk"){
     field(INP, "@L:get_trigger_position_ratio")
 }
 
-### Timebase configurations and return values
+################################################################
+#### Timebase related PVs 
+################################################################
 record(mbbo, "$(OSC):time_per_division:unit") {
 	field(DESC, "Time unit per division.")
 	field(DTYP, "Soft Channel")
@@ -352,7 +349,9 @@ record(fanout, "$(OSC):timebase:fbk:fanout"){
 	field(LNK7, "$(OSC):num_samples:fbk")
 }
 
-### Waveform retrieval PVs 
+################################################################
+#### PVs for acquiring waveform data 
+################################################################
 record(bo, "$(OSC):waveform:start") {
 	field(DTYP, "Raw Soft Channel")
 	field(VAL,  "0")
@@ -364,11 +363,9 @@ record(bo, "$(OSC):waveform:start") {
 
 record(fanout, "$(OSC):waveform:start:fanout") {
 	field(LNK1, "$(OSC):waveform:start:calcout.PROC")	
-	field(LNK2, "$(OSC):num_samples:fbk")
-	field(LNK3, "$(OSC):down_sample_ratio:fbk")
-	field(LNK4, "$(OSC):down_sample_ratio_mode:fbk:get")
-	field(LNK5, "$(OSC):trigger_position_ratio:fbk")
-	field(LNK6, "$(OSC):timebase:fbk")
+	field(LNK2, "$(OSC):down_sample_ratio:fbk")
+	field(LNK3, "$(OSC):down_sample_ratio_mode:fbk:get")
+	field(LNK4, "$(OSC):trigger_position_ratio:fbk")
 }
 
 record(calcout, "$(OSC):waveform:start:calcout") {
