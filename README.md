@@ -205,16 +205,18 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:trigger_position_ratio
 - **Type**: `ao`
-- **Description**: A value between 0 and 1 that determines the position of the trigger point in the acquisition window.
+- **Description**: A value between 0 and 100 that determines the position of the trigger point in the acquisition window.
 - **Fields**:
   - `VAL`: The ratio of pre-trigger to post-trigger samples.
     - 0: All samples are post-trigger (no pre-trigger).
-    - 1: All samples are pre-trigger (no post-trigger).
-    - 0.5: Equal pre-trigger and post-trigger samples (50% each).
+    - 100: All samples are pre-trigger (no post-trigger).
+    - 50: Equal pre-trigger and post-trigger samples (50% each).
+  - `EGU`: The unit is `%`.
+
 - **Example**:
   ```bash
     # Set trigger position ratio 80% pre-trigger samples, 20% post-trigger samples 
-    $ caput OSC1234-01:trigger_position_ratio 0.8
+    $ caput OSC1234-01:trigger_position_ratio 80
 
     # Get trigger position ratio 
     $ caget OSC1234-01:trigger_position_ratio
@@ -225,7 +227,142 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Description**: The position of the trigger in the last acquired waveform.  
   - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:trigger_position_ratio`. 
+  - `VAL`: See `OSCNAME:trigger_position_ratio`.
+
+ 
+### OSCNAME:trigger:channel
+- **Type**: `mbbo`
+- **Description**: The source channel of triggering.
+- **Fields**:
+  - `VAL`: The channel will be used by triggering.
+    |VAL      |Enum         |Description |  
+    |---------|-------------|------------|  
+    | 0       | CHANNEL_A   | Use Channel A as the triggering source |  
+    | 1       | CHANNEL_B   | Use Channel B as the triggering source |  
+    | 2       | CHANNEL_C   | Use Channel C as the triggering source        |  
+    | 3       | CHANNEL_D   | Use Channel D as the triggering source        |
+    | 1001    | TRIGGER_AUX | Use Auxiliary trigger input as the triggering source, with a fixed threshold of 1.25 V (nominal) to suit 2.5 V CMOS|
+
+- **Example**:
+  ```bash
+    # Set triggering source to Auxiliary trigger input
+    $ caput OSC1234-01:trigger:channel TRIGGER_AUX
+
+    # Get triggering source channel
+    $ caget OSC1234-01:trigger:channel
+  ```
+
+### OSCNAME:trigger:channel:fbk 
+- **Type**: `mbbi`
+- **Description**: The feedback PV of `OSCNAME:trigger:channel`
+- **Fields**: 
+  - `VAL`: See `OSCNAME:trigger:channel`. 
+
+### OSCNAME:trigger:mode
+- **Type**: `mbbo`
+- **Description**: The mode of triggering.
+- **Fields**:
+  - `VAL`: The mode of triggering.
+    |VAL      |Enum         |Description |  
+    |---------|-------------|------------|  
+    | 0       | LEVEL       | Will only use one threshold    |  
+    | 1       | WINDOW      | Will use two thresholds  |  
+
+- **Example**:
+  ```bash
+    # Set triggering mode to LEVEL
+    $ caput OSC1234-01:trigger:mode LEVEL
+
+    # Get triggering source channel
+    $ caget OSC1234-01:trigger:mode
+  ```
+
+### OSCNAME:trigger:mode:fbk 
+- **Type**: `mbbi`
+- **Description**: The feedback PV of `OSCNAME:trigger:mode`
+- **Fields**: 
+  - `VAL`: See `OSCNAME:trigger:mode`. 
+
+
+### OSCNAME:trigger:direction
+- **Type**: `mbbo`
+- **Description**: The direction of the trigger event.
+- **Fields**:
+  - `VAL`: The direction of the trigger event.
+
+  | VAL | Enum                  | Description                                          | Threshold |
+  |-----|-----------------------|-----------------------------------------------------|-----------|
+  | 0   | ABOVE_UPPER          | Level mode, triggers when above the upper threshold. | Upper     |
+  | 1   | BELOW_UPPER          | Level mode, triggers when below the upper threshold. | Upper     |
+  | 2   | RISING_UPPER         | Level mode, triggers on a rising edge crossing the upper threshold. | Upper     |
+  | 3   | FALLING_UPPER        | Level mode, triggers on a falling edge crossing the upper threshold. | Upper     |
+  | 4   | RISING_LOW/FALLING_UP| Level mode, triggers on a rising edge crossing the lower threshold, or a falling edge crossing the upper threshold | Lower/Upper     |
+  | 5   | ABOVE_LOWER          | Level mode, triggers when above the lower threshold. | Lower     |
+  | 6   | BELOW_LOWER          | Level mode, triggers when below the lower threshold. | Lower     |
+  | 7   | RISING_LOWER         | Level mode, triggers on a rising edge crossing the lower threshold. | Lower     |
+  | 8   | FALLING_LOWER        | Level mode, triggers on a falling edge crossing the lower threshold. | Lower     |
+  | 9   | WINDOW_POSITIVE_RUNT | Window mode, triggers on a positive runt pulse entering from below. | Both      |
+  | 10  | WINDOW_NEGATIVE_RUNT | Window mode, triggers on a negative runt pulse entering from above. | Both      |
+  | 11  | WINDOW_INSIDE        | Window mode, triggers when the signal is inside the upper and lower thresholds. | Both      |
+  | 12  | WINDOW_OUTSIDE       | Window mode, triggers when the signal is outside the upper and lower thresholds. | Both      |
+  | 13  | WINDOW_ENTER         | Window mode, triggers when the signal enters the range between the upper and lower thresholds. | Both      |
+  | 14  | WINDOW_EXIT          | Window mode, triggers when the signal exits the range between the upper and lower thresholds. | Both      |
+  | 15  | WINDOW_ENTER_EXIT    | Window mode, triggers when the signal either enters or exits the range between the upper and lower thresholds. | Both      |
+
+- **Example**:
+  ```bash
+    # Set triggering direction to rising
+    $ caput OSC1234-01:trigger:direction RISING_UPPER
+
+    # Get triggering direction
+    $ caget OSC1234-01:trigger:direction
+  ```
+
+### OSCNAME:trigger:direction:fbk 
+- **Type**: `mbbi`
+- **Description**: The feedback PV of `OSCNAME:trigger:direction`
+- **Fields**: 
+  - `VAL`: See `OSCNAME:trigger:direction`. 
+
+### OSCNAME:trigger:upper
+- **Type**: `ao`
+- **Description**: The upper threshold of triggering.
+- **Fields**:
+  - `VAL`: The scaled value of upper threshold.
+
+- **Example**:
+  ```bash
+    # Set triggering upper threshold to 8000
+    $ caput OSC1234-01:trigger:upper 8000
+
+    # Get triggering upper threshold
+    $ caget OSC1234-01:trigger:upper
+  ```
+### OSCNAME:trigger:upper:fbk 
+- **Type**: `ai`
+- **Description**: The feedback PV of `OSCNAME:trigger:upper`
+- **Fields**: 
+  - `VAL`: See `OSCNAME:trigger:upper`.
+
+### OSCNAME:trigger:lower
+- **Type**: `ao`
+- **Description**: The lower threshold of triggering.
+- **Fields**:
+  - `VAL`: The scaled value of lower threshold.
+
+- **Example**:
+  ```bash
+    # Set triggering lower threshold to 4000
+    $ caput OSC1234-01:trigger:lower 4000
+
+    # Get triggering lower threshold
+    $ caget OSC1234-01:trigger:lower
+  ```
+### OSCNAME:trigger:lower:fbk 
+- **Type**: `ai`
+- **Description**: The feedback PV of `OSCNAME:trigger:lower`
+- **Fields**: 
+  - `VAL`: See `OSCNAME:trigger:lower`.
 
 ### OSCNAME:time_per_division
 - **Type**: `mbbo` 

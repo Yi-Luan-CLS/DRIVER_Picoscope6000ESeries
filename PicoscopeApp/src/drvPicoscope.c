@@ -586,6 +586,9 @@ PICO_STATUS set_trigger_conditions(struct TriggerConfigs* trigger_config) {
 PICO_STATUS set_trigger_directions(struct TriggerConfigs* trigger_config) {
     int16_t nDirections = 1;    // Only support one now 
     PICO_STATUS status = 0;
+    if(trigger_config->thresholdDirection == 10){
+        trigger_config->thresholdDirection = PICO_NEGATIVE_RUNT;
+    }
     PICO_DIRECTION direction = {
         .channel = trigger_config->channel,
         .direction = trigger_config->thresholdDirection,
@@ -707,7 +710,6 @@ PICO_STATUS set_AUX_trigger(struct TriggerConfigs* trigger_config) {
  */
 PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms, uint8_t* capturing) {
     PICO_STATUS status = 0;
-
     status = start_block_capture(sample_config, time_indisposed_ms);
     if (status != PICO_OK) {
         log_error("start_block_capture", status, __FILE__, __LINE__);
@@ -739,9 +741,8 @@ void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, void *pParame
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
 PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms) {
-    uint64_t pre_trigger_samples = (uint64_t)sample_config->num_samples * sample_config->trigger_position_ratio;
+    uint64_t pre_trigger_samples = ((uint64_t)sample_config->num_samples * sample_config->trigger_position_ratio)/100;
     uint64_t post_trigger_samples = sample_config->num_samples - pre_trigger_samples;
-
     free(callback_state);
     callback_state = (BlockCaptureState*)malloc(sizeof(BlockCaptureState));
     if (callback_state == NULL) {
