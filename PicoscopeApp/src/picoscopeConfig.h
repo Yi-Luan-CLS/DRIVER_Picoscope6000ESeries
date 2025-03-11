@@ -66,7 +66,7 @@ struct ChannelConfigs{
     int16_t coupling; 
     int16_t range; 
     double analog_offset; 
-    int32_t bandwidth;
+    int16_t bandwidth;
 };
 
 
@@ -99,5 +99,9 @@ struct TriggerConfigs{
 
 /** Get the channel from the record formatted "OSCXXXX-XX:CH[A-B]:" and return index in channels array */
 int find_channel_index_from_record(const char* record_name, struct ChannelConfigs* channels[]);
+
+int16_t translate_down_sample_ratio_mode(int mode); 
+
+int16_t translate_resolution(int mode);
 
 #endif
