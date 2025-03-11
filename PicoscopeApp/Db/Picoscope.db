@@ -356,8 +356,7 @@ record(fanout, "$(OSC):timebase:fbk:fanout"){
 record(bo, "$(OSC):waveform:start") {
 	field(DTYP, "Raw Soft Channel")
 	field(VAL,  "0")
-	field(ZNAM, "NOT ACQUIRING")    	
-	field(ONAM, "ACQUIRING")
+	field(ONAM, "START")
 	field(HIGH, "1")
 	field(FLNK, "$(OSC):waveform:start:fanout")	
 }
@@ -389,6 +388,22 @@ record(waveform, "$(OSC):waveform:start:call"){
 	field(SCAN, "Passive")
 	field(FTVL, "SHORT")
     field(INP, "@L:start_retrieve_waveform")
+}
+
+record(ai, "$(OSC):waveform:start:fbk:get") {
+	field(DTYP, "Picoscope")
+	field(SCAN, "5 second")
+    field(INP, "@L:get_acquisition_status")
+	field(FLNK, "$(OSC):waveform:start:fbk.PROC")
+}
+
+record(bi, "$(OSC):waveform:start:fbk"){
+	field(DTYP, "Soft Channel")
+    field(DESC, "Get data acquisition status.")
+	field(ZNAM, "STOPPED")
+	field(ONAM, "ACQUIRING")
+	field(SCAN, "Passive")
+	field(INP, "$(OSC):waveform:start:fbk:get")
 }
 
 record(bo, "$(OSC):waveform:stop") {
