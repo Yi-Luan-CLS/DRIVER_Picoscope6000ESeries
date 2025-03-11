@@ -13,9 +13,8 @@
 
 int16_t handle = 0; // The identifier of the connected picoscope
 
-int16_t status;
 
-void log_error(char* function_name, int16_t status, const char* FILE, int LINE){ 
+void log_error(char* function_name, uint32_t status, const char* FILE, int LINE){ 
     printf("Error in %s (file: %s, line: %d). Status code: 0x%08X\n", function_name, FILE, LINE, status);
 }
 
@@ -28,15 +27,15 @@ void log_error(char* function_name, int16_t status, const char* FILE, int LINE){
  *                      - 10: 10-bit resolution
  *                      - 1: 12-bit resolution
  * 
- * @return 0 if the device is successfully opened, or -1 if an error occurs. 
+ * @return 0 if the device is successfully opened, or a non-zero error code.  
 */
-int16_t open_picoscope(int16_t resolution, int8_t* serial_num){
-
-    status = ps6000aOpenUnit(&handle, serial_num, resolution);
+uint32_t open_picoscope(int16_t resolution, int8_t* serial_num){
+    
+    uint32_t status = ps6000aOpenUnit(&handle, serial_num, resolution);
     if (status != PICO_OK) 
     { 
         log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 
-        return -1;  
+        return status;  
     }
     
     return 0;
@@ -45,15 +44,15 @@ int16_t open_picoscope(int16_t resolution, int8_t* serial_num){
 /**
  * Close an open PicoScope device.
  * 
- * @return 0 if the device is successfully closed, or -1 if an error occurs. 
+ * @return 0 if the device is successfully closed, or a non-zero error code. 
 */
-int16_t close_picoscope(){ 
+uint32_t close_picoscope(){ 
     
-    status = ps6000aCloseUnit(handle);
+    uint32_t status = ps6000aCloseUnit(handle);
     if (status != PICO_OK) 
     { 
         log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
-        return -1;  
+        return status;  
     } 
     handle = 0;
     
@@ -63,27 +62,21 @@ int16_t close_picoscope(){
 /**
  * Check that open device is still connected. 
  * 
- * @return 1 if the device is connected, 0 if not. 
+ * @return 0 if device is connect, otherwise a non-zero error code.
 */
-int16_t ping_count = 0; 
-int16_t ping_picoscope(){ 
-    
-    status = ps6000aPingUnit(handle); 
-    if (status != PICO_OK && status != PICO_DRIVER_FUNCTION) {
-        log_error("ps6000aPingUnit. Cannot ping device.", status, __FILE__, __LINE__);
-        
-        // If another call to the driver is made at the same time as this, the error code
-        // 0x00000043 will be thrown. The following is to prevent the handle from being reset 
-        // to 0 until the ping has failed twice, ensuring the device is actually disconnected.
-        if (ping_count >= 2){ 
-            handle = 0; // set handle to 0, no device is connected
-            ping_count = 0; 
-        } else {
-            ping_count++; 
-        }
-        return 0; 
+uint32_t ping_picoscope(){ 
+
+    uint32_t status = ps6000aPingUnit(handle);
+
+    // If driver call in progress, return connected. 
+    if (status == PICO_DRIVER_FUNCTION) {
+        return 0;    
     }
-    return 1;
+    if (status != PICO_OK) {
+        log_error("ps6000aPingUnit. Cannot ping device.", status, __FILE__, __LINE__);
+        return status; 
+    }
+    return 0;
 }
 
 /**
@@ -95,14 +88,14 @@ int16_t ping_picoscope(){
  *                      - 10: 10-bit resolution
  *                      - 1: 12-bit resolution
  * 
- * @return 0 if resolution successfully set, or -1 if an error occurs. 
+ * @return 0 if resolution successfully set, otherwise a non-zero error code.
 */
-int16_t set_device_resolution(int16_t resolution){ 
-    status = ps6000aSetDeviceResolution(handle, resolution); 
+uint32_t set_device_resolution(int16_t resolution){ 
+    uint32_t status = ps6000aSetDeviceResolution(handle, resolution); 
 
     if (status != PICO_OK){ 
         log_error("ps6000aSetDeviceResolution", status, __FILE__, __LINE__);
-        return -1;
+        return status;
     }
 
     return 0; 
@@ -113,17 +106,17 @@ int16_t set_device_resolution(int16_t resolution){
  * 
  * @param on exit, the resolution of the device
  * 
- * @return 0 if resolution returned, or -1 if an error occurs. 
+ * @return 0 if resolution returned, otherwise a non-zero error code.
 */
-int16_t get_resolution(int16_t* resolution) {
+uint32_t get_resolution(int16_t* resolution) {
 
     PICO_DEVICE_RESOLUTION device_resolution; 
 
-    status = ps6000aGetDeviceResolution(handle, &device_resolution); 
+    uint32_t status = ps6000aGetDeviceResolution(handle, &device_resolution); 
 
     if(status != PICO_OK) {
         log_error("ps6000aGetDeviceResolution", status, __FILE__, __LINE__);
-        return -1;
+        return status;
     }
 
     *resolution = (int16_t)device_resolution; 
@@ -137,16 +130,16 @@ int16_t required_size;
  * @param serial_num A pointer to a pointer that will hold the dynamically allocated address of
  *                  the memory buffer containing the serial number. 
  * 
- * @return 0 if the serial number is successfully retrieved, or -1 if an error occurs. 
+ * @return 0 if the serial number is successfully retrieved, otherwise a non-zero error code.
 */
-int16_t get_serial_num(int8_t** serial_num) {
+uint32_t get_serial_num(int8_t** serial_num) {
 
     int8_t* serial_num_buffer = NULL;
     
-    status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_BATCH_AND_SERIAL);
+    uint32_t status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_BATCH_AND_SERIAL);
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
-        return -1;  
+        return status;  
     }
 
     if (serial_num_buffer == NULL)
@@ -156,7 +149,7 @@ int16_t get_serial_num(int8_t** serial_num) {
     status = ps6000aGetUnitInfo(handle, serial_num_buffer, required_size, &required_size, PICO_BATCH_AND_SERIAL);
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
-        return -1;  
+        return status;  
     }
 
     *serial_num = serial_num_buffer;
@@ -171,16 +164,16 @@ int16_t get_serial_num(int8_t** serial_num) {
  * @param model_num A pointer to a pointer that will hold the dynamically allocated address of
  *                  the memory buffer containing the model number. 
  * 
- * @return 0 if the model number is successfully retrieved, or -1 if an error occurs. 
+ * @return 0 if the model number is successfully retrieved, otherwise a non-zero error code.
 */
-int16_t get_model_num(int8_t** model_num) {
+uint32_t get_model_num(int8_t** model_num) {
 
     int8_t* model_num_buffer = NULL;
     
-    status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_VARIANT_INFO);
+    uint32_t status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_VARIANT_INFO);
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
-        return -1;  
+        return status;  
     }
 
     if (model_num_buffer == NULL)
@@ -190,7 +183,7 @@ int16_t get_model_num(int8_t** model_num) {
     status = ps6000aGetUnitInfo(handle, model_num_buffer, required_size, &required_size, PICO_VARIANT_INFO);
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
-        return -1;  
+        return status;  
     }
 
     *model_num = model_num_buffer;
@@ -205,21 +198,21 @@ int16_t get_model_num(int8_t** model_num) {
  * @param device_info A pointer to a pointer that will hold the dynamically allocated address of
  *                    the memory buffer containing the device information. 
  * 
- * @return 0 if the device information is successfully retrieved, or -1 if an error occurs. 
+ * @return 0 if the device information is successfully retrieved, otherwise a non-zero error code.
 */
-int16_t get_device_info(int8_t** device_info) {
+uint32_t get_device_info(int8_t** device_info) {
 
     int8_t* device_info_buffer = NULL; 
 	int8_t* serial_num = NULL;
     int8_t* model_num = NULL; 
 
-    status = get_serial_num(&serial_num);
+    uint32_t status = get_serial_num(&serial_num);
     if (status != 0) {
-        return -1;
+        return status;
     }
     status = get_model_num(&model_num); 
     if (status != 0) {
-        return -1;
+        return status;
     }
     
     int16_t required_size = strlen((const char*)serial_num) + strlen((const char*)model_num) + 20; 
@@ -256,15 +249,15 @@ EnabledChannelFlags channel_status = {0};
  *                to be activated. The structure holds the coupling type, voltage range, analog
  *                offset, and bandwidth to configure the channel. 
  * 
- * @return 0 if the channel is succesfully set on, or -1 if an error occurs. 
+ * @return 0 if the channel is succesfully set on, otherwise a non-zero error code. 
 */
-int16_t set_channel_on(struct ChannelConfigs* channel) {
+uint32_t set_channel_on(struct ChannelConfigs* channel) {
     
-    status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analog_offset, channel->bandwidth);
+    uint32_t status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analog_offset, channel->bandwidth);
     if (status != PICO_OK) 
     {
         log_error("ps6000aSetChannelOn", status, __FILE__, __LINE__);
-        return -1;
+        return status;
     }
 
     if (channel->channel == CHANNEL_A) {
@@ -296,15 +289,15 @@ int16_t set_channel_on(struct ChannelConfigs* channel) {
  *                  - 2: Channel C
  *                  - 3: Channel D
  *  
- * @return 0 if the channel is successfully turned off, or -1 if an error occurs. 
+ * @return 0 if the channel is successfully turned off, otherwise a non-zero error code.
 */
-int16_t set_channel_off(int channel) {
+uint32_t set_channel_off(int channel) {
 
-    status = ps6000aSetChannelOff(handle, channel);
+    uint32_t status = ps6000aSetChannelOff(handle, channel);
     if (status != PICO_OK)
     {
         log_error("ps6000aSetChannelOff", status, __FILE__, __LINE__);
-        return -1;
+        return status;
     }
 
     if (channel == CHANNEL_A) {
@@ -336,7 +329,7 @@ int16_t set_channel_off(int channel) {
  * 
  * @return 1 if the channel is enabled, 0 if not, and -1 if channel does not exist
  */
-int16_t get_channel_status(int16_t channel){ 
+uint32_t get_channel_status(int16_t channel){ 
     
     if (channel == CHANNEL_A) {
         return channel_status.channel_a;
@@ -362,18 +355,18 @@ int16_t get_channel_status(int16_t channel){
  *        max_analog_offset On exit, the max analog offset voltage allowed for the range. 
  *        min_analog_offset On exit, the min analog offset voltage allowed for the range. 
  * 
- * @return 0 if the analog offset limits are succesfully retrieved, or -1 if an error occurs. 
+ * @return 0 if the analog offset limits are succesfully retrieved, otherwise a non-zero error code. 
  */
-int16_t get_analog_offset_limits(int16_t range, int16_t coupling, double* max_analog_offset, double* min_analog_offset){
+uint32_t get_analog_offset_limits(int16_t range, int16_t coupling, double* max_analog_offset, double* min_analog_offset){
 
     double maximum_voltage; 
     double minimum_voltage;
 
-    status = ps6000aGetAnalogueOffsetLimits(handle, range, coupling, &maximum_voltage, &minimum_voltage); 
+    uint32_t status = ps6000aGetAnalogueOffsetLimits(handle, range, coupling, &maximum_voltage, &minimum_voltage); 
     if (status != PICO_OK)
     {
         log_error("ps6000aGetAnalogueOffsetLimits", status, __FILE__, __LINE__);
-        return -1;
+        return status;
     }
 
     *max_analog_offset = maximum_voltage;
@@ -391,14 +384,17 @@ int16_t get_analog_offset_limits(int16_t range, int16_t coupling, double* max_an
  *        available_time_interval On exit, the closests sample interval available, given the device configurations, 
  *                                to the request interval. 
  * 
- * @return 0 if the call is successful, or -1 if an error occurs. 
+ * @return 0 if the call is successful, otherwise a non-zero error code.
  */
-int16_t validate_sample_interval(double requested_time_interval, uint32_t* timebase, double* available_time_interval){
+uint32_t validate_sample_interval(double requested_time_interval, uint32_t* timebase, double* available_time_interval){
 
     uint32_t enabledChannels = *(uint32_t*)&channel_status;
 
     int16_t resolution = 0; 
-    status = get_resolution(&resolution);
+    uint32_t status = get_resolution(&resolution);
+    if (status != PICO_OK) {
+        return status;
+    }
 
     uint32_t timebase_return; 
     double time_interval_available;
@@ -407,12 +403,12 @@ int16_t validate_sample_interval(double requested_time_interval, uint32_t* timeb
     
     if (status == PICO_NO_CHANNELS_OR_PORTS_ENABLED) {
         log_error("ps6000aNearestSampleIntervalStateless. No channels enabled.", status, __FILE__, __LINE__);
-        return -1;
+        return status;
     }
     if (status != PICO_OK)
     {
         log_error("ps6000aNearestSampleIntervalStateless", status, __FILE__, __LINE__);
-        return -1;
+        return status;
     }
 
     *timebase = timebase_return;
@@ -473,9 +469,9 @@ double calculate_sample_rate(double secs_per_div, double samples_per_div) {
  *        timebase On exit, the timebase for the requested time per division. 
  *        sample_rate On exit, the sample rate for the request time per division. 
  * 
- * @return 0 if successful, otherwise -1. 
+ * @return 0 if successful, otherwise a non-zero error code.
  */
-int16_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uint64_t num_samples, double* sample_interval, uint32_t* timebase, double* sample_rate) { 
+uint32_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uint64_t num_samples, double* sample_interval, uint32_t* timebase, double* sample_rate) { 
 
     double secs_per_div = convert_to_seconds(timebase_configs.time_per_division, timebase_configs.time_per_division_unit); 
     double samples_per_division = calculate_samples_per_division(num_samples, timebase_configs.num_divisions);
@@ -487,9 +483,9 @@ int16_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uint
 	uint32_t available_timebase; 
 	double available_sample_interval; 
 
-	int16_t result = validate_sample_interval(requested_sample_interval, &available_timebase, &available_sample_interval);
-	if (result != 0) {
-        return -1; 
+	uint32_t status = validate_sample_interval(requested_sample_interval, &available_timebase, &available_sample_interval);
+	if (status != 0) {
+        return status; 
 	} 
     *sample_interval = available_sample_interval; 
     *timebase = available_timebase;
