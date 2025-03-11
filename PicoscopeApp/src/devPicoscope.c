@@ -23,7 +23,6 @@
 
 #define MAX_SAMPLE_SIZE 1000000
 
-int16_t result; 
 uint8_t capturing;
 
 enum ioType
@@ -51,8 +50,6 @@ enum ioType
 	GET_RANGE,
 	SET_ANALOG_OFFSET,
 	GET_ANALOG_OFFSET,
-	GET_MAX_ANALOG_OFFSET,
-	GET_MIN_ANALOG_OFFSET,
 	SET_BANDWIDTH, 
 	GET_BANDWIDTH,
 	START_RETRIEVE_WAVEFORM,
@@ -79,6 +76,7 @@ enum ioType
 	GET_NUM_DIVISIONS, 
 	GET_SAMPLE_RATE, 
 	GET_TIMEBASE,
+	GET_LOG
 	};
 enum ioFlag
 	{
@@ -115,8 +113,6 @@ static struct aioType
 		{"get_range", isInput, GET_RANGE, ""},
 		{"set_analog_offset", isOutput, SET_ANALOG_OFFSET, ""},
 		{"get_analog_offset", isInput, GET_ANALOG_OFFSET, ""},
-		{"get_max_analog_offset", isInput, GET_MAX_ANALOG_OFFSET, ""},
-		{"get_min_analog_offset", isInput, GET_MIN_ANALOG_OFFSET, ""},
 		{"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
 		{"get_bandwidth", isInput, GET_BANDWIDTH, "" }, 
 		{"start_retrieve_waveform", isInput, START_RETRIEVE_WAVEFORM, "" },
@@ -143,7 +139,7 @@ static struct aioType
 		{"get_time_per_division", isInput, GET_TIME_PER_DIVISION, ""},
 		{"set_num_divisions", isOutput, SET_NUM_DIVISIONS, ""},
 		{"get_num_divisions", isInput, GET_NUM_DIVISIONS, ""},
-
+		{"get_log", isInput, GET_LOG, ""}
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -180,13 +176,11 @@ format_device_support_function(char *string, char *paramName)
         return 0;
 }
 
+void log_message(char pv_name[], char error_message[], uint32_t status_code);
 
 struct ChannelConfigs* channels[4] = {NULL}; // List of Picoscope channels and their configurations
 struct TriggerConfigs* trigger_config = {NULL};
 struct SampleConfigs* sample_configurations = NULL; // Configurations for data capture
-
-char* record_name; 
-int channel_index; 
 
 /****************************************************************************************
  * AI Record
@@ -263,9 +257,11 @@ init_record_ai (struct aiRecord *pai)
 
 static long
 read_ai (struct aiRecord *pai){
-
-	double max_analog_offset; 
-	double min_analog_offset; 
+	
+	uint32_t result; 
+	
+	char* record_name; 
+	int channel_index; 
 
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pai->dpvt;
 
@@ -274,7 +270,12 @@ read_ai (struct aiRecord *pai){
 		// Device configuration fbk
 		case GET_DEVICE_STATUS:
 			result = ping_picoscope(); 
-			pai->val = result;
+			if ( result != 0 ) {
+				log_message(pai->name, "Cannot ping device.", result);
+				pai->val = 0;
+				break;
+			}
+			pai->val = 1; 
 			break;
 
 		case GET_RESOLUTION: 
@@ -289,7 +290,9 @@ read_ai (struct aiRecord *pai){
 			channel_index = find_channel_index_from_record(record_name, channels); 
 
 			int16_t channel_status = get_channel_status(channels[channel_index]->channel); 
-			
+			if (channel_status == -1) {
+				log_message(pai->name, "Cannot get channel status.", channel_status);
+			}
 			pai->val = channel_status;
 			break; 
 
@@ -320,24 +323,6 @@ read_ai (struct aiRecord *pai){
 
 			pai->val = channels[channel_index]->analog_offset; 
 			break; 
-
-		case GET_MAX_ANALOG_OFFSET: 
-			record_name = pai->name;
-			channel_index = find_channel_index_from_record(record_name, channels); 	
-
-			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
-
-			pai->val = max_analog_offset; 
-			break;
-
-		case GET_MIN_ANALOG_OFFSET: 
-			record_name = pai->name;
-			channel_index = find_channel_index_from_record(record_name, channels); 	
-
-			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
-
-			pai->val = min_analog_offset; 
-			break;
 
 		// Data configuration fbk 
 		case GET_NUM_SAMPLES: 
@@ -481,10 +466,15 @@ epicsExportAddress(dset, devPicoscopeAo);
 int8_t* device_serial_number; 
 aoRecord* trigger_pao[3] = {NULL};
 struct aoRecord* pAnalogOffestRecords[CHANNEL_NUM];
+
 static long
 init_record_ao (struct aoRecord *pao)
 {	
+	uint32_t result;
 	
+	char* record_name; 
+	int channel_index; 
+
 	// Allocate memory for each channel
 	for (int i = 0; i < 4; i++) {
 		if (channels[i] == NULL) {
@@ -615,17 +605,14 @@ init_record_ao (struct aoRecord *pao)
 			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
 			
 			pao->drvh = max_analog_offset; 
-			pao->hopr = max_analog_offset;
-
 			pao->drvl = min_analog_offset;
-			pao->lopr = min_analog_offset; 
 			break;
 
 		case SET_BANDWIDTH: 
 			record_name = pao->name;
 			channel_index = find_channel_index_from_record(record_name, channels); 	
 
-			channels[channel_index]->bandwidth= (int)pao->val;
+			channels[channel_index]->bandwidth = (int)pao->val;
 			break;
 
 		case SET_CHANNEL_ON:	
@@ -676,12 +663,16 @@ static long
 write_ao (struct aoRecord *pao)
 {	
 	uint32_t timebase = 0; 
-	double sample_interval = 0; 
-	double sample_rate = 0; 
+	double sample_interval, sample_rate = 0; 
 	int16_t channel_status = 0;
-	struct PicoscopeData *vdp;
 	int returnState = 0;
+	
+	char* record_name; 
+	int channel_index; 
 
+	uint32_t result;
+
+	struct PicoscopeData *vdp;
     vdp = (struct PicoscopeData *)pao->dpvt;
 
 	switch (vdp->ioType)
@@ -690,7 +681,7 @@ write_ao (struct aoRecord *pao)
 			resolution = (int)pao->val; 
 			result = set_device_resolution(resolution); 
 			if (result !=0) {
-				printf("Error setting picoscope resolution.\n");
+				log_message(pao->name, "Error setting device resolution.", result);
 			}
 			break;
 		
@@ -707,6 +698,7 @@ write_ao (struct aoRecord *pao)
 			); 
 
 			if (result != 0) {
+				log_message(pao->name, "Error setting time per division unit.", result);
 				sample_configurations->timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
 				break; 
 			}
@@ -729,6 +721,7 @@ write_ao (struct aoRecord *pao)
 			); 
 			
 			if (result != 0) {
+				log_message(pao->name, "Error setting time per division.", result);
 				sample_configurations->timebase_configs.time_per_division = previous_time_per_division; 
 				break; 
 			}
@@ -751,6 +744,7 @@ write_ao (struct aoRecord *pao)
 			); 
 
 			if (result != 0) {
+				log_message(pao->name, "Error setting the number of divisions.", result);
 				sample_configurations->timebase_configs.num_divisions = previous_num_divisions; 
 				break; 
 			}
@@ -774,6 +768,7 @@ write_ao (struct aoRecord *pao)
 			); 
 
 			if (result != 0) {
+				log_message(pao->name, "Error setting the number of samples.", result);
 				sample_configurations->num_samples = previous_num_samples; 
 				break; 
 			}
@@ -797,16 +792,20 @@ write_ao (struct aoRecord *pao)
 			
 		case OPEN_PICOSCOPE: 
 			int pv_value = (int)pao->val; 
+			char message[100]; 
 			
 			if (pv_value == 1){
 				result = open_picoscope(resolution, device_serial_number);
 				if (result != 0) {
-					printf("Error opening picoscope with serial number %s\n", device_serial_number);
+					sprintf(message, "Error opening picoscope with serial number %s.", device_serial_number);
+					log_message(pao->name, message, result);
+
 				}
 			} else {
 				result = close_picoscope(); 
 				if (result != 0) {
-					printf("Error closing picoscope.\n");
+					sprintf(message, "Error closing picoscope with serial number %s.", device_serial_number);
+					log_message(pao->name, message, result);
 				}
 			}
 			break;
@@ -826,9 +825,8 @@ write_ao (struct aoRecord *pao)
 				result = set_channel_on(channels[channel_index]);
 				// If channel is not succesfully set on, return to previous value 
 				if (result != 0) {
-					printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+					log_message(pao->name, "Error setting coupling.", result);
 					channels[channel_index]->coupling = previous_coupling;
-					printf("Resetting to previous coupling.\n");
 				}
 			}
 			break;
@@ -849,9 +847,8 @@ write_ao (struct aoRecord *pao)
 				result = set_channel_on(channels[channel_index]);
 				// If channel is not succesfully set on, return to previous value 
 				if (result != 0) {
-					printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+					log_message(pao->name, "Error setting voltage range.", result);
 					channels[channel_index]->range = previous_range;
-					printf("Resetting to previous range.\n");
 				}
 			}
 			break;
@@ -865,12 +862,12 @@ write_ao (struct aoRecord *pao)
 			double max_analog_offset = 0; 
 			double min_analog_offset = 0; 
 			result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
-			
-			pao->drvh = max_analog_offset; 
-			pao->hopr = max_analog_offset;
+			if (result != 0) {
+				log_message(pao->name, "Error getting analog offset limits.", result);
+			}
 
+			pao->drvh = max_analog_offset; 
 			pao->drvl = min_analog_offset;
-			pao->lopr = min_analog_offset; 
 
 			channels[channel_index]->analog_offset = pao->val; 
 			
@@ -879,9 +876,8 @@ write_ao (struct aoRecord *pao)
 				result = set_channel_on(channels[channel_index]);
 				// If channel is not succesfully set on, return to previous value 
 				if (result != 0) {
-					printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+					log_message(pao->name, "Error setting analog offset.", result);
 					channels[channel_index]->analog_offset = previous_analog_offset;
-					printf("Resetting to previous analog offset.\n");
 				}
 			}
 			break;
@@ -892,16 +888,15 @@ write_ao (struct aoRecord *pao)
 			
 			int16_t previous_bandwidth = channels[channel_index]->bandwidth;
 
-			channels[channel_index]->bandwidth= (int)pao->val;
+			channels[channel_index]->bandwidth = (int)pao->val;
 
 			channel_status = get_channel_status(channels[channel_index]->channel); 
 			if (channel_status == 1) {
 				result = set_channel_on(channels[channel_index]);
 				// If channel is not succesfully set on, return to previous value 
 				if (result != 0) {
-					printf("Error setting %s to %d.\n", record_name, (int) pao->val);
+					log_message(pao->name, "Error setting bandwidth.", result);
 					channels[channel_index]->bandwidth = previous_bandwidth;
-					printf("Resetting to previous bandwidth.\n");
 				}
 			}
 			break;
@@ -916,14 +911,14 @@ write_ao (struct aoRecord *pao)
 			if (pv_value == 1) { 
 				result = set_channel_on(channels[channel_index]);
 				if (result != 0) {
-					printf("Error setting channel %s on.\n", record_name);
+					log_message(pao->name, "Error setting channel on.", result);
 					pao->val = 0; 
 				}
 			} 
 			else {
 				result = set_channel_off((int)channels[channel_index]->channel);
 				if (result != 0) {
-					printf("Error setting channel %s off.\n", record_name);
+					log_message(pao->name, "Error setting channel off.", result);
 					pao->val = 0; 
 				}
 			}	
@@ -935,7 +930,12 @@ write_ao (struct aoRecord *pao)
 				&sample_interval, 
 				&timebase, 
 				&sample_rate
-			); 
+			); 					
+			
+			if (result != 0){
+				log_message(pao->name, "Error setting timebase configurations.", result);
+			}
+
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;  
@@ -1094,10 +1094,10 @@ init_record_stringin(struct stringinRecord * pstringin)
 	{
 		case GET_DEVICE_INFO:
 			int8_t* device_info = (int8_t*)"No device detected";
-			result = get_device_info(&device_info);
+			uint32_t result = get_device_info(&device_info);
 			
 			if (result != 0){
-				printf("Error getting device information.\n");
+				printf("Error getting device info.\n");
 			} 
 			memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
 			
@@ -1119,10 +1119,10 @@ read_stringin (struct stringinRecord *pstringin){
 	{
 		case GET_DEVICE_INFO:
 			int8_t* device_info = (int8_t*)"No device detected";
-			result = get_device_info(&device_info);
+			uint32_t result = get_device_info(&device_info);
 			
 			if (result != 0){
-				printf("Error getting device information.\n");
+				log_message(pstringin->name, "Error getting device information.", result);
 			} 
 			memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
 			
@@ -1174,6 +1174,8 @@ int16_t waveform_size_actual;
 int16_t waveform_size_max;
 struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
 
+struct waveformRecord* pLog;
+
 static long init_record_waveform(struct waveformRecord * pwaveform)
 {
 	struct instio  *pinst;
@@ -1210,6 +1212,11 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 
 	switch (vdp->ioType)
 	{	
+		case GET_LOG: 
+			// Save log PV to process when errors occur
+			pLog = pwaveform; 
+			break; 
+
 		case UPDATE_WAVEFORM:
 			int channel_index = find_channel_index_from_record(pwaveform->name, channels); 
 			pRecordUpdateWaveform[channel_index] = pwaveform;
@@ -1249,6 +1256,7 @@ void captureThreadFunc(void *arg) {
     // Setup Picoscope
     int16_t status = setup_picoscope(waveform, data->channel_configs, data->sample_config, data->trigger_config);
     if (status != 0) {
+		log_message("", "Error configuring picoscope for data capture.", status);
         fprintf(stderr, "setup_picoscope Error with code: %d \n", status);
         goto cleanup;
     }
@@ -1271,6 +1279,7 @@ void captureThreadFunc(void *arg) {
             epicsMutexLock(epics_shared_mutex);
             capturing = 0;
             epicsMutexUnlock(epics_shared_mutex);
+			log_message("", "Error capturing data block.", status);
             fprintf(stderr, "run_block_capture Error with code: %d \n", status);
             break;
         }
@@ -1305,7 +1314,6 @@ cleanup:
 
 static long
 read_waveform(struct waveformRecord *pwaveform) {
-    int16_t status;
     struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
 
     switch (vdp->ioType) {
@@ -1408,4 +1416,25 @@ read_waveform(struct waveformRecord *pwaveform) {
     }
 
     return 0;
+}
+
+/**
+ * A function to update the log PV with the latest error message. Causes the 
+ * waveform PV pLog to process. 
+ * 
+ * @param pv_name The name of the PV processing when error occured. 
+ * 		  error_message Message to go with error. 
+ * 		  status_code The status code from Picoscope API. 
+ */
+void log_message(char pv_name[], char error_message[], uint32_t status_code){
+	
+	int16_t size = snprintf(NULL, 0, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
+
+	char log[size+1]; 
+	sprintf(log, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
+	memcpy(pLog->bptr, log, strlen(log)+1);
+	pLog->nord = strlen(log)+1;
+
+	dbProcess((struct dbCommon *)pLog); 	
+	usleep(100); // wait for log PV to process
 }
