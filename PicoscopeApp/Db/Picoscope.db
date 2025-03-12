@@ -578,25 +578,25 @@ record(mbbi, "$(OSC):trigger:mode:fbk") {
 	field(INP, "$(OSC):trigger:mode:fbk:get")
 }
 
-record(ao, "$(OSC):trigger:upper") {
+record(ao, "$(OSC):trigger:upper:threshold") {
 	field(DTYP, "Picoscope")
 	field(VAL, "0")
 	field(OUT, "@L:set_trigger_upper")
 }
 
-record(ai, "$(OSC):trigger:upper:fbk") {
+record(ai, "$(OSC):trigger:upper:threshold:fbk") {
 	field(DTYP, "Picoscope")
 	field(INP, "@L:get_trigger_upper")
 	field(FLNK, "$(OSC):trigger:upper:fbk")
 }
 
-record(ao, "$(OSC):trigger:lower") {
+record(ao, "$(OSC):trigger:lower:threshold") {
 	field(DTYP, "Picoscope")
 	field(VAL, "0")
 	field(OUT, "@L:set_trigger_lower")
 }
 
-record(ai, "$(OSC):trigger:lower:fbk") {
+record(ai, "$(OSC):trigger:lower:threshold:fbk") {
 	field(DTYP, "Picoscope")
 	field(INP, "@L:get_trigger_lower")
 	field(FLNK, "$(OSC):trigger:lower:fbk")

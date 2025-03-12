@@ -333,7 +333,7 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger:direction`. 
 
-### OSCNAME:trigger:upper
+### OSCNAME:trigger:upper:threshold
 - **Type**: `ao`
 - **Description**: The upper threshold of triggering.
 - **Fields**:
@@ -342,18 +342,18 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Example**:
   ```bash
     # Set triggering upper threshold to 8000
-    $ caput OSC1234-01:trigger:upper 8000
+    $ caput OSC1234-01:trigger:upper:threshold 8000
 
     # Get triggering upper threshold
-    $ caget OSC1234-01:trigger:upper
+    $ caget OSC1234-01:trigger:upper:threshold
   ```
-### OSCNAME:trigger:upper:fbk 
+### OSCNAME:trigger:upper:threshold:fbk 
 - **Type**: `ai`
-- **Description**: The feedback PV of `OSCNAME:trigger:upper`
+- **Description**: The feedback PV of `OSCNAME:trigger:upper:threshold`
 - **Fields**: 
-  - `VAL`: See `OSCNAME:trigger:upper`.
+  - `VAL`: See `OSCNAME:trigger:upper:threshold`.
 
-### OSCNAME:trigger:lower
+### OSCNAME:trigger:lower:threshold
 - **Type**: `ao`
 - **Description**: The lower threshold of triggering.
 - **Fields**:
@@ -362,12 +362,12 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Example**:
   ```bash
     # Set triggering lower threshold to 4000
-    $ caput OSC1234-01:trigger:lower 4000
+    $ caput OSC1234-01:trigger:lower:threshold 4000
 
     # Get triggering lower threshold
-    $ caget OSC1234-01:trigger:lower
+    $ caget OSC1234-01:trigger:lower:threshold
   ```
-### OSCNAME:trigger:lower:fbk 
+### OSCNAME:trigger:lower:threshold:fbk 
 - **Type**: `ai`
 - **Description**: The feedback PV of `OSCNAME:trigger:lower`
 - **Fields**: 
