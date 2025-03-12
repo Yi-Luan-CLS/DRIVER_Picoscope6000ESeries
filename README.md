@@ -50,6 +50,15 @@ This document provides detailed information about the EPICS driver for the Picos
 ---
 
 ## PVs
+### OSCNAME:log 
+- **Type**: `waveform`
+- **Description**: A waveform PV that reports a message when an error occurs in the driver.
+- **Example**:
+  ```bash
+  # To monitor log messages:
+  $ camonitor OSC1234-01:log -S
+  ```
+
 **_Oscilloscope configurations:_**
 ### OSCNAME:device_info
 - **Type**: `stringin`
