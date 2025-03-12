@@ -375,8 +375,8 @@ record(fanout, "$(OSC):waveform:start:fanout") {
 	field(LNK4, "$(OSC):trigger_position_ratio:fbk")
 	field(LNK5, "$(OSC):trigger:direction:fbk:get")
 	field(LNK6, "$(OSC):trigger:mode:fbk:get")
-	field(LNK7, "$(OSC):trigger:upper:fbk")
-	field(LNK8, "$(OSC):trigger:lower:fbk")
+	field(LNK7, "$(OSC):trigger:upper:threshold:fbk")
+	field(LNK8, "$(OSC):trigger:lower:threshold:fbk")
 	field(LNK9, "$(OSC):waveform:start:calcout.PROC")
 }
 
@@ -587,7 +587,7 @@ record(ao, "$(OSC):trigger:upper:threshold") {
 record(ai, "$(OSC):trigger:upper:threshold:fbk") {
 	field(DTYP, "Picoscope")
 	field(INP, "@L:get_trigger_upper")
-	field(FLNK, "$(OSC):trigger:upper:fbk")
+	field(FLNK, "$(OSC):trigger:upper:threshold:fbk")
 }
 
 record(ao, "$(OSC):trigger:lower:threshold") {
@@ -599,5 +599,5 @@ record(ao, "$(OSC):trigger:lower:threshold") {
 record(ai, "$(OSC):trigger:lower:threshold:fbk") {
 	field(DTYP, "Picoscope")
 	field(INP, "@L:get_trigger_lower")
-	field(FLNK, "$(OSC):trigger:lower:fbk")
+	field(FLNK, "$(OSC):trigger:lower:threshold:fbk")
 }
