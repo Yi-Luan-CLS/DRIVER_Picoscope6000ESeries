@@ -790,6 +790,7 @@ PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uin
             printf("Capture stopped.\n");     
             return status;
         }
+        usleep(1);
     }
 
     ps6000aStop(handle);
