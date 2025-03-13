@@ -8,6 +8,7 @@ record(ao, "$(SERIAL_NUM)"){
 record(waveform, "$(OSC):log"){ 
 	field(DTYP, "Picoscope")
 	field(SCAN, "Passive")
+	field(MPST, "1")
 	field(NELM, "500")
 	field(FTVL, "CHAR")
     field(INP, "@L:get_log")
