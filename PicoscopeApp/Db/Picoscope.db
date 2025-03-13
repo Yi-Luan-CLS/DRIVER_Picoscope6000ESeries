@@ -74,6 +74,7 @@ record(fanout, "$(OSC):ON:fanout") {
 	field(SELM, "All")
 	field(LNK1, "$(OSC):ON:set")
 	field(LNK2, "$(OSC):device_info")
+	field(LNK3, "$(OSC):ON:fbk:get")
 }
 
 record(ao, "$(OSC):ON:set") {
@@ -89,7 +90,7 @@ record(ao, "$(OSC):ON:set") {
 
 record(ai, "$(OSC):ON:fbk:get") {
 	field(DTYP, "Picoscope")
-	field(SCAN, "5 second")
+	field(SCAN, "10 second")
 	field(INP, "@L:get_device_status")
 	field(FLNK, "$(OSC):ON:fbk.PROC")
 }
