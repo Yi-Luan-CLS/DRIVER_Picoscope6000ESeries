@@ -75,6 +75,7 @@ record(fanout, "$(OSC):ON:fanout") {
 	field(SELM, "All")
 	field(LNK1, "$(OSC):ON:set")
 	field(LNK2, "$(OSC):device_info")
+	field(LNK3, "$(OSC):ON:fbk:get")
 }
 
 record(ao, "$(OSC):ON:set") {
@@ -90,7 +91,7 @@ record(ao, "$(OSC):ON:set") {
 
 record(ai, "$(OSC):ON:fbk:get") {
 	field(DTYP, "Picoscope")
-	field(SCAN, "5 second")
+	field(SCAN, "10 second")
 	field(INP, "@L:get_device_status")
 	field(FLNK, "$(OSC):ON:fbk.PROC")
 }
@@ -376,8 +377,8 @@ record(fanout, "$(OSC):waveform:start:fanout") {
 	field(LNK4, "$(OSC):trigger_position_ratio:fbk")
 	field(LNK5, "$(OSC):trigger:direction:fbk:get")
 	field(LNK6, "$(OSC):trigger:mode:fbk:get")
-	field(LNK7, "$(OSC):trigger:upper:fbk")
-	field(LNK8, "$(OSC):trigger:lower:fbk")
+	field(LNK7, "$(OSC):trigger:upper:threshold:fbk")
+	field(LNK8, "$(OSC):trigger:lower:threshold:fbk")
 	field(LNK9, "$(OSC):waveform:start:calcout.PROC")
 }
 
@@ -579,26 +580,26 @@ record(mbbi, "$(OSC):trigger:mode:fbk") {
 	field(INP, "$(OSC):trigger:mode:fbk:get")
 }
 
-record(ao, "$(OSC):trigger:upper") {
+record(ao, "$(OSC):trigger:upper:threshold") {
 	field(DTYP, "Picoscope")
 	field(VAL, "0")
 	field(OUT, "@L:set_trigger_upper")
 }
 
-record(ai, "$(OSC):trigger:upper:fbk") {
+record(ai, "$(OSC):trigger:upper:threshold:fbk") {
 	field(DTYP, "Picoscope")
 	field(INP, "@L:get_trigger_upper")
-	field(FLNK, "$(OSC):trigger:upper:fbk")
+	field(FLNK, "$(OSC):trigger:upper:threshold:fbk")
 }
 
-record(ao, "$(OSC):trigger:lower") {
+record(ao, "$(OSC):trigger:lower:threshold") {
 	field(DTYP, "Picoscope")
 	field(VAL, "0")
 	field(OUT, "@L:set_trigger_lower")
 }
 
-record(ai, "$(OSC):trigger:lower:fbk") {
+record(ai, "$(OSC):trigger:lower:threshold:fbk") {
 	field(DTYP, "Picoscope")
 	field(INP, "@L:get_trigger_lower")
-	field(FLNK, "$(OSC):trigger:lower:fbk")
+	field(FLNK, "$(OSC):trigger:lower:threshold:fbk")
 }
