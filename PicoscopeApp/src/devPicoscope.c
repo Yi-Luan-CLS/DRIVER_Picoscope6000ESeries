@@ -1311,30 +1311,20 @@ void captureThreadFunc(void *arg) {
         goto cleanup;
     }
 
-    epicsMutexLock(epics_acquisition_control_mutex);
-    epicsMutexUnlock(epics_acquisition_control_mutex);
     while (1) {
-        epicsMutexLock(epics_acquisition_control_mutex);
         if (dataAcquisitionControl!=1) {
-            epicsMutexUnlock(epics_acquisition_control_mutex);
             break;
         }
-	
-        epicsMutexUnlock(epics_acquisition_control_mutex);
         double time_indisposed_ms = 0;
 
         status = run_block_capture(data->sample_config, &time_indisposed_ms, &dataAcquisitionControl);
 
         if (status != 0) {
-            epicsMutexLock(epics_acquisition_control_mutex);
-            epicsMutexUnlock(epics_acquisition_control_mutex);
             fprintf(stderr, "run_block_capture Error with code: %d \n", status);
             break;
         }
 
-        epicsMutexLock(epics_acquisition_control_mutex);
         waveform_size_actual = data->sample_config->num_samples;
-        epicsMutexUnlock(epics_acquisition_control_mutex);
 
         // Process the UPDATE_WAVEFORM subroutine to update waveform
         for (size_t i = 0; i < CHANNEL_NUM; i++) {
@@ -1356,8 +1346,6 @@ cleanup:
     free(data->trigger_config);
     free(data);
 
-    epicsMutexLock(epics_acquisition_control_mutex);
-    epicsMutexUnlock(epics_acquisition_control_mutex);
 	epicsMutexUnlock(epics_acquisition_thread_mutex);
 }
 
