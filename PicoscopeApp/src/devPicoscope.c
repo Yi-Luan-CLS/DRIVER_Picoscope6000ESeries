@@ -463,10 +463,9 @@ typedef long (*DEVSUPFUN_AO)(struct aoRecord *);
 static long init_record_ao(struct aoRecord *pao);
 static long write_ao (struct aoRecord *pao);
 void re_acquire_waveform(struct aoRecord *pao){
-	if (!dataAcquisitionControl==1) {
+	if (dataAcquisitionControl!=1) {
 		return;
 	}
-	printf("pao: %s\n", pao->name);
 	epicsMutexLock(epics_acquisition_pv_mutex);
 	dbProcess((struct dbCommon *)pWaveformStop);
 	epicsMutexLock(epics_acquisition_thread_mutex);
@@ -1323,7 +1322,6 @@ void captureThreadFunc(void *arg) {
     }
 
     epicsMutexLock(epics_acquisition_control_mutex);
-    // dataAcquisitionControl ++;
     epicsMutexUnlock(epics_acquisition_control_mutex);
     while (1) {
         epicsMutexLock(epics_acquisition_control_mutex);
@@ -1372,7 +1370,6 @@ cleanup:
     free(data);
 
     epicsMutexLock(epics_acquisition_control_mutex);
-    // dataAcquisitionControl --;
     epicsMutexUnlock(epics_acquisition_control_mutex);
 	epicsMutexUnlock(epics_acquisition_thread_mutex);
 }
@@ -1384,26 +1381,14 @@ read_waveform(struct waveformRecord *pwaveform) {
 
     switch (vdp->ioType) {
         case START_RETRIEVE_WAVEFORM:
-			epicsMutexLock(epics_acquisition_pv_mutex);
 			printf("Start Retrieving\n");
             epicsMutexLock(epics_acquisition_control_mutex);
-            if (dataAcquisitionControl >= 1) {
-                fprintf(stderr, "%d Capture thread already running\n", dataAcquisitionControl);
-				printf("Capture thread already running\n");
+            if (dataAcquisitionControl) {
+                fprintf(stderr, "Capture thread already running\n");
                 epicsMutexUnlock(epics_acquisition_control_mutex);
-				epicsMutexUnlock(epics_acquisition_pv_mutex);
                 return -1;
-            }else if (dataAcquisitionControl<0)
-			{
-				printf("elif control:%d\n", dataAcquisitionControl);
-            	dataAcquisitionControl ++;
-				epicsMutexUnlock(epics_acquisition_control_mutex);
-				epicsMutexUnlock(epics_acquisition_pv_mutex);
-                return -1;
-			}
-			
-			printf("control:%d\n", dataAcquisitionControl);
-            dataAcquisitionControl ++;
+            }
+            dataAcquisitionControl = 1;
             epicsMutexUnlock(epics_acquisition_control_mutex);
 
             // Create CaptureThreadData
@@ -1418,9 +1403,8 @@ read_waveform(struct waveformRecord *pwaveform) {
 				free(data->sample_config);
 				free(data);
 				epicsMutexLock(epics_acquisition_control_mutex);
-				dataAcquisitionControl --;
+				dataAcquisitionControl = 0;
 				epicsMutexUnlock(epics_acquisition_control_mutex);
-				epicsMutexUnlock(epics_acquisition_pv_mutex);
 
 				return -1;
 			}
@@ -1436,9 +1420,8 @@ read_waveform(struct waveformRecord *pwaveform) {
                     free(data->sample_config);
                     free(data);
                     epicsMutexLock(epics_acquisition_control_mutex);
-                    dataAcquisitionControl --;
+                    dataAcquisitionControl = 0;
                     epicsMutexUnlock(epics_acquisition_control_mutex);
-					epicsMutexUnlock(epics_acquisition_pv_mutex);
                     return -1;
                 }
                 *data->channel_configs[i] = *channels[i];
@@ -1466,12 +1449,10 @@ read_waveform(struct waveformRecord *pwaveform) {
                 free(data->sample_config);
                 free(data);
                 epicsMutexLock(epics_acquisition_control_mutex);
-                dataAcquisitionControl --;
+                dataAcquisitionControl = 0;
                 epicsMutexUnlock(epics_acquisition_control_mutex);
-				epicsMutexUnlock(epics_acquisition_pv_mutex);
                 return -1;
             }
-			epicsMutexUnlock(epics_acquisition_pv_mutex);
 
             break;
 
@@ -1487,7 +1468,7 @@ read_waveform(struct waveformRecord *pwaveform) {
 
         case STOP_RETRIEVE_WAVEFORM:
             epicsMutexLock(epics_acquisition_control_mutex);
-            dataAcquisitionControl --;
+            dataAcquisitionControl = 0;
             epicsMutexUnlock(epics_acquisition_control_mutex);
             break;
 
