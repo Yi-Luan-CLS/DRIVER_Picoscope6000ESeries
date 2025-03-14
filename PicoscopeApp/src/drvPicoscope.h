@@ -49,7 +49,7 @@ int32_t setup_picoscope(
 int32_t run_block_capture(
     struct SampleConfigs* sample_config,
     double* time_indisposed_ms,
-    uint8_t* capturing
+    int8_t* capturing
     );
 
 int32_t get_analogue_offset_limits(

@@ -499,11 +499,11 @@ typedef struct {
     PICO_STATUS callbackStatus; // Status from the callback
 } BlockCaptureState;
 PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config);
-PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms, uint8_t* capturing);
+PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms, int8_t* dataAcquisitionControl);
 PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config);
 PICO_STATUS set_AUX_trigger(struct TriggerConfigs* trigger_config);
 PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms);
-PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uint8_t* capturing);
+PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, int8_t* dataAcquisitionControl);
 PICO_STATUS retrieve_waveform_data(struct SampleConfigs* sample_config);
 
 // /**
@@ -708,7 +708,7 @@ PICO_STATUS set_AUX_trigger(struct TriggerConfigs* trigger_config) {
  * @param time_indisposed_ms Pointer to a variable where the time indisposed (in milliseconds) will be stored.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms, uint8_t* capturing) {
+PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms, int8_t* dataAcquisitionControl) {
     PICO_STATUS status = 0;
     status = start_block_capture(sample_config, time_indisposed_ms);
     if (status != PICO_OK) {
@@ -716,7 +716,7 @@ PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_
         return status;
     }
 
-    status = wait_for_capture_completion(sample_config, capturing);
+    status = wait_for_capture_completion(sample_config, dataAcquisitionControl);
     if (status != PICO_OK) {
         log_error("wait_for_capture_completion", status, __FILE__, __LINE__);
         return status;
@@ -774,13 +774,13 @@ PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* tim
  * 
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uint8_t* capturing)
+PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, int8_t* dataAcquisitionControl)
 {
     PICO_STATUS status = 0;
 
     while (!callback_state->dataReady)
     {
-        if (!*capturing) {
+        if (*dataAcquisitionControl!=1) {
             ps6000aStop(handle);
             sample_config->num_samples = 0;
             printf("Capture stopped.\n");     
@@ -807,7 +807,7 @@ PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uin
     return callback_state->callbackStatus;
 }
 
-// PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uint8_t* capturing) {
+// PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uint8_t* dataAcquisitionControl) {
 //     PICO_STATUS status = 0;
 //     int16_t trigger_status = 0;
 //     while (1) {
@@ -826,7 +826,7 @@ PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config, uin
 //             }
 //             break;
 //         }
-//         if (!*capturing) {
+//         if (!*dataAcquisitionControl) {
 //             ps6000aStop(handle);
 //             sample_config->num_samples = 0;
 //             printf("Capture stopped.\n");     
