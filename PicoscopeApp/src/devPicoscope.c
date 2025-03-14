@@ -26,7 +26,6 @@
 
 int16_t result; 
 int8_t dataAcquisitionControl = 0;
-uint8_t dataAcquisitionFinished;
 epicsMutexId epics_acquisition_control_mutex;
 epicsMutexId epics_acquisition_thread_mutex;
 epicsMutexId epics_acquisition_pv_mutex;
@@ -454,11 +453,16 @@ void re_acquire_waveform(struct aoRecord *pao){
 	if (dataAcquisitionControl!=1) {
 		return;
 	}
-	epicsMutexLock(epics_acquisition_pv_mutex);
+	epicsMutexLock(epics_acquisition_pv_mutex);	// this is to make sure Stop and Start PV invoked in sequence.
+	
 	dbProcess((struct dbCommon *)pWaveformStop);
+
+	// this is to make sure the capureting thread is actually stopped
 	epicsMutexLock(epics_acquisition_thread_mutex);
 	epicsMutexUnlock(epics_acquisition_thread_mutex);
+	
 	dbProcess((struct dbCommon *)pWaveformStart);
+	
 	epicsMutexUnlock(epics_acquisition_pv_mutex);
 }
 struct
@@ -702,8 +706,7 @@ write_ao (struct aoRecord *pao)
 			if (result !=0) {
 				log_message(pao->name, "Error setting device resolution.", result);
 			}
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break;
 		
 		case SET_TIME_PER_DIVISION_UNIT: 
@@ -727,8 +730,7 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;  
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break; 
 
 		case SET_TIME_PER_DIVISION: 
@@ -752,8 +754,7 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;  
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break; 
 
 		case SET_NUM_DIVISIONS: 
@@ -777,8 +778,7 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;  
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break; 
 
 		case SET_NUM_SAMPLES:
@@ -803,26 +803,22 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break;  
 			
 		case SET_DOWN_SAMPLE_RATIO: 
 			sample_configurations->down_sample_ratio = (int)pao->val; 
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break; 
 		
 		case SET_DOWN_SAMPLE_RATIO_MODE: 
 			sample_configurations->down_sample_ratio_mode = (int)pao->val;
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break; 
 
 		case SET_TRIGGER_POSITION_RATIO:
 			sample_configurations->trigger_position_ratio = (float)pao->val;
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break;  
 			
 		case OPEN_PICOSCOPE: 
@@ -865,8 +861,7 @@ write_ao (struct aoRecord *pao)
 				}
 			}
 			break;
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 
 		case SET_RANGE:
 			record_name = pao->name;
@@ -888,8 +883,7 @@ write_ao (struct aoRecord *pao)
 					channels[channel_index]->range = previous_range;
 				}
 			}
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break;
 
 		case SET_ANALOG_OFFSET: 
@@ -919,8 +913,7 @@ write_ao (struct aoRecord *pao)
 					channels[channel_index]->analog_offset = previous_analog_offset;
 				}
 			}
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break;
 
 		case SET_BANDWIDTH: 
@@ -940,8 +933,7 @@ write_ao (struct aoRecord *pao)
 					channels[channel_index]->bandwidth = previous_bandwidth;
 				}
 			}
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break;
 
 		case SET_CHANNEL_ON:	
@@ -982,14 +974,12 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;  
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break;
 
 		case SET_TRIGGER_DIRECTION:
 			trigger_config->thresholdDirection = (enum ThresholdDirection) pao->val;
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break;
 
 		case SET_TRIGGER_CHANNEL:
@@ -1002,24 +992,22 @@ write_ao (struct aoRecord *pao)
 					dbProcess((struct dbCommon *)trigger_pao[i]);
 				}
 			}
-			re_acquire_waveform(pao);
-			break;
+//			re_acquire_waveform(pao);			break;
 
 		case SET_TRIGGER_MODE:
 			trigger_config->thresholdMode = (enum ThresholdMode) pao->val;
-			re_acquire_waveform(pao);
-
+//			re_acquire_waveform(pao);
 			break;
 
 		case SET_TRIGGER_UPPER:
 			trigger_config->thresholdUpper = (int16_t) pao->val;
-			re_acquire_waveform(pao);
+			// re_acquire_waveform(pao);
 
 			break;
 
 		case SET_TRIGGER_LOWER:
 			trigger_config->thresholdLower = (int16_t) pao->val;
-			re_acquire_waveform(pao);
+			// re_acquire_waveform(pao);
 
 			break;
 
@@ -1035,7 +1023,9 @@ write_ao (struct aoRecord *pao)
                 errlogPrintf("%s: Read Error\n", pao->name);
 			}
 		return 2;
-    }
+    }else{
+		re_acquire_waveform(pao);
+	}
 	return 0;
 }
 
@@ -1333,35 +1323,22 @@ void captureThreadFunc(void *arg) {
         goto cleanup;
     }
 
-    epicsMutexLock(epics_acquisition_control_mutex);
-    epicsMutexUnlock(epics_acquisition_control_mutex);
     while (1) {
-        epicsMutexLock(epics_acquisition_control_mutex);
         if (dataAcquisitionControl!=1) {
-            epicsMutexUnlock(epics_acquisition_control_mutex);
             break;
         }
-	
-		dataAcquisitionFinished = 0;
-        epicsMutexUnlock(epics_acquisition_control_mutex);
         double time_indisposed_ms = 0;
 
         status = run_block_capture(data->sample_config, &time_indisposed_ms, &dataAcquisitionControl);
 
         if (status != 0) {
 
-            epicsMutexLock(epics_acquisition_control_mutex);
-			      dataAcquisitionFinished = 1;
-            epicsMutexUnlock(epics_acquisition_control_mutex);
         		log_message("", "Error capturing data block.", status);
             fprintf(stderr, "run_block_capture Error with code: %d \n", status);
             break;
         }
 
-        epicsMutexLock(epics_acquisition_control_mutex);
         waveform_size_actual = data->sample_config->num_samples;
-		dataAcquisitionFinished = 1;
-        epicsMutexUnlock(epics_acquisition_control_mutex);
 
         // Process the UPDATE_WAVEFORM subroutine to update waveform
         for (size_t i = 0; i < CHANNEL_NUM; i++) {
@@ -1383,8 +1360,6 @@ cleanup:
     free(data->trigger_config);
     free(data);
 
-    epicsMutexLock(epics_acquisition_control_mutex);
-    epicsMutexUnlock(epics_acquisition_control_mutex);
 	epicsMutexUnlock(epics_acquisition_thread_mutex);
 }
 
