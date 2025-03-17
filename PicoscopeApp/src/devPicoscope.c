@@ -25,10 +25,10 @@
 
 
 int16_t result; 
-int8_t dataAcquisitionControl = 0;
-epicsMutexId epics_acquisition_control_mutex;
+int8_t dataAcquisitionFlag = 0;
+epicsMutexId epics_acquisition_flag_mutex;
 epicsMutexId epics_acquisition_thread_mutex;
-epicsMutexId epics_acquisition_pv_mutex;
+epicsMutexId epics_acquisition_restart_mutex;
 
 
 enum ioType
@@ -375,7 +375,7 @@ read_ai (struct aiRecord *pai){
 			break; 
 		
 		case GET_ACQUISITION_STATUS:
-			pai->val = (float)dataAcquisitionControl;
+			pai->val = (float)dataAcquisitionFlag;
 			break;
 
 		case GET_TRIGGER_DIRECTION:
@@ -450,10 +450,10 @@ typedef long (*DEVSUPFUN_AO)(struct aoRecord *);
 static long init_record_ao(struct aoRecord *pao);
 static long write_ao (struct aoRecord *pao);
 void re_acquire_waveform(struct aoRecord *pao){
-	if (dataAcquisitionControl!=1) {
+	if (dataAcquisitionFlag!=1) {
 		return;
 	}
-	epicsMutexLock(epics_acquisition_pv_mutex);	// this is to make sure Stop and Start PV invoked in sequence.
+	epicsMutexLock(epics_acquisition_restart_mutex);	// this is to make sure Stop and Start PV invoked in sequence.
 	
 	dbProcess((struct dbCommon *)pWaveformStop);
 
@@ -463,7 +463,7 @@ void re_acquire_waveform(struct aoRecord *pao){
 	
 	dbProcess((struct dbCommon *)pWaveformStart);
 	
-	epicsMutexUnlock(epics_acquisition_pv_mutex);
+	epicsMutexUnlock(epics_acquisition_restart_mutex);
 }
 struct
 	{
@@ -1279,9 +1279,9 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 			break;
 
 		case STOP_RETRIEVE_WAVEFORM:
-			epics_acquisition_control_mutex = epicsMutexCreate();
-			if (epics_acquisition_control_mutex == NULL) {
-				fprintf(stderr, "Failed to create epics_acquisition_control_mutex mutex\n");
+			epics_acquisition_flag_mutex = epicsMutexCreate();
+			if (epics_acquisition_flag_mutex == NULL) {
+				fprintf(stderr, "Failed to create epics_acquisition_flag_mutex mutex\n");
 				return -1;
 			}
 			epics_acquisition_thread_mutex = epicsMutexCreate();
@@ -1289,9 +1289,9 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 				fprintf(stderr, "Failed to create epics_acquisition_thread_mutex mutex\n");
 				return -1;
 			}
-			epics_acquisition_pv_mutex = epicsMutexCreate();
-			if (epics_acquisition_pv_mutex == NULL) {
-				fprintf(stderr, "Failed to create epics_acquisition_pv_mutex mutex\n");
+			epics_acquisition_restart_mutex = epicsMutexCreate();
+			if (epics_acquisition_restart_mutex == NULL) {
+				fprintf(stderr, "Failed to create epics_acquisition_restart_mutex mutex\n");
 				return -1;
 			}
 			
@@ -1316,7 +1316,7 @@ void captureThreadFunc(void *arg) {
 	epicsThreadId id = epicsThreadGetIdSelf();
 	printf("Start ID is %ld\n", id->tid);
     // Setup Picoscope
-    int16_t status = setup_picoscope(waveform, data->channel_configs, data->sample_config, data->trigger_config);
+    uint32_t status = setup_picoscope(waveform, data->channel_configs, data->sample_config, data->trigger_config);
     if (status != 0) {
 		log_message("", "Error configuring picoscope for data capture.", status);
         fprintf(stderr, "setup_picoscope Error with code: %d \n", status);
@@ -1324,16 +1324,16 @@ void captureThreadFunc(void *arg) {
     }
 
     while (1) {
-        if (dataAcquisitionControl!=1) {
+        if (dataAcquisitionFlag!=1) {
             break;
         }
         double time_indisposed_ms = 0;
 
-        status = run_block_capture(data->sample_config, &time_indisposed_ms, &dataAcquisitionControl);
+        status = run_block_capture(data->sample_config, &time_indisposed_ms);
 
         if (status != 0) {
 
-        		log_message("", "Error capturing data block.", status);
+        	log_message("", "Error capturing data block.", status);
             fprintf(stderr, "run_block_capture Error with code: %d \n", status);
             break;
         }
@@ -1370,14 +1370,14 @@ read_waveform(struct waveformRecord *pwaveform) {
     switch (vdp->ioType) {
         case START_RETRIEVE_WAVEFORM:
 			printf("Start Retrieving\n");
-            epicsMutexLock(epics_acquisition_control_mutex);
-            if (dataAcquisitionControl) {
+            epicsMutexLock(epics_acquisition_flag_mutex);
+            if (dataAcquisitionFlag) {
                 fprintf(stderr, "Capture thread already running\n");
-                epicsMutexUnlock(epics_acquisition_control_mutex);
+                epicsMutexUnlock(epics_acquisition_flag_mutex);
                 return -1;
             }
-            dataAcquisitionControl = 1;
-            epicsMutexUnlock(epics_acquisition_control_mutex);
+            dataAcquisitionFlag = 1;
+            epicsMutexUnlock(epics_acquisition_flag_mutex);
 
             // Create CaptureThreadData
 			struct CaptureThreadData *data = malloc(sizeof(struct CaptureThreadData));
@@ -1390,9 +1390,9 @@ read_waveform(struct waveformRecord *pwaveform) {
 				free(data->channel_configs);
 				free(data->sample_config);
 				free(data);
-				epicsMutexLock(epics_acquisition_control_mutex);
-				dataAcquisitionControl = 0;
-				epicsMutexUnlock(epics_acquisition_control_mutex);
+				epicsMutexLock(epics_acquisition_flag_mutex);
+				dataAcquisitionFlag = 0;
+				epicsMutexUnlock(epics_acquisition_flag_mutex);
 
 				return -1;
 			}
@@ -1407,9 +1407,9 @@ read_waveform(struct waveformRecord *pwaveform) {
                     free(data->channel_configs);
                     free(data->sample_config);
                     free(data);
-                    epicsMutexLock(epics_acquisition_control_mutex);
-                    dataAcquisitionControl = 0;
-                    epicsMutexUnlock(epics_acquisition_control_mutex);
+                    epicsMutexLock(epics_acquisition_flag_mutex);
+                    dataAcquisitionFlag = 0;
+                    epicsMutexUnlock(epics_acquisition_flag_mutex);
                     return -1;
                 }
                 *data->channel_configs[i] = *channels[i];
@@ -1436,9 +1436,9 @@ read_waveform(struct waveformRecord *pwaveform) {
                 free(data->channel_configs);
                 free(data->sample_config);
                 free(data);
-                epicsMutexLock(epics_acquisition_control_mutex);
-                dataAcquisitionControl = 0;
-                epicsMutexUnlock(epics_acquisition_control_mutex);
+                epicsMutexLock(epics_acquisition_flag_mutex);
+                dataAcquisitionFlag = 0;
+                epicsMutexUnlock(epics_acquisition_flag_mutex);
                 return -1;
             }
 
@@ -1446,18 +1446,19 @@ read_waveform(struct waveformRecord *pwaveform) {
 
         case UPDATE_WAVEFORM:
             int channel_index = find_channel_index_from_record(pwaveform->name, channels);
-            epicsMutexLock(epics_acquisition_control_mutex);
-            if (dataAcquisitionControl == 1) {
+            epicsMutexLock(epics_acquisition_flag_mutex);
+            if (dataAcquisitionFlag == 1) {
                 memcpy(pwaveform->bptr, waveform[channel_index], waveform_size_actual * sizeof(int16_t));
                 pwaveform->nord = waveform_size_actual;
             }
-            epicsMutexUnlock(epics_acquisition_control_mutex);
+            epicsMutexUnlock(epics_acquisition_flag_mutex);
             break;
 
         case STOP_RETRIEVE_WAVEFORM:
-            epicsMutexLock(epics_acquisition_control_mutex);
-            dataAcquisitionControl = 0;
-            epicsMutexUnlock(epics_acquisition_control_mutex);
+            epicsMutexLock(epics_acquisition_flag_mutex);
+            dataAcquisitionFlag = 0;
+            epicsMutexUnlock(epics_acquisition_flag_mutex);
+			interrupt_block_capture();
             break;
 
         default:
