@@ -66,4 +66,7 @@ uint32_t validate_sample_interval(
     double* available_time_interval
     );
 
+uint32_t stop_capturing();
+
+
 #endif

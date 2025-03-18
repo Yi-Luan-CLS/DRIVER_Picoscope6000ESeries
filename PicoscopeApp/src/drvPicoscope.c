@@ -14,7 +14,7 @@
 
 int16_t handle = 0; // The identifier of the connected picoscope
 pthread_mutex_t block_ready_mutex;
-
+pthread_mutex_t ps6000a_call_mutex;
 void log_error(char* function_name, uint32_t status, const char* FILE, int LINE){ 
     printf("Error in %s (file: %s, line: %d). Status code: 0x%08X\n", function_name, FILE, LINE, status);
 }
@@ -31,7 +31,7 @@ void log_error(char* function_name, uint32_t status, const char* FILE, int LINE)
  * @return 0 if the device is successfully opened, or a non-zero error code.  
 */
 uint32_t open_picoscope(int16_t resolution, int8_t* serial_num){
-    
+
     uint32_t status = ps6000aOpenUnit(&handle, serial_num, resolution);
     if (status != PICO_OK) 
     { 
@@ -39,6 +39,7 @@ uint32_t open_picoscope(int16_t resolution, int8_t* serial_num){
         return status;  
     }
     pthread_mutex_init(&block_ready_mutex, NULL);
+    pthread_mutex_init(&ps6000a_call_mutex, NULL);
 
     return 0;
 }
@@ -49,8 +50,9 @@ uint32_t open_picoscope(int16_t resolution, int8_t* serial_num){
  * @return 0 if the device is successfully closed, or a non-zero error code. 
 */
 uint32_t close_picoscope(){ 
-    
+    pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aCloseUnit(handle);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
     if (status != PICO_OK) 
     { 
         log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
@@ -58,6 +60,7 @@ uint32_t close_picoscope(){
     } 
     handle = 0;
     pthread_mutex_destroy(&block_ready_mutex);
+    pthread_mutex_destroy(&ps6000a_call_mutex);
 
     return 0;
 }
@@ -68,8 +71,9 @@ uint32_t close_picoscope(){
  * @return 0 if device is connect, otherwise a non-zero error code.
 */
 uint32_t ping_picoscope(){ 
-
+    pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aPingUnit(handle);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
 
     // If driver call in progress, return connected. 
     if (status == PICO_DRIVER_FUNCTION) {
@@ -94,7 +98,9 @@ uint32_t ping_picoscope(){
  * @return 0 if resolution successfully set, otherwise a non-zero error code.
 */
 uint32_t set_device_resolution(int16_t resolution){ 
+    pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aSetDeviceResolution(handle, resolution); 
+    pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK){ 
         log_error("ps6000aSetDeviceResolution", status, __FILE__, __LINE__);
@@ -114,8 +120,10 @@ uint32_t set_device_resolution(int16_t resolution){
 uint32_t get_resolution(int16_t* resolution) {
 
     PICO_DEVICE_RESOLUTION device_resolution; 
-
+    
+    pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aGetDeviceResolution(handle, &device_resolution); 
+    pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if(status != PICO_OK) {
         log_error("ps6000aGetDeviceResolution", status, __FILE__, __LINE__);
@@ -138,8 +146,11 @@ int16_t required_size;
 uint32_t get_serial_num(int8_t** serial_num) {
 
     int8_t* serial_num_buffer = NULL;
-    
+
+    pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_BATCH_AND_SERIAL);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
+
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
         return status;  
@@ -149,7 +160,10 @@ uint32_t get_serial_num(int8_t** serial_num) {
         serial_num_buffer = malloc(required_size);
     memset(serial_num_buffer, 0, required_size);
 
+    pthread_mutex_lock(&ps6000a_call_mutex);
     status = ps6000aGetUnitInfo(handle, serial_num_buffer, required_size, &required_size, PICO_BATCH_AND_SERIAL);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
+
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
         return status;  
@@ -173,7 +187,10 @@ uint32_t get_model_num(int8_t** model_num) {
 
     int8_t* model_num_buffer = NULL;
     
+    pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_VARIANT_INFO);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
+
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
         return status;  
@@ -182,8 +199,11 @@ uint32_t get_model_num(int8_t** model_num) {
     if (model_num_buffer == NULL)
         model_num_buffer = malloc(required_size);
     memset(model_num_buffer, 0, required_size);
-
+    
+    pthread_mutex_lock(&ps6000a_call_mutex);
     status = ps6000aGetUnitInfo(handle, model_num_buffer, required_size, &required_size, PICO_VARIANT_INFO);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
+
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
         return status;  
@@ -255,8 +275,10 @@ EnabledChannelFlags channel_status = {0};
  * @return 0 if the channel is succesfully set on, otherwise a non-zero error code. 
 */
 uint32_t set_channel_on(struct ChannelConfigs* channel) {
-    
+
+    pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analog_offset, channel->bandwidth);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
     if (status != PICO_OK) 
     {
         log_error("ps6000aSetChannelOn", status, __FILE__, __LINE__);
@@ -295,8 +317,10 @@ uint32_t set_channel_on(struct ChannelConfigs* channel) {
  * @return 0 if the channel is successfully turned off, otherwise a non-zero error code.
 */
 uint32_t set_channel_off(int channel) {
-
+    pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aSetChannelOff(handle, channel);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
+
     if (status != PICO_OK)
     {
         log_error("ps6000aSetChannelOff", status, __FILE__, __LINE__);
@@ -365,7 +389,9 @@ uint32_t get_analog_offset_limits(int16_t range, int16_t coupling, double* max_a
     double maximum_voltage; 
     double minimum_voltage;
 
+    pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aGetAnalogueOffsetLimits(handle, range, coupling, &maximum_voltage, &minimum_voltage); 
+    pthread_mutex_unlock(&ps6000a_call_mutex);
     if (status != PICO_OK)
     {
         log_error("ps6000aGetAnalogueOffsetLimits", status, __FILE__, __LINE__);
@@ -402,7 +428,9 @@ uint32_t validate_sample_interval(double requested_time_interval, uint32_t* time
     uint32_t timebase_return; 
     double time_interval_available;
 
+    pthread_mutex_lock(&ps6000a_call_mutex);
     status = ps6000aNearestSampleIntervalStateless(handle, enabledChannels, requested_time_interval, resolution, &timebase_return, &time_interval_available); 
+    pthread_mutex_unlock(&ps6000a_call_mutex);
     
     if (status == PICO_NO_CHANNELS_OR_PORTS_ENABLED) {
         log_error("ps6000aNearestSampleIntervalStateless. No channels enabled.", status, __FILE__, __LINE__);
@@ -498,7 +526,6 @@ uint32_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uin
 
 
 typedef struct {
-    int dataReady; // Flag to indicate data is ready
     PICO_STATUS callbackStatus; // Status from the callback
 } BlockCaptureState;
 PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config);
@@ -542,8 +569,10 @@ PICO_STATUS set_trigger_conditions(struct TriggerConfigs* trigger_config) {
         .source = trigger_config->channel,
         .condition = PICO_CONDITION_TRUE
     };
+    pthread_mutex_lock(&ps6000a_call_mutex);
     ps6000aSetTriggerChannelConditions(handle, &condition, nConditions, PICO_CLEAR_ALL);
     ps6000aSetTriggerChannelConditions(handle, &condition, nConditions, PICO_ADD);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aSetTriggerChannelConditions", status, __FILE__, __LINE__);
@@ -564,7 +593,9 @@ PICO_STATUS set_trigger_directions(struct TriggerConfigs* trigger_config) {
         .direction = trigger_config->thresholdDirection,
         .thresholdMode = trigger_config->thresholdMode
     };
+    pthread_mutex_lock(&ps6000a_call_mutex);
     ps6000aSetTriggerChannelDirections(handle, &direction, nDirections);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aSetTriggerChannelDirections", status, __FILE__, __LINE__);
@@ -576,7 +607,6 @@ PICO_STATUS set_trigger_directions(struct TriggerConfigs* trigger_config) {
 
 PICO_STATUS set_trigger_properties(struct TriggerConfigs* trigger_config) {
     int16_t nChannelProperties = 1; // Only support one now 
-    uint32_t autoTriggerMicroSeconds = 0;     // Keep waiting until triggered
     unsigned short hysteresis = (unsigned short)((UINT16_MAX / 100.0) * 5.0);   // 5% of the full range
 
     PICO_TRIGGER_CHANNEL_PROPERTIES channelProperty = { 
@@ -586,7 +616,9 @@ PICO_STATUS set_trigger_properties(struct TriggerConfigs* trigger_config) {
         .thresholdLower = trigger_config->thresholdLower,
         .thresholdLowerHysteresis = hysteresis
     };
+    pthread_mutex_lock(&ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetTriggerChannelProperties(handle, &channelProperty, nChannelProperties, 0, trigger_config->autoTriggerMicroSeconds);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aSetTriggerChannelProperties", status, __FILE__, __LINE__);
@@ -626,10 +658,13 @@ uint32_t is_Channel_On(enum Channel channel){
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
 PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config) {
+    pthread_mutex_lock(&ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetDataBuffer(
         handle, (PICO_CHANNEL)NULL, NULL, 0, PICO_INT16_T, 0, 0, 
         PICO_CLEAR_ALL      // Clear buffer in Picoscope buffer list
     );
+    pthread_mutex_unlock(&ps6000a_call_mutex);
+    
     for (size_t i = 0; i < CHANNEL_NUM; i++)
     {
         if (status != PICO_OK) {
@@ -637,6 +672,7 @@ PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct Channe
         }
         if (is_Channel_On(channel_config[i]->channel))
         {
+            pthread_mutex_lock(&ps6000a_call_mutex);
             status = ps6000aSetDataBuffer(
                 handle, 
                 channel_config[i]->channel, 
@@ -647,7 +683,7 @@ PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct Channe
                 sample_config->down_sample_ratio_mode, 
                 PICO_ADD
             );
-            
+            pthread_mutex_unlock(&ps6000a_call_mutex);
             if (status != PICO_OK) {
                 log_error("ps6000aSetDataBuffer PICO_ADD", status, __FILE__, __LINE__);
             }
@@ -700,7 +736,6 @@ void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, void *pParame
 {
     BlockCaptureState *state = (BlockCaptureState *)pParameter;
     state->callbackStatus = status;
-    state->dataReady = 1;
     pthread_mutex_unlock(&block_ready_mutex);
 }
 
@@ -710,7 +745,6 @@ void interrupt_block_capture()
 {
     is_interrupted = 1;
     pthread_mutex_unlock(&block_ready_mutex);
-    printf("Capture stopped.\n");     
 }
 
 /**
@@ -724,15 +758,17 @@ void interrupt_block_capture()
 PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms) {
     uint64_t pre_trigger_samples = ((uint64_t)sample_config->num_samples * sample_config->trigger_position_ratio)/100;
     uint64_t post_trigger_samples = sample_config->num_samples - pre_trigger_samples;
+    int8_t runBlockCaptureRetryFlag = 0;
+    pthread_mutex_lock(&block_ready_mutex); 
     free(callback_state);
     callback_state = (BlockCaptureState*)malloc(sizeof(BlockCaptureState));
     if (callback_state == NULL) {
         log_error("BlockCaptureState malloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
         return PICO_MEMORY_FAIL;
     }
-        memset(callback_state, 0, sizeof(BlockCaptureState)); // Initialize to zero
-    pthread_mutex_lock(&block_ready_mutex);
+    memset(callback_state, 0, sizeof(BlockCaptureState)); // Initialize to zero
     is_interrupted = 0;
+    pthread_mutex_lock(&ps6000a_call_mutex);
     PICO_STATUS status = ps6000aRunBlock(
         handle,
         pre_trigger_samples,    
@@ -743,12 +779,39 @@ PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* tim
         ps6000aBlockReadyCallback, 
         (void*) callback_state
     );
+
+    while (status == PICO_HARDWARE_CAPTURING_CALL_STOP)
+    {  
+
+        pthread_mutex_unlock(&block_ready_mutex);
+
+        runBlockCaptureRetryFlag ++;
+        printf("runBlockCaptureRetryFlag Retry: %d\n",runBlockCaptureRetryFlag);
+        status = ps6000aStop(handle);
+
+        pthread_mutex_lock(&block_ready_mutex);
+
+        status = ps6000aRunBlock(
+            handle,
+            pre_trigger_samples,    
+            post_trigger_samples,
+            sample_config->timebase_configs.timebase,
+            time_indisposed_ms,
+            0,
+            ps6000aBlockReadyCallback, 
+            (void*) callback_state
+        );
+
+    }
+    pthread_mutex_unlock(&ps6000a_call_mutex);
+
     if (status != PICO_OK) {
         pthread_mutex_unlock(&block_ready_mutex);
         log_error("ps6000aRunBlock", status, __FILE__, __LINE__);
+        return status;
     }
 
-    return status;
+    return PICO_OK;
 }
 
 /**
@@ -758,17 +821,15 @@ PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* tim
  */
 PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config)
 {
-    PICO_STATUS status = 0;
+    PICO_STATUS status = PICO_OK;
     pthread_mutex_lock(&block_ready_mutex);
     pthread_mutex_unlock(&block_ready_mutex);
-    ps6000aStop(handle);
 
     if (is_interrupted) {
         printf("Capture interrupted, exiting wait_for_capture_completion.\n");
         sample_config->num_samples = 0;
         return PICO_CANCELLED; // Or another appropriate status code
     }
-    
 
     if (callback_state->callbackStatus != PICO_OK)
     {
@@ -777,14 +838,13 @@ PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config)
     }
 
     printf("Capture finished.\n");
-
     status = retrieve_waveform_data(sample_config);
 
     if (status != PICO_OK) {
         return status;
     }  
 
-    return callback_state->callbackStatus;
+    return PICO_OK;
 }
 
 /**
@@ -797,6 +857,9 @@ PICO_STATUS retrieve_waveform_data(struct SampleConfigs* sample_config) {
     uint64_t start_index = 0;
     uint64_t segment_index = 0;
     int16_t overflow = 0;
+    int8_t getValueRetryFlag = 0;
+    
+    pthread_mutex_lock(&ps6000a_call_mutex);
     PICO_STATUS status = ps6000aGetValues(
         handle, 
         start_index, 
@@ -806,10 +869,42 @@ PICO_STATUS retrieve_waveform_data(struct SampleConfigs* sample_config) {
         segment_index, 
         &overflow
     );
+    while (status == PICO_HARDWARE_CAPTURING_CALL_STOP && getValueRetryFlag < 10)
+    {  
+        getValueRetryFlag ++;
+        printf("getValueRetryFlag Retry: %d\n",getValueRetryFlag);
+        status = ps6000aStop(handle);
+        PICO_STATUS status = ps6000aGetValues(
+            handle, 
+            start_index, 
+            &sample_config->num_samples, 
+            sample_config->down_sample_ratio, 
+            sample_config->down_sample_ratio_mode, 
+            segment_index, 
+            &overflow
+        );
+    }
+    
+    pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aGetValues", status, __FILE__, __LINE__);
+        return status;
     }
 
+
+    return PICO_OK;
+}
+
+PICO_STATUS stop_capturing() {
+    PICO_STATUS status;
+    printf("Capture stopping.\n");  
+    pthread_mutex_lock(&ps6000a_call_mutex);
+    status = ps6000aStop(handle);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
+    printf("Capture stopped.\n");     
+    if (status != PICO_OK) {
+        log_error("wait_for_capture_completion ps6000aStop", status, __FILE__, __LINE__);
+    }
     return status;
 }
