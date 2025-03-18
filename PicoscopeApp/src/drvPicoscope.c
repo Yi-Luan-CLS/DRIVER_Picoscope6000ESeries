@@ -521,7 +521,17 @@ BlockCaptureState* callback_state;
 PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config) {
 
     PICO_STATUS status = 0;
-    if (trigger_config->triggerType != NO_TRIGGER) {
+
+    if (trigger_config->triggerType == NO_TRIGGER) {
+        // If no trigger set, clear previous triggers and do not set new one 
+        PICO_CONDITION condition;
+        status = ps6000aSetTriggerChannelConditions(handle, &condition, 0, PICO_CLEAR_ALL);   
+        if (status != PICO_OK) {
+            return status;
+        }        
+        printf("No trigger set.\n");
+    } 
+    else { 
         status = set_trigger_configurations(trigger_config);
         if (status != PICO_OK) {
             return status;
