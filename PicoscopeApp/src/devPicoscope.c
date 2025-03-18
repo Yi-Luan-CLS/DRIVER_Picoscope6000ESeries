@@ -1515,7 +1515,7 @@ epicsExportAddress(dset, devPicoscopeWaveform);
 
 int16_t* waveform[CHANNEL_NUM];
 int16_t waveform_size_actual;
-int16_t waveform_size_max;
+uint32_t waveform_size_max;
 struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
 
 struct waveformRecord* pLog;
@@ -1567,36 +1567,23 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 			break; 
 
 		case UPDATE_WAVEFORM:
-			int channel_index = find_channel_index_from_record(pwaveform->name, channels); 
-			pRecordUpdateWaveform[channel_index] = pwaveform;
-			waveform[channel_index] = (int16_t*)malloc(sizeof(int16_t) * pwaveform->nelm);
-			waveform_size_max = pwaveform->nelm;
-			// printf("channel:%s, nelm:%d\n",pwaveform->name,(int)pwaveform->nelm);
-			if (waveform[channel_index] == NULL) {
-				// Handle memory allocation failure
-				fprintf(stderr, "Memory allocation failed\n");
-				return -1;
-			}
-    		memset(waveform[channel_index], 0, sizeof(int16_t) * pwaveform->nelm);
+			int channel_index = find_channel_index_from_record(pwaveform->name, channels);
+            pRecordUpdateWaveform[channel_index] = pwaveform;
+            waveform[channel_index] = calloc(pwaveform->nelm, sizeof(int16_t));
+            if (!waveform[channel_index]) {
+                errlogPrintf("%s: Waveform memory allocation failed\n", pwaveform->name);
+                return -1;
+            }
+            waveform_size_max = pwaveform->nelm;
 			break;
 
 		case STOP_RETRIEVE_WAVEFORM:
-			epics_acquisition_flag_mutex = epicsMutexCreate();
-			if (epics_acquisition_flag_mutex == NULL) {
-				fprintf(stderr, "Failed to create epics_acquisition_flag_mutex mutex\n");
-				return -1;
-			}
-			epics_acquisition_thread_mutex = epicsMutexCreate();
-			if (epics_acquisition_thread_mutex == NULL) {
-				fprintf(stderr, "Failed to create epics_acquisition_thread_mutex mutex\n");
-				return -1;
-			}
-			epics_acquisition_restart_mutex = epicsMutexCreate();
-			if (epics_acquisition_restart_mutex == NULL) {
-				fprintf(stderr, "Failed to create epics_acquisition_restart_mutex mutex\n");
-				return -1;
-			}
-			
+			if (!(epics_acquisition_flag_mutex = epicsMutexCreate()) ||
+                !(epics_acquisition_thread_mutex = epicsMutexCreate()) ||
+                !(epics_acquisition_restart_mutex = epicsMutexCreate())) {
+                errlogPrintf("%s: Mutex creation failed\n", pwaveform->name);
+                return -1;
+            }
 			pWaveformStop = pwaveform;
 			break;
 
@@ -1612,6 +1599,8 @@ struct CaptureThreadData {
     struct ChannelConfigs **channel_configs;
     struct TriggerConfigs *trigger_config;
 };
+static int allocate_capture_data(struct CaptureThreadData **data_ptr);
+static void free_capture_data(struct CaptureThreadData *data_ptr);
 void captureThreadFunc(void *arg) {
 	epicsMutexLock(epics_acquisition_thread_mutex);
     struct CaptureThreadData *data = (struct CaptureThreadData *)arg;
@@ -1621,22 +1610,21 @@ void captureThreadFunc(void *arg) {
     uint32_t status = setup_picoscope(waveform, data->channel_configs, data->sample_config, data->trigger_config);
     if (status != 0) {
 		log_message("", "Error configuring picoscope for data capture.", status);
-        fprintf(stderr, "setup_picoscope Error with code: %d \n", status);
-        goto cleanup;
-    }
+		printf("captureThreadFunc Cleanup ID is %ld\n", id->tid);
+		free_capture_data(data);
+		epicsMutexLock(epics_acquisition_flag_mutex);
+        dataAcquisitionFlag = 0;
+        epicsMutexUnlock(epics_acquisition_flag_mutex);
+		epicsMutexUnlock(epics_acquisition_thread_mutex);
+	    }
 
-    while (1) {
-        if (dataAcquisitionFlag!=1) {
-            break;
-        }
-        double time_indisposed_ms = 0;
+    while (dataAcquisitionFlag == 1) {
+
+		double time_indisposed_ms = 0;
 
         status = run_block_capture(data->sample_config, &time_indisposed_ms);
-
         if (status != 0) {
-
         	log_message("", "Error capturing data block.", status);
-            fprintf(stderr, "run_block_capture Error with code: %d \n", status);
             break;
         }
 
@@ -1644,24 +1632,14 @@ void captureThreadFunc(void *arg) {
 
         // Process the UPDATE_WAVEFORM subroutine to update waveform
         for (size_t i = 0; i < CHANNEL_NUM; i++) {
-            int channel_index = find_channel_index_from_record(pRecordUpdateWaveform[i]->name, channels);
-            if (is_Channel_On(data->channel_configs[channel_index]->channel)) {
+			if (is_Channel_On(data->channel_configs[i]->channel)) {
                 dbProcess((struct dbCommon *)pRecordUpdateWaveform[i]);
             }
         }
     }
-
-cleanup:
+	stop_capturing();
 	printf("Cleanup ID is %ld\n", id->tid);
-
-    free(data->sample_config);
-    for (size_t i = 0; i < CHANNEL_NUM; i++) {
-        free(data->channel_configs[i]);
-    }
-    free(data->channel_configs);
-    free(data->trigger_config);
-    free(data);
-
+	free_capture_data(data);
 	epicsMutexUnlock(epics_acquisition_thread_mutex);
 }
 
@@ -1683,64 +1661,19 @@ read_waveform(struct waveformRecord *pwaveform) {
 
             // Create CaptureThreadData
 			struct CaptureThreadData *data = malloc(sizeof(struct CaptureThreadData));
-			data->sample_config = data ? malloc(sizeof(struct SampleConfigs)) : NULL;
-			data->channel_configs = data ? malloc(CHANNEL_NUM * sizeof(struct ChannelConfigs *)) : NULL;
-			data->trigger_config = data ? malloc(sizeof(struct TriggerConfigs)) : NULL;
-			if (!data || !data->sample_config || !data->channel_configs || !data->trigger_config) {
-				fprintf(stderr, "Memory allocation failed for CaptureThreadData or its members\n");
-				free(data->trigger_config);
-				free(data->channel_configs);
-				free(data->sample_config);
-				free(data);
-				epicsMutexLock(epics_acquisition_flag_mutex);
-				dataAcquisitionFlag = 0;
-				epicsMutexUnlock(epics_acquisition_flag_mutex);
-
+			if (allocate_capture_data(&data) != 0) {
 				return -1;
 			}
-
-            for (size_t i = 0; i < CHANNEL_NUM; i++) {
-                data->channel_configs[i] = malloc(sizeof(struct ChannelConfigs));
-                if (!data->channel_configs[i]) {
-                    fprintf(stderr, "channel_configs[%zu] Memory allocation failed\n", i);
-                    for (size_t j = 0; j < i; j++) {
-                        free(data->channel_configs[j]);
-                    }
-                    free(data->channel_configs);
-                    free(data->sample_config);
-                    free(data);
-                    epicsMutexLock(epics_acquisition_flag_mutex);
-                    dataAcquisitionFlag = 0;
-                    epicsMutexUnlock(epics_acquisition_flag_mutex);
-                    return -1;
-                }
-                *data->channel_configs[i] = *channels[i];
-            }
-			*data->sample_config = *sample_configurations;
-			*data->trigger_config = *trigger_config;
-
-            // Ensure sample size doesn't exceed maximum
-            if (data->sample_config->num_samples > waveform_size_max) {
-                printf("Sample size (%ld) exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n",
-                       data->sample_config->num_samples, waveform_size_max);
-                data->sample_config->num_samples = waveform_size_max;
-            }
-
             // Create capture thread
             epicsThreadId capture_thread = epicsThreadCreate("captureThread", epicsThreadPriorityMedium,
                                                              0, (EPICSTHREADFUNC)captureThreadFunc, data);
-            if (!capture_thread) {
-                fprintf(stderr, "Failed to create capture thread\n");
-                free(data->trigger_config);
-                for (size_t i = 0; i < CHANNEL_NUM; i++) {
-                    free(data->channel_configs[i]);
-                }
-                free(data->channel_configs);
-                free(data->sample_config);
-                free(data);
-                epicsMutexLock(epics_acquisition_flag_mutex);
-                dataAcquisitionFlag = 0;
-                epicsMutexUnlock(epics_acquisition_flag_mutex);
+															 
+			if (!capture_thread) {
+                errlogPrintf("%s: Failed to create capture thread\n", pwaveform->name);
+				epicsMutexLock(epics_acquisition_flag_mutex);
+	            dataAcquisitionFlag = 0;
+	            epicsMutexUnlock(epics_acquisition_flag_mutex);
+                free_capture_data(data);
                 return -1;
             }
 
@@ -1774,6 +1707,73 @@ read_waveform(struct waveformRecord *pwaveform) {
     return 0;
 }
 
+static void
+free_capture_data(struct CaptureThreadData *data) {
+    if (!data) return;
+    
+    if (data->channel_configs) {
+        for (size_t i = 0; i < CHANNEL_NUM; i++) {
+            free(data->channel_configs[i]);
+        }
+    }
+    free(data->trigger_config);
+    free(data->channel_configs);
+    free(data->sample_config);
+    free(data);
+}
+
+static int
+allocate_capture_data(struct CaptureThreadData **data_ptr) {
+    *data_ptr = malloc(sizeof(struct CaptureThreadData));
+    if (!*data_ptr) {
+        errlogPrintf("Memory allocation failed for CaptureThreadData\n");
+        epicsMutexLock(epics_acquisition_flag_mutex);
+        dataAcquisitionFlag = 0;
+        epicsMutexUnlock(epics_acquisition_flag_mutex);
+        return -1;
+    }
+
+    (*data_ptr)->sample_config = malloc(sizeof(struct SampleConfigs));
+    (*data_ptr)->channel_configs = malloc(CHANNEL_NUM * sizeof(struct ChannelConfigs *));
+    (*data_ptr)->trigger_config = malloc(sizeof(struct TriggerConfigs));
+
+    if (!(*data_ptr)->sample_config || !(*data_ptr)->channel_configs || !(*data_ptr)->trigger_config) {
+        free_capture_data(*data_ptr);
+        errlogPrintf("Memory allocation failed for CaptureThreadData\n");
+        epicsMutexLock(epics_acquisition_flag_mutex);
+        dataAcquisitionFlag = 0;
+        epicsMutexUnlock(epics_acquisition_flag_mutex);
+        return -1;
+    }
+
+    for (size_t i = 0; i < CHANNEL_NUM; i++) {
+        (*data_ptr)->channel_configs[i] = malloc(sizeof(struct ChannelConfigs));
+        if (!(*data_ptr)->channel_configs[i]) {
+            // Cleanup previously allocated channel_configs
+            for (size_t j = 0; j < i; j++) {
+                free((*data_ptr)->channel_configs[j]);
+            }
+            free_capture_data(*data_ptr);
+            errlogPrintf("Memory allocation failed for CaptureThreadData\n");
+            epicsMutexLock(epics_acquisition_flag_mutex);
+            dataAcquisitionFlag = 0;
+            epicsMutexUnlock(epics_acquisition_flag_mutex);
+            return -1;
+        }
+        *(*data_ptr)->channel_configs[i] = *channels[i];
+    }
+
+    *(*data_ptr)->sample_config = *sample_configurations;
+    *(*data_ptr)->trigger_config = *trigger_config;
+    if ((*data_ptr)->sample_config->num_samples > waveform_size_max) {
+        printf("Sample size (%ld) exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n",
+               (*data_ptr)->sample_config->num_samples, waveform_size_max);
+        (*data_ptr)->sample_config->num_samples = waveform_size_max;
+        printf("2 %d\n", waveform_size_max);
+    }
+
+    return 0;
+}
 /**
  * A function to update the log PV with the latest error message. Causes the 
  * waveform PV pLog to process. 
