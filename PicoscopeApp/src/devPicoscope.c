@@ -197,8 +197,12 @@ struct SampleConfigs* sample_configurations = NULL; // Configurations for data c
  * AI Record
  ****************************************************************************************/
 #include <mbbiRecord.h>
+#include <mbboRecord.h>
+
+mbboRecord* pTriggerDirection;
 
 mbbiRecord* pTriggerDirectionFbk;
+mbbiRecord* pTriggerType;
 aiRecord* pTriggerFbk[4];
 
 typedef long (*DEVSUPFUN_AI)(struct aiRecord *);
@@ -451,7 +455,7 @@ typedef long (*DEVSUPFUN_AO)(struct aoRecord *);
 
 static long init_record_ao(struct aoRecord *pao);
 static long write_ao (struct aoRecord *pao);
-void re_acquire_waveform(struct aoRecord *pao){
+void re_acquire_waveform(){
 	if (dataAcquisitionFlag!=1) {
 		return;
 	}
@@ -467,6 +471,7 @@ void re_acquire_waveform(struct aoRecord *pao){
 	
 	epicsMutexUnlock(epics_acquisition_restart_mutex);
 }
+
 struct
 	{
 	long         number;
@@ -694,7 +699,6 @@ write_ao (struct aoRecord *pao)
 			if (result !=0) {
 				log_message(pao->name, "Error setting device resolution.", result);
 			}
-//			re_acquire_waveform(pao);
 			break;
 		
 		case SET_TIME_PER_DIVISION_UNIT: 
@@ -718,7 +722,6 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;  
-//			re_acquire_waveform(pao);
 			break; 
 
 		case SET_TIME_PER_DIVISION: 
@@ -742,7 +745,6 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;  
-//			re_acquire_waveform(pao);
 			break; 
 
 		case SET_NUM_DIVISIONS: 
@@ -766,7 +768,6 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;  
-//			re_acquire_waveform(pao);
 			break; 
 
 		case SET_NUM_SAMPLES:
@@ -791,22 +792,18 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;
-//			re_acquire_waveform(pao);
 			break;  
 			
 		case SET_DOWN_SAMPLE_RATIO: 
 			sample_configurations->down_sample_ratio = (int)pao->val; 
-//			re_acquire_waveform(pao);
 			break; 
 		
 		case SET_DOWN_SAMPLE_RATIO_MODE: 
 			sample_configurations->down_sample_ratio_mode = (int)pao->val;
-//			re_acquire_waveform(pao);
 			break; 
 
 		case SET_TRIGGER_POSITION_RATIO:
 			sample_configurations->trigger_position_ratio = (float)pao->val;
-//			re_acquire_waveform(pao);
 			break;  
 			
 		case OPEN_PICOSCOPE: 
@@ -849,7 +846,6 @@ write_ao (struct aoRecord *pao)
 				}
 			}
 			break;
-//			re_acquire_waveform(pao);
 
 		case SET_RANGE:
 			record_name = pao->name;
@@ -871,7 +867,6 @@ write_ao (struct aoRecord *pao)
 					channels[channel_index]->range = previous_range;
 				}
 			}
-//			re_acquire_waveform(pao);
 			break;
 
 		case SET_ANALOG_OFFSET: 
@@ -901,7 +896,6 @@ write_ao (struct aoRecord *pao)
 					channels[channel_index]->analog_offset = previous_analog_offset;
 				}
 			}
-//			re_acquire_waveform(pao);
 			break;
 
 		case SET_BANDWIDTH: 
@@ -921,7 +915,6 @@ write_ao (struct aoRecord *pao)
 					channels[channel_index]->bandwidth = previous_bandwidth;
 				}
 			}
-//			re_acquire_waveform(pao);
 			break;
 
 		case SET_CHANNEL_ON:	
@@ -962,7 +955,6 @@ write_ao (struct aoRecord *pao)
 			sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
 			sample_configurations->timebase_configs.timebase = timebase;
 			sample_configurations->timebase_configs.sample_rate = sample_rate;  
-//			re_acquire_waveform(pao);
 			break;
 
 		case SET_TRIGGER_CHANNEL:
@@ -978,18 +970,38 @@ write_ao (struct aoRecord *pao)
 					dbProcess((struct dbCommon *)pTriggerFbk[i]);
 				}
 			}
-//			re_acquire_waveform(pao);			break;
+			else if (trigger_config->channel == NO_CHANNEL) {
+				trigger_config->triggerType = NO_TRIGGER;
+				trigger_config->thresholdMode = LEVEL; 
+				trigger_config->thresholdLower = 0; 
+				trigger_config->thresholdUpper = 0; 
+				
+				dbProcess((struct dbCommon *)pTriggerType); 
+				dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+				for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+				{
+					dbProcess((struct dbCommon *)pTriggerFbk[i]);
+				}
+
+				char empty_str [] = "";
+				char tw_str [] = "NONE";
+				// Update trigger direction enum options
+				memcpy(pTriggerDirection->zrst, empty_str, strlen((char *)empty_str) + 1);
+				memcpy(pTriggerDirection->onst, empty_str, strlen((char *)empty_str) + 1);
+				memcpy(pTriggerDirection->onst, tw_str, strlen((char *)tw_str) + 1);
+			
+				memcpy(pTriggerDirectionFbk->zrst, empty_str, strlen((char *)empty_str) + 1);
+				memcpy(pTriggerDirectionFbk->onst, empty_str, strlen((char *)empty_str) + 1);
+				memcpy(pTriggerDirectionFbk->onst, tw_str, strlen((char *)tw_str) + 1);
+			}
+			break;
 
 		case SET_TRIGGER_UPPER:
 			trigger_config->thresholdUpper = (int16_t) pao->val;
-			// re_acquire_waveform(pao);
-
 			break;
 
 		case SET_TRIGGER_LOWER:
 			trigger_config->thresholdLower = (int16_t) pao->val;
-			// re_acquire_waveform(pao);
-
 			break;
 
         default:
@@ -1005,7 +1017,7 @@ write_ao (struct aoRecord *pao)
 			}
 		return 2;
     }else{
-		re_acquire_waveform(pao);
+		re_acquire_waveform();
 	}
 	return 0;
 }
@@ -1051,7 +1063,7 @@ int find_channel_index_from_record(const char* record_name, struct ChannelConfig
 /****************************************************************************************
  * Multi-Bit Binary Output Records - mbbo
  ****************************************************************************************/
-#include <mbboRecord.h>
+
 
 typedef long (*DEVSUPFUN_MBBO)(struct mbboRecord*);
 
@@ -1121,11 +1133,13 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     {		
 
 		case SET_TRIGGER_TYPE: 
-			trigger_config->triggerType = (int) pmbbo->val; 
+			trigger_config->triggerType = (int) pmbbo->rval; 
+			printf("Trigger type init %d\n", trigger_config->triggerType);
 			break; 
 		
 		case SET_TRIGGER_DIRECTION:
 			trigger_config->thresholdDirection = (enum ThresholdDirection) pmbbo->val;
+			pTriggerDirection = pmbbo;
 			break;
 
 		default:
@@ -1140,13 +1154,22 @@ static long
 write_mbbo (struct mbboRecord *pmbbo)
 {
 	struct PicoscopeData *vdp = (struct PicoscopeData *)pmbbo->dpvt;
+	int returnState = 0; 
 
 	switch (vdp->ioType)
     {		
 		case SET_TRIGGER_TYPE: 
+			printf("set trigger type %d\n", (int)pmbbo->val); 
 			trigger_config->triggerType = (int)pmbbo->val; 
+			
+			char empty_str [] = "";
+			char zr_str [] = "RISING";
+			char on_str [] = "FALLING";
+			char tw_str [] = "NONE";
 
 			if (trigger_config->triggerType == NO_TRIGGER){
+				
+				// Update configurations for no trigger 
 				trigger_config->channel = NO_CHANNEL; 
 				trigger_config->thresholdMode = LEVEL; 			
 				trigger_config->thresholdLower = 0; 
@@ -1157,17 +1180,37 @@ write_mbbo (struct mbboRecord *pmbbo)
 					{
 						dbProcess((struct dbCommon *)pTriggerFbk[i]);
 					}
+
+				// Update trigger direction enum options
+				memcpy(pTriggerDirection->zrst, empty_str, strlen((char *)empty_str) + 1);
+				memcpy(pTriggerDirection->onst, empty_str, strlen((char *)empty_str) + 1);
+				memcpy(pTriggerDirection->onst, tw_str, strlen((char *)tw_str) + 1);
+			
+				memcpy(pTriggerDirectionFbk->zrst, empty_str, strlen((char *)empty_str) + 1);
+				memcpy(pTriggerDirectionFbk->onst, empty_str, strlen((char *)empty_str) + 1);
+				memcpy(pTriggerDirectionFbk->onst, tw_str, strlen((char *)tw_str) + 1);
 			}		
 			else if (trigger_config->triggerType == SIMPLE_EDGE) {
 				if (trigger_config->channel == NO_CHANNEL) {
-					trigger_config->channel = CHANNEL_A;
+					trigger_config->channel = TRIGGER_AUX;
 				} 
-				trigger_config->thresholdMode = LEVEL; 			
+				trigger_config->thresholdMode = LEVEL; 		
+				trigger_config->thresholdLower = 0; 	
 				dbProcess((struct dbCommon *)pTriggerDirectionFbk);
 				for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
 					{
 						dbProcess((struct dbCommon *)pTriggerFbk[i]);
 					}
+				
+				// Update trigger direction enum options
+				memcpy(pTriggerDirection->zrst, zr_str, strlen((char *)zr_str) + 1);
+				memcpy(pTriggerDirection->onst, on_str, strlen((char *)on_str) + 1);
+				memcpy(pTriggerDirection->twst, empty_str, strlen((char *)empty_str) + 1);
+
+				memcpy(pTriggerDirectionFbk->zrst, zr_str, strlen((char *)zr_str) + 1);
+				memcpy(pTriggerDirectionFbk->onst, on_str, strlen((char *)on_str) + 1);
+				memcpy(pTriggerDirectionFbk->twst, empty_str, strlen((char *)empty_str) + 1);
+
 			}
 			//else if (trigger_config->triggerType == WINDOW) {
 			//	trigger_config->channel = CHANNEL_A; 
@@ -1183,7 +1226,7 @@ write_mbbo (struct mbboRecord *pmbbo)
 			break; 
 
 		case SET_TRIGGER_DIRECTION:
-
+			
 			if (trigger_config->triggerType == NO_TRIGGER) {
 				trigger_config->thresholdDirection = NONE; 
 			}
@@ -1197,8 +1240,20 @@ write_mbbo (struct mbboRecord *pmbbo)
 	}
 
 
+	if (returnState < 0)
+    {
+        if (recGblSetSevr(pmbbo, READ_ALARM, INVALID_ALARM)  &&  errVerbose
+            &&  (pmbbo->stat != READ_ALARM  ||  pmbbo->sevr != INVALID_ALARM))
+			{
+                errlogPrintf("%s: Read Error\n", pmbbo->name);
+			}
+		return 2;
+    }else{
+		re_acquire_waveform();
+	}
 	return 0;
 }
+
 
 /****************************************************************************************
  * Multi-Bit Binary Input Records - mbbi
@@ -1270,8 +1325,14 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
 	pmbbi->udf = FALSE;
 
 	switch (vdp->ioType) {
+
+		case GET_TRIGGER_TYPE: 
+			pTriggerType = pmbbi;
+			break;  
+
 		case GET_TRIGGER_DIRECTION:
 			pTriggerDirectionFbk = pmbbi; 
+			break;  
 
 		default: 
 			return 0; 
