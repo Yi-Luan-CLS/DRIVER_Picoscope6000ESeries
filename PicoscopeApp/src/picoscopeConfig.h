@@ -11,7 +11,8 @@ enum Channel{
     CHANNEL_B = 1,
     CHANNEL_C = 2,
     CHANNEL_D = 3,
-    TRIGGER_AUX = 1001
+    TRIGGER_AUX = 1001, 
+    NO_CHANNEL = 10
 };
 enum ThresholdDirection
 {
@@ -43,6 +44,11 @@ enum ThresholdMode
   LEVEL = 0,
   WINDOW = 1
 };
+
+enum TriggerType {
+    NO_TRIGGER = 0, 
+    SIMPLE_EDGE = 1,
+}; 
 
 enum RatioMode {
     RATIO_MODE_AGGREGATE = 1,
@@ -89,6 +95,7 @@ struct SampleConfigs{
 
 /** Structure for data trigger configurations*/
 struct TriggerConfigs{ 
+    enum TriggerType triggerType;
     enum Channel channel;
     enum ThresholdDirection thresholdDirection;
     enum ThresholdMode thresholdMode;
