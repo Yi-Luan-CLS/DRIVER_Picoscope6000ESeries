@@ -882,12 +882,12 @@ PICO_STATUS retrieve_waveform_data(struct SampleConfigs* sample_config) {
         segment_index, 
         &overflow
     );
-    while (status == PICO_HARDWARE_CAPTURING_CALL_STOP && getValueRetryFlag < 10)
+    while (status == PICO_HARDWARE_CAPTURING_CALL_STOP)
     {  
         getValueRetryFlag ++;
         printf("getValueRetryFlag Retry: %d\n",getValueRetryFlag);
         status = ps6000aStop(handle);
-        PICO_STATUS status = ps6000aGetValues(
+        status = ps6000aGetValues(
             handle, 
             start_index, 
             &sample_config->num_samples, 
