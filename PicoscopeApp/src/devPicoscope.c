@@ -1765,7 +1765,6 @@ allocate_capture_data(struct CaptureThreadData **data_ptr) {
 
     *(*data_ptr)->sample_config = *sample_configurations;
     *(*data_ptr)->trigger_config = *trigger_config;
-    printf("1 %d\n", waveform_size_max);
     if ((*data_ptr)->sample_config->num_samples > waveform_size_max) {
         printf("Sample size (%ld) exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n",
                (*data_ptr)->sample_config->num_samples, waveform_size_max);
