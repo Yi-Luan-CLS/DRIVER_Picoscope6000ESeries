@@ -67,7 +67,6 @@ enum ioType
 	GET_TRIGGER_DIRECTION,
 	SET_TRIGGER_CHANNEL,
 	GET_TRIGGER_CHANNEL,
-	SET_TRIGGER_MODE,
 	GET_TRIGGER_MODE,
 	SET_TRIGGER_UPPER,
 	GET_TRIGGER_UPPER,
@@ -82,7 +81,9 @@ enum ioType
 	GET_NUM_DIVISIONS, 
 	GET_SAMPLE_RATE, 
 	GET_TIMEBASE,
-	GET_LOG
+	GET_LOG, 
+	SET_TRIGGER_TYPE, 
+	GET_TRIGGER_TYPE
 	};
 enum ioFlag
 	{
@@ -130,13 +131,11 @@ static struct aioType
 		{"get_trigger_direction", isInput, GET_TRIGGER_DIRECTION, ""},
 		{"set_trigger_channel", isOutput, SET_TRIGGER_CHANNEL, ""},
 		{"get_trigger_channel", isInput, GET_TRIGGER_CHANNEL, ""},
-		{"set_trigger_mode", isOutput, SET_TRIGGER_MODE, ""},
 		{"get_trigger_mode", isInput, GET_TRIGGER_MODE, ""},
 		{"set_trigger_upper", isOutput, SET_TRIGGER_UPPER, ""},
 		{"get_trigger_upper", isInput, GET_TRIGGER_UPPER, ""},
 		{"set_trigger_lower", isOutput, SET_TRIGGER_LOWER, ""},
 		{"get_trigger_lower", isInput, GET_TRIGGER_LOWER, ""},
-		{"set_trigger_direction", isOutput, SET_TRIGGER_DIRECTION, ""}, 
 		{"get_sample_interval", isInput, GET_SAMPLE_INTERVAL, "" },
 		{"get_sample_rate", isInput, GET_SAMPLE_RATE, ""},
 		{"set_time_per_division_unit", isOutput, SET_TIME_PER_DIVISION_UNIT, ""},
@@ -145,7 +144,11 @@ static struct aioType
 		{"get_time_per_division", isInput, GET_TIME_PER_DIVISION, ""},
 		{"set_num_divisions", isOutput, SET_NUM_DIVISIONS, ""},
 		{"get_num_divisions", isInput, GET_NUM_DIVISIONS, ""},
-		{"get_log", isInput, GET_LOG, ""}
+		{"get_log", isInput, GET_LOG, ""}, 
+
+		{"set_trigger_type", isOutput, SET_TRIGGER_TYPE, ""},
+		{"get_trigger_type", isInput, GET_TRIGGER_TYPE, ""}
+
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -193,6 +196,10 @@ struct SampleConfigs* sample_configurations = NULL; // Configurations for data c
 /****************************************************************************************
  * AI Record
  ****************************************************************************************/
+#include <mbbiRecord.h>
+
+mbbiRecord* pTriggerDirectionFbk;
+aiRecord* pTriggerFbk[4];
 
 typedef long (*DEVSUPFUN_AI)(struct aiRecord *);
 
@@ -259,7 +266,30 @@ init_record_ai (struct aiRecord *pai)
 		return(S_db_badField);
 	}
 
+	switch(vdp->ioType)
+	{
+		case GET_TRIGGER_CHANNEL:
+			pTriggerFbk[0] = pai;
+			break;
+
+		case GET_TRIGGER_MODE:
+			pTriggerFbk[1] = pai;
+			break;
+
+		case GET_TRIGGER_UPPER:
+			pTriggerFbk[2] = pai;
+			break;
+
+		case GET_TRIGGER_LOWER:
+			pTriggerFbk[3] = pai;
+			break;
+
+		default:
+			return 2;
+	} 
+	
 	return 0;
+
 }
 
 
@@ -378,43 +408,15 @@ read_ai (struct aiRecord *pai){
 			pai->val = (float)dataAcquisitionFlag;
 			break;
 
-		case GET_TRIGGER_DIRECTION:
-			float direction_value;
-			// Handle window mode
-			if (trigger_config->thresholdMode == WINDOW) {
-			    switch (trigger_config->thresholdDirection) {
-			        case INSIDE:
-			            direction_value = 11;
-			            break;
-			        case OUTSIDE:
-			            direction_value = 12;
-			            break;
-			        case ENTER:
-			            direction_value = 13;
-			            break;
-			        case EXIT:
-			            direction_value = 14;
-			            break;
-			        case ENTER_OR_EXIT:
-			            direction_value = 15;
-			            break;
-			        default:
-			            direction_value = trigger_config->thresholdDirection;
-			            break;
-			    }
-			} else {
-			    direction_value = trigger_config->thresholdDirection;
-			}
 			
-			pai->val = direction_value;
-			
-			break;
-			
-		case GET_TRIGGER_CHANNEL: 
-			if(trigger_config->channel == TRIGGER_AUX){
+		case GET_TRIGGER_CHANNEL:
+			if (trigger_config->channel == TRIGGER_AUX){
 				pai->val = 4;
-			}else{
-
+			}
+			else if (trigger_config->channel == NO_CHANNEL){
+				pai->val = 5;
+			}
+			else {
 				pai->val = trigger_config->channel;
 			}
 			break;
@@ -487,7 +489,6 @@ struct
 epicsExportAddress(dset, devPicoscopeAo);
 
 int8_t* device_serial_number; 
-aoRecord* trigger_pao[3] = {NULL};
 struct aoRecord* pAnalogOffestRecords[CHANNEL_NUM];
 
 static long
@@ -650,28 +651,16 @@ init_record_ao (struct aoRecord *pao)
 			}
 			break;
 
-		case SET_TRIGGER_DIRECTION:
-			trigger_config->thresholdDirection = (enum ThresholdDirection) pao->val;
-			break;
-
 		case SET_TRIGGER_CHANNEL:
 			trigger_config->channel = (enum Channel) pao->val;
-			 
-			break;
-
-		case SET_TRIGGER_MODE:
-			trigger_config->thresholdMode = (enum ThresholdMode) pao->val;
-			trigger_pao[0] = pao;
 			break;
 
 		case SET_TRIGGER_UPPER:
 			trigger_config->thresholdUpper = (int16_t) pao->val;
-			trigger_pao[1] = pao;
 			break;
 
 		case SET_TRIGGER_LOWER:
 			trigger_config->thresholdLower = (int16_t) pao->val;
-			trigger_pao[2] = pao;
 			break;
 		default:
             return 0;
@@ -679,7 +668,6 @@ init_record_ao (struct aoRecord *pao)
 
 	return 2;
 }
-
 
 
 static long
@@ -977,27 +965,20 @@ write_ao (struct aoRecord *pao)
 //			re_acquire_waveform(pao);
 			break;
 
-		case SET_TRIGGER_DIRECTION:
-			trigger_config->thresholdDirection = (enum ThresholdDirection) pao->val;
-//			re_acquire_waveform(pao);
-			break;
-
 		case SET_TRIGGER_CHANNEL:
 			trigger_config->channel = (enum Channel) pao->val;
 			if (trigger_config->channel == TRIGGER_AUX)
-			{
-				for (size_t i = 0; i < 3; i++)
+			{	
+				trigger_config->thresholdMode = LEVEL; 
+				trigger_config->thresholdLower = 0; 
+				trigger_config->thresholdUpper = 0; 
+				dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+				for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
 				{
-					trigger_pao[i]->val = 0;
-					dbProcess((struct dbCommon *)trigger_pao[i]);
+					dbProcess((struct dbCommon *)pTriggerFbk[i]);
 				}
 			}
 //			re_acquire_waveform(pao);			break;
-
-		case SET_TRIGGER_MODE:
-			trigger_config->thresholdMode = (enum ThresholdMode) pao->val;
-//			re_acquire_waveform(pao);
-			break;
 
 		case SET_TRIGGER_UPPER:
 			trigger_config->thresholdUpper = (int16_t) pao->val;
@@ -1066,8 +1047,268 @@ int find_channel_index_from_record(const char* record_name, struct ChannelConfig
     return -1;  // Channel not found
 }
 
+
 /****************************************************************************************
- * Stringin - read a data array of values
+ * Multi-Bit Binary Output Records - mbbo
+ ****************************************************************************************/
+#include <mbboRecord.h>
+
+typedef long (*DEVSUPFUN_MBBO)(struct mbboRecord*);
+
+static long init_record_mbbo(struct mbboRecord *pmbbo);
+static long write_mbbo (struct mbboRecord *pmbbo);
+
+struct
+	{
+	long         number;
+	DEVSUPFUN_MBBO report;
+	DEVSUPFUN_MBBO init;
+	DEVSUPFUN_MBBO init_record;
+	DEVSUPFUN_MBBO get_ioint_info;
+	DEVSUPFUN_MBBO write_lout;
+	// DEVSUPFUN   special_linconv;
+	} devPicoscopeMbbo =
+		{
+		6,
+		NULL,
+		NULL,
+		init_record_mbbo,
+		NULL,
+	    write_mbbo, 
+		};
+
+epicsExportAddress(dset, devPicoscopeMbbo);
+
+
+static long
+init_record_mbbo (struct mbboRecord *pmbbo)
+{	
+    struct instio  *pinst;
+	struct PicoscopeData *vdp;
+
+    if (pmbbo->out.type != INST_IO)
+    {
+        errlogPrintf("%s: INP field type should be INST_IO\n", pmbbo->name);
+        return(S_db_badField);
+    }
+    pmbbo->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+    if (pmbbo->dpvt == (void *)0)
+    {
+    	errlogPrintf("%s: Failed to allocated memory\n", pmbbo->name);
+    	return -1;
+    }
+  
+    pinst = &(pmbbo->out.value.instio);
+    vdp = (struct PicoscopeData *)pmbbo->dpvt;
+
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+		{
+			printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+		}
+
+	vdp->ioType = findAioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
+
+	if (vdp->ioType == UNKNOWN_IOTYPE)
+	{
+    	errlogPrintf("%s: Invalid type: \"%s\"\n", pmbbo->name, vdp->paramLabel);
+    	return(S_db_badField);
+	}
+
+	pmbbo->udf = FALSE;
+
+	switch (vdp->ioType)
+    {		
+
+		case SET_TRIGGER_TYPE: 
+			trigger_config->triggerType = (int) pmbbo->val; 
+			break; 
+		
+		case SET_TRIGGER_DIRECTION:
+			trigger_config->thresholdDirection = (enum ThresholdDirection) pmbbo->val;
+			break;
+
+		default:
+			return 0;
+	}
+
+	return 0; 
+}
+
+
+static long
+write_mbbo (struct mbboRecord *pmbbo)
+{
+	struct PicoscopeData *vdp = (struct PicoscopeData *)pmbbo->dpvt;
+
+	switch (vdp->ioType)
+    {		
+		case SET_TRIGGER_TYPE: 
+			trigger_config->triggerType = (int)pmbbo->val; 
+
+			if (trigger_config->triggerType == NO_TRIGGER){
+				trigger_config->channel = NO_CHANNEL; 
+				trigger_config->thresholdMode = LEVEL; 			
+				trigger_config->thresholdLower = 0; 
+				trigger_config->thresholdUpper = 0; 
+	
+				dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+				for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+					{
+						dbProcess((struct dbCommon *)pTriggerFbk[i]);
+					}
+			}		
+			else if (trigger_config->triggerType == SIMPLE_EDGE) {
+				if (trigger_config->channel == NO_CHANNEL) {
+					trigger_config->channel = CHANNEL_A;
+				} 
+				trigger_config->thresholdMode = LEVEL; 			
+				dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+				for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+					{
+						dbProcess((struct dbCommon *)pTriggerFbk[i]);
+					}
+			}
+			//else if (trigger_config->triggerType == WINDOW) {
+			//	trigger_config->channel = CHANNEL_A; 
+			//	trigger_config->thresholdMode = WINDOW; 			
+  			//
+			//	dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+			//	for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+			//		{
+			//			dbProcess((struct dbCommon *)pTriggerFbk[i]);
+			//		}
+			//}
+
+			break; 
+
+		case SET_TRIGGER_DIRECTION:
+
+			if (trigger_config->triggerType == NO_TRIGGER) {
+				trigger_config->thresholdDirection = NONE; 
+			}
+			else {
+				trigger_config->thresholdDirection = (enum ThresholdDirection) pmbbo->rval;
+			}
+			break;
+		
+		default:
+			return 0;
+	}
+
+
+	return 0;
+}
+
+/****************************************************************************************
+ * Multi-Bit Binary Input Records - mbbi
+ ****************************************************************************************/
+
+typedef long (*DEVSUPFUN_MBBI)(struct mbbiRecord *);
+
+static long init_record_mbbi(struct mbbiRecord *);
+static long read_mbbi(struct mbbiRecord *);
+
+struct
+        {
+			long         number;
+			DEVSUPFUN_MBBI report;
+			DEVSUPFUN_MBBI init;
+			DEVSUPFUN_MBBI init_record;
+			DEVSUPFUN_MBBI get_ioint_info;
+			DEVSUPFUN_MBBI read;
+			// long (*special_linconv)(struct mbbiRecord *, int);
+        } devPicoscopeMbbi =
+                {
+                6,
+                NULL,
+                NULL,
+                init_record_mbbi,
+                NULL,
+                read_mbbi,
+                };
+
+epicsExportAddress(dset, devPicoscopeMbbi);
+
+
+
+static long
+init_record_mbbi(struct mbbiRecord * pmbbi)
+{
+	struct instio  *pinst;
+    struct PicoscopeData *vdp;
+
+	if (pmbbi->inp.type != INST_IO)
+	{
+		printf("%s: INP field type should be INST_IO\n", pmbbi->name);
+		return(S_db_badField);
+	}
+	
+	pmbbi->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+	
+	if (pmbbi->dpvt == (void *)0)
+	{
+        printf("%s: Failed to allocated memory\n", pmbbi->name);
+        return -1;
+	}
+	
+	pinst = &(pmbbi->inp.value.instio);
+	vdp = (struct PicoscopeData *)pmbbi->dpvt;
+
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+		{
+			printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+		}
+
+    vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
+	if (vdp->ioType == UNKNOWN_IOTYPE){
+		printf("%s: Invalid type: \"@%s\"\n", pmbbi->name, vdp->paramLabel);
+		return(S_db_badField);
+	}
+	
+	pmbbi->udf = FALSE;
+
+	switch (vdp->ioType) {
+		case GET_TRIGGER_DIRECTION:
+			pTriggerDirectionFbk = pmbbi; 
+
+		default: 
+			return 0; 
+	} 
+
+	return 0;
+}
+
+static long
+read_mbbi(struct mbbiRecord *pmbbi){
+
+	struct PicoscopeData *vdp = (struct PicoscopeData *)pmbbi->dpvt;
+
+	switch (vdp->ioType)
+	{
+		case GET_TRIGGER_DIRECTION:
+			if (trigger_config->triggerType == NO_TRIGGER){
+				pmbbi->rval = -1; // no trigger direction
+			}
+			else {
+				pmbbi->rval = trigger_config->thresholdDirection; 
+			}
+			break;
+		
+		case GET_TRIGGER_TYPE: 
+			pmbbi->rval = trigger_config->triggerType; 
+			break; 
+
+		default:
+			return 0;
+	}
+	return 0; 
+}	
+
+
+/****************************************************************************************
+ *  Stringin - read a data array of values
  ****************************************************************************************/
 
 typedef long (*DEVSUPFUN_STRINGIN)(struct stringinRecord *);

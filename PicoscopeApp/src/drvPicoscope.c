@@ -504,7 +504,7 @@ typedef struct {
 PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config);
 PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms);
 PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config);
-PICO_STATUS set_AUX_trigger(struct TriggerConfigs* trigger_config);
+PICO_STATUS set_trigger_configurations(struct TriggerConfigs* trigger_config);
 PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms);
 PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config);
 PICO_STATUS retrieve_waveform_data(struct SampleConfigs* sample_config);
@@ -522,9 +522,21 @@ PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct Channe
 
     PICO_STATUS status = 0;
 
-    status = set_AUX_trigger(trigger_config);
-    if (status != PICO_OK) {
-        return status;
+    if (trigger_config->triggerType == NO_TRIGGER) {
+        // If no trigger set, clear previous triggers and do not set new one 
+        PICO_CONDITION condition;
+        status = ps6000aSetTriggerChannelConditions(handle, &condition, 0, PICO_CLEAR_ALL);   
+        if (status != PICO_OK) {
+            return status;
+        }        
+        printf("No trigger set.\n");
+    } 
+    else { 
+        status = set_trigger_configurations(trigger_config);
+        if (status != PICO_OK) {
+            return status;
+        }
+        printf("Trigger set.\n");
     }
 
     status = set_data_buffer(waveform_buffer, channel_config, sample_config);
@@ -626,6 +638,7 @@ uint32_t is_Channel_On(enum Channel channel){
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
 PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config) {
+   
     PICO_STATUS status = ps6000aSetDataBuffer(
         handle, (PICO_CHANNEL)NULL, NULL, 0, PICO_INT16_T, 0, 0, 
         PICO_CLEAR_ALL      // Clear buffer in Picoscope buffer list
@@ -658,7 +671,8 @@ PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct Channe
     return status;
 }
 
-PICO_STATUS set_AUX_trigger(struct TriggerConfigs* trigger_config) {
+PICO_STATUS set_trigger_configurations(struct TriggerConfigs* trigger_config) {
+    
     PICO_STATUS status = set_trigger_conditions(trigger_config);
     if (status != PICO_OK) return status;
 
@@ -797,6 +811,7 @@ PICO_STATUS retrieve_waveform_data(struct SampleConfigs* sample_config) {
     uint64_t start_index = 0;
     uint64_t segment_index = 0;
     int16_t overflow = 0;
+
     PICO_STATUS status = ps6000aGetValues(
         handle, 
         start_index, 
