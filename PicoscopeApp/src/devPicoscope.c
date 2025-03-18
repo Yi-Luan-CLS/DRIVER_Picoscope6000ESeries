@@ -1171,10 +1171,10 @@ write_mbbo (struct mbboRecord *pmbbo)
 			printf("set trigger type %d\n", (int)pmbbo->val); 
 			trigger_config->triggerType = (int)pmbbo->val; 
 			
-			char empty_str [] = "";
-			char zr_str [] = "RISING";
-			char on_str [] = "FALLING";
-			char tw_str [] = "NONE";
+			// char empty_str [] = "";
+			// char zr_str [] = "RISING";
+			// char on_str [] = "FALLING";
+			// char tw_str [] = "NONE";
 
 			if (trigger_config->triggerType == NO_TRIGGER){
 				
