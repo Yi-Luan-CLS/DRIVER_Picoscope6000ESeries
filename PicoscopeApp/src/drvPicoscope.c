@@ -134,7 +134,6 @@ uint32_t get_resolution(int16_t* resolution) {
     return 0; 
 }
 
-int16_t required_size;
 /**
  * Retrieves the serial number of the currently connected PicoScope. 
  * 
@@ -145,7 +144,7 @@ int16_t required_size;
 */
 uint32_t get_serial_num(int8_t** serial_num) {
 
-    int8_t* serial_num_buffer = NULL;
+    int16_t required_size = 0; 
 
     pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_BATCH_AND_SERIAL);
@@ -156,9 +155,7 @@ uint32_t get_serial_num(int8_t** serial_num) {
         return status;  
     }
 
-    if (serial_num_buffer == NULL)
-        serial_num_buffer = malloc(required_size);
-    memset(serial_num_buffer, 0, required_size);
+    int8_t* serial_num_buffer = calloc(required_size, sizeof(int8_t)); 
 
     pthread_mutex_lock(&ps6000a_call_mutex);
     status = ps6000aGetUnitInfo(handle, serial_num_buffer, required_size, &required_size, PICO_BATCH_AND_SERIAL);
@@ -170,6 +167,8 @@ uint32_t get_serial_num(int8_t** serial_num) {
     }
 
     *serial_num = serial_num_buffer;
+
+    free(serial_num_buffer);
 
     return 0;  
 }
@@ -185,8 +184,8 @@ uint32_t get_serial_num(int8_t** serial_num) {
 */
 uint32_t get_model_num(int8_t** model_num) {
 
-    int8_t* model_num_buffer = NULL;
-    
+    int16_t required_size = 0; 
+
     pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_VARIANT_INFO);
     pthread_mutex_unlock(&ps6000a_call_mutex);
@@ -196,9 +195,8 @@ uint32_t get_model_num(int8_t** model_num) {
         return status;  
     }
 
-    if (model_num_buffer == NULL)
-        model_num_buffer = malloc(required_size);
-    memset(model_num_buffer, 0, required_size);
+    int8_t* model_num_buffer = calloc(required_size, sizeof(int8_t));
+
     
     pthread_mutex_lock(&ps6000a_call_mutex);
     status = ps6000aGetUnitInfo(handle, model_num_buffer, required_size, &required_size, PICO_VARIANT_INFO);
@@ -210,6 +208,8 @@ uint32_t get_model_num(int8_t** model_num) {
     }
 
     *model_num = model_num_buffer;
+    
+    free(model_num_buffer);
 
     return 0;
 }
