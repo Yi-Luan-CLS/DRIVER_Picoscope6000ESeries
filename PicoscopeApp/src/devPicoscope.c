@@ -961,9 +961,13 @@ write_ao (struct aoRecord *pao)
 			trigger_config->channel = (enum Channel) pao->val;
 			if (trigger_config->channel == TRIGGER_AUX)
 			{	
+				trigger_config->triggerType = SIMPLE_EDGE;
 				trigger_config->thresholdMode = LEVEL; 
 				trigger_config->thresholdLower = 0; 
 				trigger_config->thresholdUpper = 0; 
+				trigger_config->thresholdDirection = NONE; 
+				
+				dbProcess((struct dbCommon *)pTriggerType); 
 				dbProcess((struct dbCommon *)pTriggerDirectionFbk);
 				for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
 				{
@@ -975,7 +979,8 @@ write_ao (struct aoRecord *pao)
 				trigger_config->thresholdMode = LEVEL; 
 				trigger_config->thresholdLower = 0; 
 				trigger_config->thresholdUpper = 0; 
-				
+				trigger_config->thresholdDirection = NONE; 
+
 				dbProcess((struct dbCommon *)pTriggerType); 
 				dbProcess((struct dbCommon *)pTriggerDirectionFbk);
 				for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
@@ -983,16 +988,20 @@ write_ao (struct aoRecord *pao)
 					dbProcess((struct dbCommon *)pTriggerFbk[i]);
 				}
 
-				char empty_str [] = "";
-				char tw_str [] = "NONE";
-				// Update trigger direction enum options
-				memcpy(pTriggerDirection->zrst, empty_str, strlen((char *)empty_str) + 1);
-				memcpy(pTriggerDirection->onst, empty_str, strlen((char *)empty_str) + 1);
-				memcpy(pTriggerDirection->onst, tw_str, strlen((char *)tw_str) + 1);
+				//char empty_str [] = "";
+				//char tw_str [] = "NONE";
+				//// Update trigger direction enum options
+				//memcpy(pTriggerDirection->zrst, empty_str, strlen((char *)empty_str) + 1);
+				//memcpy(pTriggerDirection->onst, empty_str, strlen((char *)empty_str) + 1);
+				//memcpy(pTriggerDirection->onst, tw_str, strlen((char *)tw_str) + 1);
 			
-				memcpy(pTriggerDirectionFbk->zrst, empty_str, strlen((char *)empty_str) + 1);
-				memcpy(pTriggerDirectionFbk->onst, empty_str, strlen((char *)empty_str) + 1);
-				memcpy(pTriggerDirectionFbk->onst, tw_str, strlen((char *)tw_str) + 1);
+				//memcpy(pTriggerDirectionFbk->zrst, empty_str, strlen((char *)empty_str) + 1);
+				//memcpy(pTriggerDirectionFbk->onst, empty_str, strlen((char *)empty_str) + 1);
+				//memcpy(pTriggerDirectionFbk->onst, tw_str, strlen((char *)tw_str) + 1);
+			}
+			else { 
+				trigger_config->triggerType = SIMPLE_EDGE;
+				dbProcess((struct dbCommon *)pTriggerType); 
 			}
 			break;
 
@@ -1162,10 +1171,10 @@ write_mbbo (struct mbboRecord *pmbbo)
 			printf("set trigger type %d\n", (int)pmbbo->val); 
 			trigger_config->triggerType = (int)pmbbo->val; 
 			
-			char empty_str [] = "";
-			char zr_str [] = "RISING";
-			char on_str [] = "FALLING";
-			char tw_str [] = "NONE";
+			// char empty_str [] = "";
+			// char zr_str [] = "RISING";
+			// char on_str [] = "FALLING";
+			// char tw_str [] = "NONE";
 
 			if (trigger_config->triggerType == NO_TRIGGER){
 				
@@ -1182,13 +1191,13 @@ write_mbbo (struct mbboRecord *pmbbo)
 					}
 
 				// Update trigger direction enum options
-				memcpy(pTriggerDirection->zrst, empty_str, strlen((char *)empty_str) + 1);
-				memcpy(pTriggerDirection->onst, empty_str, strlen((char *)empty_str) + 1);
-				memcpy(pTriggerDirection->onst, tw_str, strlen((char *)tw_str) + 1);
+				//memcpy(pTriggerDirection->zrst, empty_str, strlen((char *)empty_str) + 1);
+				//memcpy(pTriggerDirection->onst, empty_str, strlen((char *)empty_str) + 1);
+				//memcpy(pTriggerDirection->onst, tw_str, strlen((char *)tw_str) + 1);
 			
-				memcpy(pTriggerDirectionFbk->zrst, empty_str, strlen((char *)empty_str) + 1);
-				memcpy(pTriggerDirectionFbk->onst, empty_str, strlen((char *)empty_str) + 1);
-				memcpy(pTriggerDirectionFbk->onst, tw_str, strlen((char *)tw_str) + 1);
+				//memcpy(pTriggerDirectionFbk->zrst, empty_str, strlen((char *)empty_str) + 1);
+				//memcpy(pTriggerDirectionFbk->onst, empty_str, strlen((char *)empty_str) + 1);
+				//memcpy(pTriggerDirectionFbk->onst, tw_str, strlen((char *)tw_str) + 1);
 			}		
 			else if (trigger_config->triggerType == SIMPLE_EDGE) {
 				if (trigger_config->channel == NO_CHANNEL) {
@@ -1203,13 +1212,13 @@ write_mbbo (struct mbboRecord *pmbbo)
 					}
 				
 				// Update trigger direction enum options
-				memcpy(pTriggerDirection->zrst, zr_str, strlen((char *)zr_str) + 1);
-				memcpy(pTriggerDirection->onst, on_str, strlen((char *)on_str) + 1);
-				memcpy(pTriggerDirection->twst, empty_str, strlen((char *)empty_str) + 1);
+				//memcpy(pTriggerDirection->zrst, zr_str, strlen((char *)zr_str) + 1);
+				//memcpy(pTriggerDirection->onst, on_str, strlen((char *)on_str) + 1);
+				//memcpy(pTriggerDirection->twst, empty_str, strlen((char *)empty_str) + 1);
 
-				memcpy(pTriggerDirectionFbk->zrst, zr_str, strlen((char *)zr_str) + 1);
-				memcpy(pTriggerDirectionFbk->onst, on_str, strlen((char *)on_str) + 1);
-				memcpy(pTriggerDirectionFbk->twst, empty_str, strlen((char *)empty_str) + 1);
+				//memcpy(pTriggerDirectionFbk->zrst, zr_str, strlen((char *)zr_str) + 1);
+				//memcpy(pTriggerDirectionFbk->onst, on_str, strlen((char *)on_str) + 1);
+				//memcpy(pTriggerDirectionFbk->twst, empty_str, strlen((char *)empty_str) + 1);
 
 			}
 			//else if (trigger_config->triggerType == WINDOW) {
