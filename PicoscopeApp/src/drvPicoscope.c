@@ -7,6 +7,7 @@
 #include <limits.h>
 #include "ps6000aApi.h"
 #include "PicoStatus.h"
+#include <sys/time.h>
 
 #include "picoscopeConfig.h"
 #include <pthread.h>
@@ -844,6 +845,18 @@ PICO_STATUS wait_for_capture_completion(struct SampleConfigs sample_config, uint
     }
 
    // printf("Capture finished.\n");
+    struct timeval tv;
+    struct tm *tm_info;
+    gettimeofday(&tv, NULL); 
+    tm_info = localtime(&tv.tv_sec);
+    printf("Capture finished: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
+         tm_info->tm_year + 1900,
+         tm_info->tm_mon + 1,    
+         tm_info->tm_mday,       
+         tm_info->tm_hour,       
+         tm_info->tm_min,        
+         tm_info->tm_sec,        
+         tv.tv_usec); 
     status = retrieve_waveform_data(sample_config, waveform_size_actual);
 
     if (status != PICO_OK) {
