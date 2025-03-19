@@ -1523,7 +1523,7 @@ struct{
 epicsExportAddress(dset, devPicoscopeWaveform);
 
 int16_t* waveform[CHANNEL_NUM];
-int16_t waveform_size_actual;
+uint64_t waveform_size_actual;
 uint32_t waveform_size_max;
 struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
 
