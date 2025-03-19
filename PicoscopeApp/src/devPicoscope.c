@@ -1450,11 +1450,14 @@ init_record_stringin(struct stringinRecord * pstringin)
 			int8_t* device_info = (int8_t*)"No device detected";
 			uint32_t result = get_device_info(&device_info);
 			
+			memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
+			
 			if (result != 0){
 				printf("Error getting device info.\n");
 			} 
-			memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
-			
+			else {
+				free(device_info); 
+			} 
 			break;
 			
 		default:
@@ -1475,10 +1478,14 @@ read_stringin (struct stringinRecord *pstringin){
 			int8_t* device_info = (int8_t*)"No device detected";
 			uint32_t result = get_device_info(&device_info);
 			
+			memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
+			
 			if (result != 0){
 				log_message(pstringin->name, "Error getting device information.", result);
 			} 
-			memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
+			else {
+				free(device_info); 
+			}
 			
 			break;
 			

@@ -168,7 +168,6 @@ uint32_t get_serial_num(int8_t** serial_num) {
 
     *serial_num = serial_num_buffer;
 
-    free(serial_num_buffer);
 
     return 0;  
 }
@@ -209,8 +208,6 @@ uint32_t get_model_num(int8_t** model_num) {
 
     *model_num = model_num_buffer;
     
-    free(model_num_buffer);
-
     return 0;
 }
 
@@ -225,30 +222,26 @@ uint32_t get_model_num(int8_t** model_num) {
 */
 uint32_t get_device_info(int8_t** device_info) {
 
-    int8_t* device_info_buffer = NULL; 
 	int8_t* serial_num = NULL;
     int8_t* model_num = NULL; 
 
     uint32_t status = get_serial_num(&serial_num);
-    if (status != 0) {
-        return status;
+    if (status == 0) {
+        status = get_model_num(&model_num); 
+        if (status == 0) {
+            const static char* FORMAT_STR = "Picoscope %s [%s]";
+            int16_t required_size = strlen((const char*)serial_num) + strlen((const char*)model_num) + *FORMAT_STR; 
+
+            int8_t* device_info_buffer = malloc(required_size);
+            snprintf((char*)device_info_buffer, required_size, FORMAT_STR, (char*)model_num, (char*)serial_num);
+            *device_info = device_info_buffer;
+        }
     }
-    status = get_model_num(&model_num); 
-    if (status != 0) {
-        return status;
-    }
-    
-    int16_t required_size = strlen((const char*)serial_num) + strlen((const char*)model_num) + 20; 
 
-    if (device_info_buffer == NULL)
-        device_info_buffer = malloc(required_size);
-    memset(device_info_buffer, 0, required_size);
+    free(serial_num); 
+    free(model_num);
 
-    snprintf((char*)device_info_buffer, required_size, "Picoscope %s [%s]", (char*)model_num, (char*)serial_num);
-
-    *device_info = device_info_buffer;
-
-    return 0; 
+    return status; 
 }
 
 
