@@ -441,7 +441,6 @@ read_ai (struct aiRecord *pai){
 			break;
 
 		case GET_AUTO_TRIGGER_US: 
-			printf("get autoTriggerMicroSeconds %d\n", trigger_config->autoTriggerMicroSeconds);
 			pai->val = trigger_config->autoTriggerMicroSeconds; 
 			break; 
 
