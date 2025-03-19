@@ -19,6 +19,9 @@
 #include <errlog.h>
 #include <epicsMutex.h>
 #include "picoscopeConfig.h"
+
+#include <sys/time.h>
+
 #include "drvPicoscope.h"
 
 #define MAX_SAMPLE_SIZE 1000000
@@ -1633,11 +1636,12 @@ void captureThreadFunc(void *arg) {
         }
 
         waveform_size_actual = data->sample_config.num_samples;
-
+        
         // Process the UPDATE_WAVEFORM subroutine to update waveform
         for (size_t i = 0; i < CHANNEL_NUM; i++) {
             if (is_Channel_On(data->channel_configs[i].channel)) {
                 dbProcess((struct dbCommon *)pRecordUpdateWaveform[i]);
+
             }
         }
     }
@@ -1685,6 +1689,20 @@ read_waveform(struct waveformRecord *pwaveform) {
                 memcpy(pwaveform->bptr, waveform[channel_index], waveform_size_actual * sizeof(int16_t));
                 pwaveform->nord = waveform_size_actual;
             }
+            struct timeval tv;
+            struct tm *tm_info;
+                
+            gettimeofday(&tv, NULL); 
+            tm_info = localtime(&tv.tv_sec);
+            printf("%s: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
+                 pwaveform->name,
+                 tm_info->tm_year + 1900,
+                 tm_info->tm_mon + 1,    
+                 tm_info->tm_mday,       
+                 tm_info->tm_hour,       
+                 tm_info->tm_min,        
+                 tm_info->tm_sec,        
+                 tv.tv_usec); 
             epicsMutexUnlock(epics_acquisition_flag_mutex);
             break;
 

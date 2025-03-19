@@ -843,7 +843,7 @@ PICO_STATUS wait_for_capture_completion(struct SampleConfigs sample_config, uint
         return callback_state->callbackStatus;
     }
 
-    printf("Capture finished.\n");
+   // printf("Capture finished.\n");
     status = retrieve_waveform_data(sample_config, waveform_size_actual);
 
     if (status != PICO_OK) {
