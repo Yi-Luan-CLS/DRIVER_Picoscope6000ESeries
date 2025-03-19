@@ -1626,13 +1626,13 @@ void captureThreadFunc(void *arg) {
     while (dataAcquisitionFlag == 1) {
         double time_indisposed_ms = 0;
 
+        waveform_size_actual = data->sample_config.num_samples;
         status = run_block_capture(data->sample_config, &time_indisposed_ms, &waveform_size_actual);
         if (status != 0) {
             log_message("", "Error capturing data block.", status);
             break;
         }
 
-        waveform_size_actual = data->sample_config.num_samples;
 
         // Process the UPDATE_WAVEFORM subroutine to update waveform
         for (size_t i = 0; i < CHANNEL_NUM; i++) {
@@ -1644,6 +1644,9 @@ void captureThreadFunc(void *arg) {
 
     stop_capturing();
     printf("Cleanup ID is %ld\n", id->tid);
+    epicsMutexLock(epics_acquisition_flag_mutex);
+    dataAcquisitionFlag = 0;
+    epicsMutexUnlock(epics_acquisition_flag_mutex);
     epicsMutexUnlock(epics_acquisition_thread_mutex);
 }
 static long
