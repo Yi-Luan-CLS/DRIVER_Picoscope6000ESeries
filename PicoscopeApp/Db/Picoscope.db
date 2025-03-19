@@ -436,6 +436,23 @@ record(waveform, "$(OSC):waveform:stop:call"){
     field(INP, "@L:stop_retrieve_waveform")
 }
 
+record(ao, "$(OSC):auto_trigger_us"){ 
+	field(DTYP, "Picoscope")
+	field(DESC, "us to wait for trigger before collecting")
+	field(EGU, "us")
+	field(VAL, "0")
+	field(OUT, "@L:set_auto_trigger_us")
+	field(FLNK, "$(OSC):auto_trigger_us:fbk")
+}
+
+record(ai, "$(OSC):auto_trigger_us:fbk"){ 
+	field(DTYP, "Picoscope")
+	field(DESC, "us to wait for trigger before collecting")
+	field(EGU, "us")
+	field(VAL, "0")
+	field(INP, "@L:get_auto_trigger_us")
+}
+
 record(mbbo, "$(OSC):trigger:type") {
 	field(DTYP, "Picoscope")
 	field(RVAL, "1")
