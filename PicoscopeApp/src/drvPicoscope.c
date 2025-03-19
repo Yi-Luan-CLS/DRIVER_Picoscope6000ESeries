@@ -222,7 +222,7 @@ uint32_t get_model_num(int8_t** model_num) {
 */
 uint32_t get_device_info(int8_t** device_info) {
 
-	int8_t* serial_num = NULL;
+    int8_t* serial_num = NULL;
     int8_t* model_num = NULL; 
 
     uint32_t status = get_serial_num(&serial_num);
@@ -504,13 +504,13 @@ uint32_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uin
 
     *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
 
-	uint32_t available_timebase; 
-	double available_sample_interval; 
+    uint32_t available_timebase; 
+    double available_sample_interval; 
 
-	uint32_t status = validate_sample_interval(requested_sample_interval, &available_timebase, &available_sample_interval);
-	if (status != 0) {
+    uint32_t status = validate_sample_interval(requested_sample_interval, &available_timebase, &available_sample_interval);
+    if (status != 0) {
         return status; 
-	} 
+    } 
     *sample_interval = available_sample_interval; 
     *timebase = available_timebase;
 
