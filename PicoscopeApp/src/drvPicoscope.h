@@ -41,16 +41,17 @@ uint32_t is_Channel_On(enum Channel channel);
 
 uint32_t setup_picoscope(
     int16_t* waveform_buffer[CHANNEL_NUM],
-    struct ChannelConfigs* channel_config[CHANNEL_NUM],
-    struct SampleConfigs* sample_config,
-    struct TriggerConfigs* trigger_config
+    struct ChannelConfigs channel_config[CHANNEL_NUM],
+    struct SampleConfigs sample_config,
+    struct TriggerConfigs trigger_config
     );
 
 uint32_t interrupt_block_capture();
 
 uint32_t run_block_capture(
-    struct SampleConfigs* sample_config,
-    double* time_indisposed_ms
+    struct SampleConfigs sample_config,
+    double* time_indisposed_ms,
+    uint64_t* waveform_size_actual
     );
 
 uint32_t get_analogue_offset_limits(

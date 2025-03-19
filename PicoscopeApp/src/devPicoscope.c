@@ -1523,7 +1523,7 @@ struct{
 epicsExportAddress(dset, devPicoscopeWaveform);
 
 int16_t* waveform[CHANNEL_NUM];
-int16_t waveform_size_actual;
+uint64_t waveform_size_actual;
 uint32_t waveform_size_max;
 struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
 
@@ -1614,12 +1614,9 @@ void captureThreadFunc(void *arg) {
     struct CaptureThreadData *data = (struct CaptureThreadData *)arg;
     epicsThreadId id = epicsThreadGetIdSelf();
     printf("Start ID is %ld\n", id->tid);
-	struct ChannelConfigs *channel_config_ptrs[CHANNEL_NUM];
-    for (size_t i = 0; i < CHANNEL_NUM; i++) {
-        channel_config_ptrs[i] = &data->channel_configs[i];
-    }
+
     // Setup Picoscope
-    uint32_t status = setup_picoscope(waveform, channel_config_ptrs, &data->sample_config, &data->trigger_config);
+    uint32_t status = setup_picoscope(waveform, data->channel_configs, data->sample_config, data->trigger_config);
     if (status != 0) {
         log_message("", "Error configuring picoscope for data capture.", status);
         printf("captureThreadFunc Cleanup ID is %ld\n", id->tid);
@@ -1633,7 +1630,7 @@ void captureThreadFunc(void *arg) {
     while (dataAcquisitionFlag == 1) {
         double time_indisposed_ms = 0;
 
-        status = run_block_capture(&data->sample_config, &time_indisposed_ms);
+        status = run_block_capture(data->sample_config, &time_indisposed_ms, &waveform_size_actual);
         if (status != 0) {
             log_message("", "Error capturing data block.", status);
             break;

@@ -528,13 +528,13 @@ uint32_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uin
 typedef struct {
     PICO_STATUS callbackStatus; // Status from the callback
 } BlockCaptureState;
-PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config);
-PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms);
-PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config);
-PICO_STATUS set_trigger_configurations(struct TriggerConfigs* trigger_config);
-PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms);
-PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config);
-PICO_STATUS retrieve_waveform_data(struct SampleConfigs* sample_config);
+PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs channel_config[CHANNEL_NUM], struct SampleConfigs sample_config, struct TriggerConfigs trigger_config);
+PICO_STATUS run_block_capture(struct SampleConfigs sample_config, double* time_indisposed_ms, uint64_t* waveform_size_actual);
+PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs channel_config[CHANNEL_NUM], struct SampleConfigs sample_config);
+PICO_STATUS set_trigger_configurations(struct TriggerConfigs trigger_config);
+PICO_STATUS start_block_capture(struct SampleConfigs sample_config, double* time_indisposed_ms);
+PICO_STATUS wait_for_capture_completion(struct SampleConfigs sample_config, uint64_t* waveform_size_actual);
+PICO_STATUS retrieve_waveform_data(struct SampleConfigs sample_config, uint64_t* waveform_size_actual);
 
 BlockCaptureState* callback_state;
 /**
@@ -545,11 +545,11 @@ BlockCaptureState* callback_state;
  * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
  * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config, struct TriggerConfigs* trigger_config) {
+PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs channel_config[CHANNEL_NUM], struct SampleConfigs sample_config, struct TriggerConfigs trigger_config) {
 
     PICO_STATUS status = 0;
 
-    if (trigger_config->triggerType == NO_TRIGGER) {
+    if (trigger_config.triggerType == NO_TRIGGER) {
         // If no trigger set, clear previous triggers and do not set new one 
         PICO_CONDITION condition;
         status = ps6000aSetTriggerChannelConditions(handle, &condition, 0, PICO_CLEAR_ALL);   
@@ -573,12 +573,12 @@ PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct Channe
     return status;
 }
 
-PICO_STATUS set_trigger_conditions(struct TriggerConfigs* trigger_config) {
+PICO_STATUS set_trigger_conditions(struct TriggerConfigs trigger_config) {
     int16_t nConditions = 1;
     PICO_STATUS status = 0;
 
     PICO_CONDITION condition = {
-        .source = trigger_config->channel,
+        .source = trigger_config.channel,
         .condition = PICO_CONDITION_TRUE
     };
     pthread_mutex_lock(&ps6000a_call_mutex);
@@ -594,16 +594,16 @@ PICO_STATUS set_trigger_conditions(struct TriggerConfigs* trigger_config) {
     return status;
 }
 
-PICO_STATUS set_trigger_directions(struct TriggerConfigs* trigger_config) {
+PICO_STATUS set_trigger_directions(struct TriggerConfigs trigger_config) {
     int16_t nDirections = 1;    // Only support one now 
     PICO_STATUS status = 0;
-    if(trigger_config->thresholdDirection == 10){
-        trigger_config->thresholdDirection = PICO_NEGATIVE_RUNT;
+    if(trigger_config.thresholdDirection == 10){
+        trigger_config.thresholdDirection = PICO_NEGATIVE_RUNT;
     }
     PICO_DIRECTION direction = {
-        .channel = trigger_config->channel,
-        .direction = trigger_config->thresholdDirection,
-        .thresholdMode = trigger_config->thresholdMode
+        .channel = trigger_config.channel,
+        .direction = trigger_config.thresholdDirection,
+        .thresholdMode = trigger_config.thresholdMode
     };
     pthread_mutex_lock(&ps6000a_call_mutex);
     ps6000aSetTriggerChannelDirections(handle, &direction, nDirections);
@@ -617,19 +617,19 @@ PICO_STATUS set_trigger_directions(struct TriggerConfigs* trigger_config) {
     return status;
 }
 
-PICO_STATUS set_trigger_properties(struct TriggerConfigs* trigger_config) {
+PICO_STATUS set_trigger_properties(struct TriggerConfigs trigger_config) {
     int16_t nChannelProperties = 1; // Only support one now 
     unsigned short hysteresis = (unsigned short)((UINT16_MAX / 100.0) * 5.0);   // 5% of the full range
 
     PICO_TRIGGER_CHANNEL_PROPERTIES channelProperty = { 
-        .channel = trigger_config->channel,
-        .thresholdUpper = trigger_config->thresholdUpper,
+        .channel = trigger_config.channel,
+        .thresholdUpper = trigger_config.thresholdUpper,
         .thresholdUpperHysteresis = hysteresis,
-        .thresholdLower = trigger_config->thresholdLower,
+        .thresholdLower = trigger_config.thresholdLower,
         .thresholdLowerHysteresis = hysteresis
     };
     pthread_mutex_lock(&ps6000a_call_mutex);
-    PICO_STATUS status = ps6000aSetTriggerChannelProperties(handle, &channelProperty, nChannelProperties, 0, trigger_config->autoTriggerMicroSeconds);
+    PICO_STATUS status = ps6000aSetTriggerChannelProperties(handle, &channelProperty, nChannelProperties, 0, trigger_config.autoTriggerMicroSeconds);
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
@@ -669,7 +669,7 @@ uint32_t is_Channel_On(enum Channel channel){
  * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs* channel_config[CHANNEL_NUM], struct SampleConfigs* sample_config) {
+PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs channel_config[CHANNEL_NUM], struct SampleConfigs sample_config) {
     pthread_mutex_lock(&ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetDataBuffer(
         handle, (PICO_CHANNEL)NULL, NULL, 0, PICO_INT16_T, 0, 0, 
@@ -682,17 +682,17 @@ PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct Channe
         if (status != PICO_OK) {
             log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
         }
-        if (is_Channel_On(channel_config[i]->channel))
+        if (is_Channel_On(channel_config[i].channel))
         {
             pthread_mutex_lock(&ps6000a_call_mutex);
             status = ps6000aSetDataBuffer(
                 handle, 
-                channel_config[i]->channel, 
+                channel_config[i].channel, 
                 waveform_buffer[i], 
-                sample_config->num_samples, 
+                sample_config.num_samples, 
                 PICO_INT16_T, 
                 0, 
-                sample_config->down_sample_ratio_mode, 
+                sample_config.down_sample_ratio_mode, 
                 PICO_ADD
             );
             pthread_mutex_unlock(&ps6000a_call_mutex);
@@ -706,7 +706,7 @@ PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct Channe
     return status;
 }
 
-PICO_STATUS set_trigger_configurations(struct TriggerConfigs* trigger_config) {
+PICO_STATUS set_trigger_configurations(struct TriggerConfigs trigger_config) {
     
     PICO_STATUS status = set_trigger_conditions(trigger_config);
     if (status != PICO_OK) return status;
@@ -727,7 +727,7 @@ PICO_STATUS set_trigger_configurations(struct TriggerConfigs* trigger_config) {
  * @param time_indisposed_ms Pointer to a variable where the time indisposed (in milliseconds) will be stored.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms) {
+PICO_STATUS run_block_capture(struct SampleConfigs sample_config, double* time_indisposed_ms, uint64_t* waveform_size_actual) {
     PICO_STATUS status = 0;
     status = start_block_capture(sample_config, time_indisposed_ms);
     if (status != PICO_OK) {
@@ -735,7 +735,7 @@ PICO_STATUS run_block_capture(struct SampleConfigs* sample_config, double* time_
         return status;
     }
 
-    status = wait_for_capture_completion(sample_config);
+    status = wait_for_capture_completion(sample_config, waveform_size_actual);
     if (status != PICO_OK && status != PICO_CANCELLED) {
         log_error("wait_for_capture_completion", status, __FILE__, __LINE__);
         return status;
@@ -768,9 +768,9 @@ void interrupt_block_capture()
  * @param time_indisposed_ms Pointer to a variable where the time indisposed (in milliseconds) will be stored.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* time_indisposed_ms) {
-    uint64_t pre_trigger_samples = ((uint64_t)sample_config->num_samples * sample_config->trigger_position_ratio)/100;
-    uint64_t post_trigger_samples = sample_config->num_samples - pre_trigger_samples;
+PICO_STATUS start_block_capture(struct SampleConfigs sample_config, double* time_indisposed_ms) {
+    uint64_t pre_trigger_samples = ((uint64_t)sample_config.num_samples * sample_config.trigger_position_ratio)/100;
+    uint64_t post_trigger_samples = sample_config.num_samples - pre_trigger_samples;
     int8_t runBlockCaptureRetryFlag = 0;
     pthread_mutex_lock(&block_ready_mutex); 
     free(callback_state);
@@ -786,7 +786,7 @@ PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* tim
         handle,
         pre_trigger_samples,    
         post_trigger_samples,
-        sample_config->timebase_configs.timebase,
+        sample_config.timebase_configs.timebase,
         time_indisposed_ms,
         0,
         ps6000aBlockReadyCallback, 
@@ -808,7 +808,7 @@ PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* tim
             handle,
             pre_trigger_samples,    
             post_trigger_samples,
-            sample_config->timebase_configs.timebase,
+            sample_config.timebase_configs.timebase,
             time_indisposed_ms,
             0,
             ps6000aBlockReadyCallback, 
@@ -832,7 +832,7 @@ PICO_STATUS start_block_capture(struct SampleConfigs* sample_config, double* tim
  * 
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config)
+PICO_STATUS wait_for_capture_completion(struct SampleConfigs sample_config, uint64_t* waveform_size_actual)
 {
     PICO_STATUS status = PICO_OK;
     pthread_mutex_lock(&block_ready_mutex);
@@ -840,7 +840,7 @@ PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config)
 
     if (is_interrupted) {
         printf("Capture interrupted, exiting wait_for_capture_completion.\n");
-        sample_config->num_samples = 0;
+        *waveform_size_actual = 0;
         return PICO_CANCELLED; // Or another appropriate status code
     }
 
@@ -851,7 +851,7 @@ PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config)
     }
 
     printf("Capture finished.\n");
-    status = retrieve_waveform_data(sample_config);
+    status = retrieve_waveform_data(sample_config, waveform_size_actual);
 
     if (status != PICO_OK) {
         return status;
@@ -866,7 +866,7 @@ PICO_STATUS wait_for_capture_completion(struct SampleConfigs* sample_config)
  * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS retrieve_waveform_data(struct SampleConfigs* sample_config) {
+PICO_STATUS retrieve_waveform_data(struct SampleConfigs sample_config, uint64_t* waveform_size_actual) {
     uint64_t start_index = 0;
     uint64_t segment_index = 0;
     int16_t overflow = 0;
@@ -876,9 +876,9 @@ PICO_STATUS retrieve_waveform_data(struct SampleConfigs* sample_config) {
     PICO_STATUS status = ps6000aGetValues(
         handle, 
         start_index, 
-        &sample_config->num_samples, 
-        sample_config->down_sample_ratio, 
-        sample_config->down_sample_ratio_mode, 
+        waveform_size_actual, 
+        sample_config.down_sample_ratio, 
+        sample_config.down_sample_ratio_mode, 
         segment_index, 
         &overflow
     );
@@ -890,9 +890,9 @@ PICO_STATUS retrieve_waveform_data(struct SampleConfigs* sample_config) {
         status = ps6000aGetValues(
             handle, 
             start_index, 
-            &sample_config->num_samples, 
-            sample_config->down_sample_ratio, 
-            sample_config->down_sample_ratio_mode, 
+            waveform_size_actual, 
+            sample_config.down_sample_ratio, 
+            sample_config.down_sample_ratio_mode, 
             segment_index, 
             &overflow
         );
