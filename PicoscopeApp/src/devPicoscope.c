@@ -1614,9 +1614,12 @@ void captureThreadFunc(void *arg) {
     struct CaptureThreadData *data = (struct CaptureThreadData *)arg;
     epicsThreadId id = epicsThreadGetIdSelf();
     printf("Start ID is %ld\n", id->tid);
-
+	struct ChannelConfigs *channel_config_ptrs[CHANNEL_NUM];
+    for (size_t i = 0; i < CHANNEL_NUM; i++) {
+        channel_config_ptrs[i] = &data->channel_configs[i];
+    }
     // Setup Picoscope
-    uint32_t status = setup_picoscope(waveform, &data->channel_configs, &data->sample_config, &data->trigger_config);
+    uint32_t status = setup_picoscope(waveform, channel_config_ptrs, &data->sample_config, &data->trigger_config);
     if (status != 0) {
         log_message("", "Error configuring picoscope for data capture.", status);
         printf("captureThreadFunc Cleanup ID is %ld\n", id->tid);
@@ -1666,15 +1669,13 @@ read_waveform(struct waveformRecord *pwaveform) {
             dataAcquisitionFlag = 1;
             epicsMutexUnlock(epics_acquisition_flag_mutex);
 
-            // Use a stack-allocated CaptureThreadData
-            struct CaptureThreadData data;
-            if (allocate_capture_data(&data) != 0) {
+			struct CaptureThreadData *data = malloc(sizeof(struct CaptureThreadData));
+            if (allocate_capture_data(data) != 0) {
                 return -1;
             }
-
             // Create capture thread
             epicsThreadId capture_thread = epicsThreadCreate("captureThread", epicsThreadPriorityMedium,
-                                                             0, (EPICSTHREADFUNC)captureThreadFunc, &data);
+                                                             0, (EPICSTHREADFUNC)captureThreadFunc, data);
             if (!capture_thread) {
                 errlogPrintf("%s: Failed to create capture thread\n", pwaveform->name);
                 epicsMutexLock(epics_acquisition_flag_mutex);
