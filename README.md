@@ -238,6 +238,9 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger_position_ratio`.
 
+### OSCNAME:auto_trigger_us 
+- **Type**: `ai` 
+- **Description**: The time in microseconds for which the scope will wait before collecting data if no trigger event occurs. If set to zero, the scope will wait indefinitely for a trigger. 
  
 ### OSCNAME:trigger:channel
 - **Type**: `mbbo`
