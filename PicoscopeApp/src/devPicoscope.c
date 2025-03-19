@@ -1644,7 +1644,7 @@ void captureThreadFunc(void *arg) {
 
     stop_capturing();
     printf("Cleanup ID is %ld\n", id->tid);
-	epicsMutexLock(epics_acquisition_flag_mutex);
+    epicsMutexLock(epics_acquisition_flag_mutex);
     dataAcquisitionFlag = 0;
     epicsMutexUnlock(epics_acquisition_flag_mutex);
     epicsMutexUnlock(epics_acquisition_thread_mutex);
