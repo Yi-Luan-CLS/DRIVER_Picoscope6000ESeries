@@ -580,7 +580,7 @@ PICO_STATUS init_block_ready_callback_params(struct DataAcquisitionModule* dataA
         log_error("BlockReadyCallbackParams malloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
         return PICO_MEMORY_FAIL;
     }
-    memset(blockReadyCallbackParams, 0, sizeof(BlockReadyCallbackParams)); // Initialize to zero
+    memset(blockReadyCallbackParams, 0, sizeof(BlockReadyCallbackParams));
     blockReadyCallbackParams->dataAcquisitionModule = dataAcquisitionModule;
     return PICO_OK;
 }
@@ -829,7 +829,7 @@ PICO_STATUS wait_for_capture_completion(struct DataAcquisitionModule* dataAcquis
     {
         int returnStatus = epicsEventWait((epicsEventId)dataAcquisitionModule->triggerReadyEvent);
         if (returnStatus == epicsEventWaitOK){  /* signal recieved */
-            printf("Capture finished epicsEventWaitOK.\n");
+            // printf("Capture finished epicsEventWaitOK.\n");
             break;    
         }
     }
@@ -842,7 +842,7 @@ PICO_STATUS wait_for_capture_completion(struct DataAcquisitionModule* dataAcquis
 
     if (!blockReadyCallbackParams->dataReady) {
         *waveform_size_actual = 0;
-        return PICO_CANCELLED; // Or another appropriate status code
+        return PICO_CANCELLED;
     }
 
    // printf("Capture finished.\n");
