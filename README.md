@@ -11,11 +11,10 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:coupling`  
   - `<OSCNAME>:CH[A-D]:range`  
   - `<OSCNAME>:CH[A-D]:bandwidth`  
-  - `<OSCNAME>:CH[A-D]:analogue_offset`    
+  - `<OSCNAME>:CH[A-D]:analog_offset`    
 >[!Note] 
->Changes to the above PVs will only be applied when `<OSCNAME>:CH[A-D]:ON` is set to `1` or `ON`, even if the channel is already `ON`.
->To ensure the channel is ON, verify the staus with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
-  - Channel configuration PVs have corresponding feedback PVs with the same name, plus the suffix :fbk. These feedback PVs reflect the current value of the configuration when the channel is ON. However, if `<OSCNAME>:CH[A-D]:ON:fbk` is OFF, the configuration feedback PVs do not accurately reflect the channel's settings. 
+>Changes to the above PVs will turn the channel ON. Changes apply immediately and can be verified by checking the :fbk PVs.  
+>To ensure a channel is ON, verify the status with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
 
 - **Simple usage example walkthrough:**
 
@@ -31,26 +30,35 @@ This document provides detailed information about the EPICS driver for the Picos
   ./st.cmd
 
   # On another terminal
-  caput OSC1022-01:timebase 156254    # Set the sample time interval to 1 ms
   caput OSC1022-01:CHB:range 10       # Set the voltage range for Channel B to +/-20V
-  caput OSC1022-01:num_samples 10000  # Set the number of samples to 10,000
-  caput OSC1022-01:CHB:ON 1           # Enable and apply changes to Channel B
-  caput OSC1022-01:CHB:waveform:acquire 1 # Acquire the waveform (takes approximately 10 seconds)
-  caget OSC1022-01:CHB:waveform       # when waveform is ready, get the waveform. The waveform has a maximum size of 1,000,000 elements. Only the first 10,000 elements will contain data; the rest will be zeros.
+  caput OSC1022-01:num_samples 1000   # Set the number of samples to 1,000
+  caget OSC1022-01:CHB:ON:fbk         # Check if Channel B is ON. If not, try: caput OSC1022-01:CHB:ON ON. 
+  caput OSC1022-11:sample_interval 0.001    # Set the sample time interval to 1 ms
+  caput OSC1022-01:CHB:waveform:start 1 # Start the waveform capturing (Use external triggering)
+  caget OSC1022-01:CHB:waveform         # when waveform is ready, get the waveform. The waveform has a maximum size of 1,000,000 elements. Only the first 10,000 elements will contain data; the rest will be zeros.
   ```
   All details of these configurations can be found in this document.
 
   **The waveform data is a scaled value. The calculation is located at the bottom.**
   - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
-  - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:acquire` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
+  - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:start` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
   - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
 
 >[!Note] 
->Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:CH[A-D]:waveform:acquire`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
+>Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:CH[A-D]:waveform:start`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
 
 ---
 
 ## PVs
+### OSCNAME:log 
+- **Type**: `waveform`
+- **Description**: A waveform PV that reports a message when an error occurs in the driver.
+- **Example**:
+  ```bash
+  # To monitor log messages:
+  $ camonitor OSC1234-01:log -S
+  ```
+
 **_Oscilloscope configurations:_**
 ### OSCNAME:device_info
 - **Type**: `stringin`
@@ -147,7 +155,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:down_sample_ratio_mode:fbk 
 - **Type**: `mbbi`
 - **Description**: The method of data reduction applied to the last waveform acquired. 
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:down_sample_ratio_mode`. 
 
@@ -169,7 +177,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:down_sample_ratio:fbk 
 - **Type**: `ai`
 - **Description**: The downsampling facter that has been applied to the raw data of the last waveform acquired. 
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:down_sample_ratio`. 
 
@@ -200,22 +208,24 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:num_samples:fbk 
 - **Type**: `ai`
 - **Description**: The number of samples collected for the last waveform acquired. 
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:num_samples`. 
 
 ### OSCNAME:trigger_position_ratio
 - **Type**: `ao`
-- **Description**: A value between 0 and 1 that determines the position of the trigger point in the acquisition window.
+- **Description**: A value between 0 and 100 that determines the position of the trigger point in the acquisition window.
 - **Fields**:
   - `VAL`: The ratio of pre-trigger to post-trigger samples.
     - 0: All samples are post-trigger (no pre-trigger).
-    - 1: All samples are pre-trigger (no post-trigger).
-    - 0.5: Equal pre-trigger and post-trigger samples (50% each).
+    - 100: All samples are pre-trigger (no post-trigger).
+    - 50: Equal pre-trigger and post-trigger samples (50% each).
+  - `EGU`: The unit is `%`.
+
 - **Example**:
   ```bash
     # Set trigger position ratio 80% pre-trigger samples, 20% post-trigger samples 
-    $ caput OSC1234-01:trigger_position_ratio 0.8
+    $ caput OSC1234-01:trigger_position_ratio 80
 
     # Get trigger position ratio 
     $ caget OSC1234-01:trigger_position_ratio
@@ -224,28 +234,216 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:trigger_position_ratio:fbk 
 - **Type**: `ai`
 - **Description**: The position of the trigger in the last acquired waveform.  
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:acquire` is set to 1. 
+  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:trigger_position_ratio`. 
+  - `VAL`: See `OSCNAME:trigger_position_ratio`.
 
-### OSCNAME:sample_interval 
-- **Type**: `ao`
-- **Description**: The requested sample interval in seconds. 
+### OSCNAME:auto_trigger_us 
+- **Type**: `ai` 
+- **Description**: The time in microseconds for which the scope will wait before collecting data if no trigger event occurs. If set to zero, the scope will wait indefinitely for a trigger. 
+ 
+### OSCNAME:trigger:channel
+- **Type**: `mbbo`
+- **Description**: The source channel of triggering.
+- **Fields**:
+  - `VAL`: The channel will be used by triggering.
+    |VAL      |Enum         |Description |  
+    |---------|-------------|------------|  
+    | 0       | CHANNEL_A   | Use Channel A as the triggering source |  
+    | 1       | CHANNEL_B   | Use Channel B as the triggering source |  
+    | 2       | CHANNEL_C   | Use Channel C as the triggering source        |  
+    | 3       | CHANNEL_D   | Use Channel D as the triggering source        |
+    | 1001    | TRIGGER_AUX | Use Auxiliary trigger input as the triggering source, with a fixed threshold of 1.25 V (nominal) to suit 2.5 V CMOS|
+
+- **Example**:
+  ```bash
+    # Set triggering source to Auxiliary trigger input
+    $ caput OSC1234-01:trigger:channel TRIGGER_AUX
+
+    # Get triggering source channel
+    $ caget OSC1234-01:trigger:channel
+  ```
+
+### OSCNAME:trigger:channel:fbk 
+- **Type**: `mbbi`
+- **Description**: The feedback PV of `OSCNAME:trigger:channel`
 - **Fields**: 
-  - `VAL`: The sample interval in seconds you would like to obtain. 
+  - `VAL`: See `OSCNAME:trigger:channel`. 
+
+### OSCNAME:trigger:mode
+- **Type**: `mbbo`
+- **Description**: The mode of triggering.
+- **Fields**:
+  - `VAL`: The mode of triggering.
+    |VAL      |Enum         |Description |  
+    |---------|-------------|------------|  
+    | 0       | LEVEL       | Will only use one threshold    |  
+    | 1       | WINDOW      | Will use two thresholds  |  
+
+- **Example**:
+  ```bash
+    # Set triggering mode to LEVEL
+    $ caput OSC1234-01:trigger:mode LEVEL
+
+    # Get triggering source channel
+    $ caget OSC1234-01:trigger:mode
+  ```
+
+### OSCNAME:trigger:mode:fbk 
+- **Type**: `mbbi`
+- **Description**: The feedback PV of `OSCNAME:trigger:mode`
+- **Fields**: 
+  - `VAL`: See `OSCNAME:trigger:mode`. 
+
+
+### OSCNAME:trigger:direction
+- **Type**: `mbbo`
+- **Description**: The direction of the trigger event.
+- **Fields**:
+  - `VAL`: The direction of the trigger event.
+
+  | VAL | Enum                  | Description                                          | Threshold |
+  |-----|-----------------------|-----------------------------------------------------|-----------|
+  | 0   | ABOVE_UPPER          | Level mode, triggers when above the upper threshold. | Upper     |
+  | 1   | BELOW_UPPER          | Level mode, triggers when below the upper threshold. | Upper     |
+  | 2   | RISING_UPPER         | Level mode, triggers on a rising edge crossing the upper threshold. | Upper     |
+  | 3   | FALLING_UPPER        | Level mode, triggers on a falling edge crossing the upper threshold. | Upper     |
+  | 4   | RISING_LOW/FALLING_UP| Level mode, triggers on a rising edge crossing the lower threshold, or a falling edge crossing the upper threshold | Lower/Upper     |
+  | 5   | ABOVE_LOWER          | Level mode, triggers when above the lower threshold. | Lower     |
+  | 6   | BELOW_LOWER          | Level mode, triggers when below the lower threshold. | Lower     |
+  | 7   | RISING_LOWER         | Level mode, triggers on a rising edge crossing the lower threshold. | Lower     |
+  | 8   | FALLING_LOWER        | Level mode, triggers on a falling edge crossing the lower threshold. | Lower     |
+  | 9   | WINDOW_POSITIVE_RUNT | Window mode, triggers on a positive runt pulse entering from below. | Both      |
+  | 10  | WINDOW_NEGATIVE_RUNT | Window mode, triggers on a negative runt pulse entering from above. | Both      |
+  | 11  | WINDOW_INSIDE        | Window mode, triggers when the signal is inside the upper and lower thresholds. | Both      |
+  | 12  | WINDOW_OUTSIDE       | Window mode, triggers when the signal is outside the upper and lower thresholds. | Both      |
+  | 13  | WINDOW_ENTER         | Window mode, triggers when the signal enters the range between the upper and lower thresholds. | Both      |
+  | 14  | WINDOW_EXIT          | Window mode, triggers when the signal exits the range between the upper and lower thresholds. | Both      |
+  | 15  | WINDOW_ENTER_EXIT    | Window mode, triggers when the signal either enters or exits the range between the upper and lower thresholds. | Both      |
+
+- **Example**:
+  ```bash
+    # Set triggering direction to rising
+    $ caput OSC1234-01:trigger:direction RISING_UPPER
+
+    # Get triggering direction
+    $ caget OSC1234-01:trigger:direction
+  ```
+
+### OSCNAME:trigger:direction:fbk 
+- **Type**: `mbbi`
+- **Description**: The feedback PV of `OSCNAME:trigger:direction`
+- **Fields**: 
+  - `VAL`: See `OSCNAME:trigger:direction`. 
+
+### OSCNAME:trigger:upper:threshold
+- **Type**: `ao`
+- **Description**: The upper threshold of triggering.
+- **Fields**:
+  - `VAL`: The scaled value of upper threshold.
+
+- **Example**:
+  ```bash
+    # Set triggering upper threshold to 8000
+    $ caput OSC1234-01:trigger:upper:threshold 8000
+
+    # Get triggering upper threshold
+    $ caget OSC1234-01:trigger:upper:threshold
+  ```
+### OSCNAME:trigger:upper:threshold:fbk 
+- **Type**: `ai`
+- **Description**: The feedback PV of `OSCNAME:trigger:upper:threshold`
+- **Fields**: 
+  - `VAL`: See `OSCNAME:trigger:upper:threshold`.
+
+### OSCNAME:trigger:lower:threshold
+- **Type**: `ao`
+- **Description**: The lower threshold of triggering.
+- **Fields**:
+  - `VAL`: The scaled value of lower threshold.
+
+- **Example**:
+  ```bash
+    # Set triggering lower threshold to 4000
+    $ caput OSC1234-01:trigger:lower:threshold 4000
+
+    # Get triggering lower threshold
+    $ caget OSC1234-01:trigger:lower:threshold
+  ```
+### OSCNAME:trigger:lower:threshold:fbk 
+- **Type**: `ai`
+- **Description**: The feedback PV of `OSCNAME:trigger:lower`
+- **Fields**: 
+  - `VAL`: See `OSCNAME:trigger:lower`.
+
+### OSCNAME:time_per_division
+- **Type**: `mbbo` 
+- **Description**: The time per division. 
+- **Fields**:
+  - `VAL`
+    | VAL   | Description    |
+    |-------|----------------|
+    | 0     | 1    time/div  |
+    | 1     | 2    time/div  | 
+    | 2     | 5    time/div  |  
+    | 3     | 10   time/div  | 
+    | 4     | 20   time/div  | 
+    | 5     | 50   time/div  | 
+    | 6     | 100  time/div  | 
+    | 7     | 200  time/div  | 
+    | 8     | 500  time/div  | 
+    | 9     | 1000 time/div  | 
+    | 10    | 2000 time/div  | 
+    | 11    | 5000 time/div  | 
+
+### OSCNAME:time_per_division:fbk
+- **Type**: `mbbi` 
+- **Description**: The currently set time per division. 
+- **Fields**:
+  - `VAL`: See `OSCNAME:time_per_division`
+
+### OSCNAME:time_per_division:unit 
+- **Type**: `mbbo` 
+- **Description**: The time unit used per division. 
+- **Fields**:
+  - `VAL`
+    | VAL   | Description |
+    |-------|-------------|
+    | 0     | ns/div      |
+    | 1     | us/div      |
+    | 2     | ms/div      | 
+    | 3     | s/div       |
+
+### OSCNAME:time_per_division:unit:fbk
+- **Type**: `mbbi` 
+- **Description**: The currently set time unit used per division. 
+- **Fields**:
+  - `VAL`: See `OSCNAME:time_per_division:unit`
+
+### OSCNAME:num_divisions 
+- **Type**: `ao` 
+- **Description**: The number of divisions. 
+
+### OSCNAME:num_divisions:fbk
+- **Type**: `ai` 
+- **Description**: The currently set number of divisions. 
 
 ### OSCNAME:sample_interval:fbk
 - **Type**: `ai`
-- **Description**: The actual sample interval in seconds that will be applied when capturing data.
-  - Updated with a new value put to `OSCNAME:sample_interval` or when any channel is turned ON/OFF. 
+- **Description**: The sample interval in seconds that will be applied when capturing data.
+  - The value returned is based on the value of `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
 - **Fields**: 
-  - `VAL`: The actual sample interval appliead in seconds. 
+  - `VAL`: The actual sample interval applied in seconds. 
 
+### OSCNAME:sample_rate:fbk 
+- **Type**: `ai`
+- **Description**: The sample rate in samples/second (S/s).
+  - The value returned is based on the value of `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
+ 
 ### OSCNAME:timebase:fbk
 - **Type**: `ai`
 - **Description**: The time scale used to determine time per division when capturing data. 
-  - The value returned is based on the value of `OSCNAME:sample_interval:fbk`. 
-  - This value will update when a new value is put to `OSCNAME:sample_interval` or when any channel is turned ON/OFF.
+  - The value returned is based on the value of `OSCNAME:time_per_division:fbk` and     `OSCNAME:time_per_division:unit:fbk`. 
 - **Fields**:
   - `VAL`: Timebase
   ![image](https://github.lightsource.ca/cid/DRIVER_Picoscope6000ESeries/assets/209/a348ee4f-d014-44ec-a948-070051ce5d46)
@@ -283,7 +481,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:ON:fbk 
 - **Type**: `bo`
 - **Description**: The actual state of the channel.
-  - Updated when a new value set to `OSCNAME:CH[A-D]:ON`. 
+  - Updated when a new value set to `OSCNAME:CH[A-D]:ON` and when a channel configuration is changed. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-D]:ON` 
 
@@ -309,7 +507,6 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:coupling:fbk
 - **Type**: `mbbi`
 - **Description**: The actual impedance and coupling type set to a channel. 
-  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:coupling` 
@@ -350,7 +547,6 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:range:fbk
 - **Type**: `mbbi`
 - **Description**: The actual value of the voltage range set to a channel.  
-  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:range` 
@@ -379,12 +575,11 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:CH[A-D]:bandwith:fbk
 - **Type**: `mbbi`
 - **Description**: The actual value of the voltage range set to a channel.  
-  - Updated when OSCNAME:CH[A-D]:ON is set to ON. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:CH[A-B]:bandwith` 
 
-### OSCNAME:CH[A-D]:analogue_offset
+### OSCNAME:CH[A-D]:analog_offset
 - **Type**: `ao`
 - **Description**: A voltage to add to the input channel before digitization.
 - **Fields**:
@@ -392,35 +587,34 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Example**:
   ```bash
     # Set offset to 1V
-    $ caput OSC1234-01:CHA:analogueoffset 1
+    $ caput OSC1234-01:CHA:analogoffset 1
     # Set offset to 10V
-    $ caput OSC1234-01:CHA:analogueoffset 10
+    $ caput OSC1234-01:CHA:analogoffset 10
 
     # Get offset
-    $ caput OSC1234-01:CHA:analogueoffset
+    $ caput OSC1234-01:CHA:analogoffset
   ```
-### OSCNAME:CH[A-D]:analogue_offset:fbk
+### OSCNAME:CH[A-D]:analog_offset:fbk
 - **Type**: `ai`
-- **Description**: The actual voltage to added to the input channel before digitization. The analogue offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analogue_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
-  - Updated when `OSCNAME:CH[A-D]:ON` is set to ON. 
+- **Description**: The actual voltage to added to the input channel before digitization. The analog offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analog_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:CH[A-B]:analogue_offset` 
+  - `VAL`: See `OSCNAME:CH[A-B]:analog_offset` 
 
-### OSCNAME:CH[A-D]:analogue_offset:max 
+### OSCNAME:CH[A-D]:analog_offset:max 
 - **Type**: `ai`
-- **Description**: The maximun allowed analogue offset voltage allowed for the range. 
+- **Description**: The maximun allowed analog offset voltage allowed for the range. 
   - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
 
-### OSCNAME:CH[A-D]:analogue_offset:min
+### OSCNAME:CH[A-D]:analog_offset:min
 - **Type**: `ai`
-- **Description**: The minimum allowed analogue offset voltage allowed for the range. 
+- **Description**: The minimum allowed analog offset voltage allowed for the range. 
   - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
 
 
-### OSCNAME:CH[A-D]:waveform:acquire
+### OSCNAME:CH[A-D]:waveform:start
 - **Type**: `bo`
-- **Description**: The PV to ask Oscilloscope start acquiring PV with current configuration(set by other PVs).
+- **Description**: The PV to ask Oscilloscope start acquiring wavefrom with current configuration(set by other PVs).
 - **Fields**:
   - `VAL`: Start getting the waveform.
     | VAL   | Description      |
@@ -429,12 +623,26 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Example**:
   ```bash
     # Start acquiring waveform
-    $ caput OSC1234-01:CHA:waveform:acquire 1
+    $ caput OSC1234-01:CHA:waveform:start 1
+  ```
+
+### OSCNAME:CH[A-D]:waveform:stop
+- **Type**: `bo`
+- **Description**: The PV to ask Oscilloscope stop acquiring.
+- **Fields**:
+  - `VAL`: Start getting the waveform.
+    | VAL   | Description      |
+    |-------|------------------|
+    | 1     | Stop acquiring waveform   |
+- **Example**:
+  ```bash
+    # Stop acquiring waveform
+    $ caput OSC1234-01:CHA:waveform:stop 1
   ```
 
 ### OSCNAME:CH[A-D]:waveform
 - **Type**: `waveform`
-- **Description**: Waveform will be available after `OSCNAME:CH[A-D]:waveform:acquire` PV is invoked.
+- **Description**: Waveform will be available after `OSCNAME:CH[A-D]:waveform:start` PV is invoked.
 - **Fields**:
   - `VAL`: Waveform result acquired
 - **Example**:

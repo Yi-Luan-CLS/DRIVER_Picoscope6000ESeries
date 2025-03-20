@@ -2,38 +2,72 @@
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
 
-int16_t get_device_info(int8_t** device_info);
+uint32_t get_device_info(int8_t** device_info);
 
-int16_t connect_picoscope();
+uint32_t connect_picoscope();
 
-int16_t open_picoscope(int16_t resolution, int8_t* serial_num); 
+uint32_t open_picoscope(int16_t resolution, int8_t* serial_num); 
 
-int16_t ping_picoscope();
+uint32_t ping_picoscope();
 
-int16_t set_device_resolution(int16_t resolution);
+uint32_t set_device_resolution(int16_t resolution);
 
-int16_t get_resolution(int16_t* resolution);
+uint32_t get_resolution(int16_t* resolution);
 
-int16_t close_picoscope();
+uint32_t close_picoscope();
 
-int16_t set_channel_on(struct ChannelConfigs* channel);
+uint32_t set_channel_on(struct ChannelConfigs* channel);
 
-int16_t set_channel_off(int channel);
+uint32_t set_channel_off(int channel);
 
-int16_t get_analogue_offset_limits(
+uint32_t get_channel_status(int16_t channel);
+
+
+uint32_t get_valid_timebase_configs(
+    struct TimebaseConfigs timebase_configs, 
+    uint64_t num_samples,   
+    double* sample_interval,
+    uint32_t* timebase, 
+    double* sample_rate
+    );  
+
+uint32_t get_analog_offset_limits(
+    int16_t range, 
+    int16_t coupling, 
+    double* max_analog_offset,
+    double* min_analog_offset);
+
+uint32_t is_Channel_On(enum Channel channel);
+
+uint32_t setup_picoscope(
+    int16_t* waveform_buffer[CHANNEL_NUM],
+    struct ChannelConfigs channel_config[CHANNEL_NUM],
+    struct SampleConfigs sample_config,
+    struct TriggerConfigs trigger_config
+    );
+
+uint32_t interrupt_block_capture();
+
+uint32_t run_block_capture(
+    struct SampleConfigs sample_config,
+    double* time_indisposed_ms,
+    uint64_t* waveform_size_actual
+    );
+
+uint32_t get_analogue_offset_limits(
     int16_t range, 
     int16_t coupling, 
     double* max_analogue_offset,
-    double* min_analogue_offset);
+    double* min_analogue_offset
+    );
 
-int16_t set_sample_interval(
+uint32_t validate_sample_interval(
     double requested_time_interval, 
     uint32_t* timebase, 
-    double* available_time_interval);
+    double* available_time_interval
+    );
 
-int16_t retrieve_waveform(
-    struct ChannelConfigs* channel_configuration,
-    struct SampleConfigs* sample_configurations,
-    int16_t* waveform);
+uint32_t stop_capturing();
+
 
 #endif
