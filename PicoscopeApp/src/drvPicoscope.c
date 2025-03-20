@@ -521,16 +521,19 @@ uint32_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uin
 
 typedef struct {
     PICO_STATUS callbackStatus; // Status from the callback
-} BlockCaptureState;
-PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs channel_config[CHANNEL_NUM], struct SampleConfigs sample_config, struct TriggerConfigs trigger_config);
-PICO_STATUS run_block_capture(struct SampleConfigs sample_config, double* time_indisposed_ms, uint64_t* waveform_size_actual);
+    int dataReady;
+    struct DataAcquisitionModule* dataAcquisitionModule
+} BlockReadyCallbackParams;
+PICO_STATUS setup_picoscope(struct DataAcquisitionModule* dataAcquisitionModule, int16_t* waveform_buffer[CHANNEL_NUM]);
+PICO_STATUS init_block_ready_callback_params(struct DataAcquisitionModule* dataAcquisitionModule);
+PICO_STATUS run_block_capture(struct DataAcquisitionModule* dataAcquisitionModule, double* time_indisposed_ms, uint64_t* waveform_size_actual);
 PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs channel_config[CHANNEL_NUM], struct SampleConfigs sample_config);
 PICO_STATUS set_trigger_configurations(struct TriggerConfigs trigger_config);
-PICO_STATUS start_block_capture(struct SampleConfigs sample_config, double* time_indisposed_ms);
-PICO_STATUS wait_for_capture_completion(struct SampleConfigs sample_config, uint64_t* waveform_size_actual);
+PICO_STATUS start_block_capture(struct DataAcquisitionModule* dataAcquisitionModule, double* time_indisposed_ms);
+PICO_STATUS wait_for_capture_completion(struct DataAcquisitionModule* dataAcquisitionModule, uint64_t* waveform_size_actual);
 PICO_STATUS retrieve_waveform_data(struct SampleConfigs sample_config, uint64_t* waveform_size_actual);
 
-BlockCaptureState* callback_state;
+BlockReadyCallbackParams* blockReadyCallbackParams;
 /**
  * Configures the data buffer for the specified channel on the Picoscope device.
  * 
@@ -539,11 +542,14 @@ BlockCaptureState* callback_state;
  * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
  * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs channel_config[CHANNEL_NUM], struct SampleConfigs sample_config, struct TriggerConfigs trigger_config) {
+PICO_STATUS setup_picoscope(struct DataAcquisitionModule* dataAcquisitionModule, int16_t* waveform_buffer[CHANNEL_NUM]) {
 
     PICO_STATUS status = 0;
-
-    if (trigger_config.triggerType == NO_TRIGGER) {
+    init_block_ready_callback_params(dataAcquisitionModule);
+    if (status != PICO_OK) {
+        return status;
+    }
+    if (dataAcquisitionModule->trigger_config.triggerType == NO_TRIGGER) {
         // If no trigger set, clear previous triggers and do not set new one 
         PICO_CONDITION condition;
         status = ps6000aSetTriggerChannelConditions(handle, &condition, 0, PICO_CLEAR_ALL);   
@@ -553,18 +559,30 @@ PICO_STATUS setup_picoscope(int16_t* waveform_buffer[CHANNEL_NUM], struct Channe
         printf("No trigger set.\n");
     } 
     else { 
-        status = set_trigger_configurations(trigger_config);
+        status = set_trigger_configurations(dataAcquisitionModule->trigger_config);
         if (status != PICO_OK) {
             return status;
         }
         printf("Trigger set.\n");
     }
 
-    status = set_data_buffer(waveform_buffer, channel_config, sample_config);
+    status = set_data_buffer(waveform_buffer, dataAcquisitionModule->channel_configs, dataAcquisitionModule->sample_config);
     if (status != PICO_OK) {
         return status;
     }
     return status;
+}
+
+PICO_STATUS init_block_ready_callback_params(struct DataAcquisitionModule* dataAcquisitionModule){
+    free(blockReadyCallbackParams);
+    blockReadyCallbackParams = (BlockReadyCallbackParams*)malloc(sizeof(BlockReadyCallbackParams));
+    if (blockReadyCallbackParams == NULL) {
+        log_error("BlockReadyCallbackParams malloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
+        return PICO_MEMORY_FAIL;
+    }
+    memset(blockReadyCallbackParams, 0, sizeof(BlockReadyCallbackParams));
+    blockReadyCallbackParams->dataAcquisitionModule = dataAcquisitionModule;
+    return PICO_OK;
 }
 
 PICO_STATUS set_trigger_conditions(struct TriggerConfigs trigger_config) {
@@ -721,15 +739,16 @@ PICO_STATUS set_trigger_configurations(struct TriggerConfigs trigger_config) {
  * @param time_indisposed_ms Pointer to a variable where the time indisposed (in milliseconds) will be stored.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS run_block_capture(struct SampleConfigs sample_config, double* time_indisposed_ms, uint64_t* waveform_size_actual) {
+PICO_STATUS run_block_capture(struct DataAcquisitionModule* dataAcquisitionModule, double* time_indisposed_ms, uint64_t* waveform_size_actual) {
     PICO_STATUS status = 0;
-    status = start_block_capture(sample_config, time_indisposed_ms);
+
+    status = start_block_capture(dataAcquisitionModule, time_indisposed_ms);
     if (status != PICO_OK) {
         log_error("start_block_capture", status, __FILE__, __LINE__);
         return status;
     }
 
-    status = wait_for_capture_completion(sample_config, waveform_size_actual);
+    status = wait_for_capture_completion(dataAcquisitionModule, waveform_size_actual);
     if (status != PICO_OK && status != PICO_CANCELLED) {
         log_error("wait_for_capture_completion", status, __FILE__, __LINE__);
         return status;
@@ -741,17 +760,10 @@ PICO_STATUS run_block_capture(struct SampleConfigs sample_config, double* time_i
 
 void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, void *pParameter)
 {
-    BlockCaptureState *state = (BlockCaptureState *)pParameter;
+    BlockReadyCallbackParams *state = (BlockReadyCallbackParams *)pParameter;
     state->callbackStatus = status;
-    pthread_mutex_unlock(&block_ready_mutex);
-}
-
-volatile int is_interrupted = 0;
-
-void interrupt_block_capture()
-{
-    is_interrupted = 1;
-    pthread_mutex_unlock(&block_ready_mutex);
+    state->dataReady = 1;
+    epicsEventSignal(state->dataAcquisitionModule->triggerReadyEvent);
 }
 
 /**
@@ -762,43 +774,19 @@ void interrupt_block_capture()
  * @param time_indisposed_ms Pointer to a variable where the time indisposed (in milliseconds) will be stored.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS start_block_capture(struct SampleConfigs sample_config, double* time_indisposed_ms) {
+PICO_STATUS start_block_capture(struct DataAcquisitionModule* dataAcquisitionModule, double* time_indisposed_ms) {
+    PICO_STATUS ps6000aRunBlockStatus;
+    PICO_STATUS ps6000aStopStatus;
+    struct SampleConfigs sample_config = dataAcquisitionModule->sample_config;
     uint64_t pre_trigger_samples = ((uint64_t)sample_config.num_samples * sample_config.trigger_position_ratio)/100;
     uint64_t post_trigger_samples = sample_config.num_samples - pre_trigger_samples;
+
+    blockReadyCallbackParams->dataReady = 0;
     int8_t runBlockCaptureRetryFlag = 0;
-    pthread_mutex_lock(&block_ready_mutex); 
-    free(callback_state);
-    callback_state = (BlockCaptureState*)malloc(sizeof(BlockCaptureState));
-    if (callback_state == NULL) {
-        log_error("BlockCaptureState malloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
-        return PICO_MEMORY_FAIL;
-    }
-    memset(callback_state, 0, sizeof(BlockCaptureState)); // Initialize to zero
-    is_interrupted = 0;
+
     pthread_mutex_lock(&ps6000a_call_mutex);
-    PICO_STATUS status = ps6000aRunBlock(
-        handle,
-        pre_trigger_samples,    
-        post_trigger_samples,
-        sample_config.timebase_configs.timebase,
-        time_indisposed_ms,
-        0,
-        ps6000aBlockReadyCallback, 
-        (void*) callback_state
-    );
-
-    while (status == PICO_HARDWARE_CAPTURING_CALL_STOP)
-    {  
-
-        pthread_mutex_unlock(&block_ready_mutex);
-
-        runBlockCaptureRetryFlag ++;
-        printf("runBlockCaptureRetryFlag Retry: %d\n",runBlockCaptureRetryFlag);
-        status = ps6000aStop(handle);
-
-        pthread_mutex_lock(&block_ready_mutex);
-
-        status = ps6000aRunBlock(
+    do {
+        ps6000aRunBlockStatus = ps6000aRunBlock(
             handle,
             pre_trigger_samples,    
             post_trigger_samples,
@@ -806,16 +794,24 @@ PICO_STATUS start_block_capture(struct SampleConfigs sample_config, double* time
             time_indisposed_ms,
             0,
             ps6000aBlockReadyCallback, 
-            (void*) callback_state
+            (void*) blockReadyCallbackParams
         );
 
-    }
+        if (ps6000aRunBlockStatus == PICO_HARDWARE_CAPTURING_CALL_STOP) {
+            runBlockCaptureRetryFlag++;
+            printf("ps6000aRunBlock Retry attempt: %d\n", runBlockCaptureRetryFlag);
+            ps6000aStopStatus = ps6000aStop(handle);
+            if (ps6000aStopStatus != PICO_OK) {
+                printf("Error: Failed to stop capture in ps6000aRunBlock, status: %d\n", ps6000aStopStatus);
+                return ps6000aStopStatus;
+            }
+        }
+    } while (ps6000aRunBlockStatus == PICO_HARDWARE_CAPTURING_CALL_STOP);
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
-    if (status != PICO_OK) {
-        pthread_mutex_unlock(&block_ready_mutex);
-        log_error("ps6000aRunBlock", status, __FILE__, __LINE__);
-        return status;
+    if (ps6000aRunBlockStatus != PICO_OK) {
+        log_error("ps6000aRunBlock", ps6000aRunBlockStatus, __FILE__, __LINE__);
+        return ps6000aRunBlockStatus;
     }
 
     return PICO_OK;
@@ -826,22 +822,27 @@ PICO_STATUS start_block_capture(struct SampleConfigs sample_config, double* time
  * 
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS wait_for_capture_completion(struct SampleConfigs sample_config, uint64_t* waveform_size_actual)
+PICO_STATUS wait_for_capture_completion(struct DataAcquisitionModule* dataAcquisitionModule, uint64_t* waveform_size_actual)
 {
     PICO_STATUS status = PICO_OK;
-    pthread_mutex_lock(&block_ready_mutex);
-    pthread_mutex_unlock(&block_ready_mutex);
-
-    if (is_interrupted) {
-        printf("Capture interrupted, exiting wait_for_capture_completion.\n");
-        *waveform_size_actual = 0;
-        return PICO_CANCELLED; // Or another appropriate status code
+    while (1)
+    {
+        int returnStatus = epicsEventWait((epicsEventId)dataAcquisitionModule->triggerReadyEvent);
+        if (returnStatus == epicsEventWaitOK){  /* signal recieved */
+            // printf("Capture finished epicsEventWaitOK.\n");
+            break;    
+        }
     }
 
-    if (callback_state->callbackStatus != PICO_OK)
+    if (blockReadyCallbackParams->callbackStatus != PICO_OK)
     {
-        log_error("wait_for_capture_completion", callback_state->callbackStatus, __FILE__, __LINE__);
-        return callback_state->callbackStatus;
+        log_error("wait_for_capture_completion", blockReadyCallbackParams->callbackStatus, __FILE__, __LINE__);
+        return blockReadyCallbackParams->callbackStatus;
+    }
+
+    if (!blockReadyCallbackParams->dataReady) {
+        *waveform_size_actual = 0;
+        return PICO_CANCELLED;
     }
 
    // printf("Capture finished.\n");
@@ -857,7 +858,7 @@ PICO_STATUS wait_for_capture_completion(struct SampleConfigs sample_config, uint
          tm_info->tm_min,        
          tm_info->tm_sec,        
          tv.tv_usec); 
-    status = retrieve_waveform_data(sample_config, waveform_size_actual);
+    status = retrieve_waveform_data(dataAcquisitionModule->sample_config, waveform_size_actual);
 
     if (status != PICO_OK) {
         return status;
@@ -877,38 +878,37 @@ PICO_STATUS retrieve_waveform_data(struct SampleConfigs sample_config, uint64_t*
     uint64_t segment_index = 0;
     int16_t overflow = 0;
     int8_t getValueRetryFlag = 0;
-    
+    PICO_STATUS ps6000aStopStatus;
+    PICO_STATUS ps6000aGetValuesStatus;
+
     pthread_mutex_lock(&ps6000a_call_mutex);
-    PICO_STATUS status = ps6000aGetValues(
-        handle, 
-        start_index, 
-        waveform_size_actual, 
-        sample_config.down_sample_ratio, 
-        sample_config.down_sample_ratio_mode, 
-        segment_index, 
-        &overflow
-    );
-    while (status == PICO_HARDWARE_CAPTURING_CALL_STOP)
-    {  
-        getValueRetryFlag ++;
-        printf("getValueRetryFlag Retry: %d\n",getValueRetryFlag);
-        status = ps6000aStop(handle);
-        status = ps6000aGetValues(
-            handle, 
-            start_index, 
-            waveform_size_actual, 
-            sample_config.down_sample_ratio, 
-            sample_config.down_sample_ratio_mode, 
-            segment_index, 
+    do {
+        ps6000aGetValuesStatus = ps6000aGetValues(
+            handle,
+            start_index,
+            waveform_size_actual,
+            sample_config.down_sample_ratio,
+            sample_config.down_sample_ratio_mode,
+            segment_index,
             &overflow
         );
-    }
-    
+
+        if (ps6000aGetValuesStatus == PICO_HARDWARE_CAPTURING_CALL_STOP) {
+            getValueRetryFlag++;
+            printf("dataReady %d\n",blockReadyCallbackParams->dataReady);
+            printf("ps6000aGetValues Retry attempt: %d\n", getValueRetryFlag);
+            ps6000aStopStatus = ps6000aStop(handle);
+            if (ps6000aStopStatus != PICO_OK) {
+                printf("Error: Failed to stop capture, status: %d\n", ps6000aStopStatus);
+                return ps6000aStopStatus;
+            }
+        }
+    } while (ps6000aGetValuesStatus == PICO_HARDWARE_CAPTURING_CALL_STOP);
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
-    if (status != PICO_OK) {
-        log_error("ps6000aGetValues", status, __FILE__, __LINE__);
-        return status;
+    if (ps6000aGetValuesStatus != PICO_OK) {
+        log_error("ps6000aGetValues", ps6000aGetValuesStatus, __FILE__, __LINE__);
+        return ps6000aGetValuesStatus;
     }
 
 
