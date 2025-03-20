@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdint.h>
+#include "epicsEvent.h"
 
 #ifndef PICOSCOPE_CONFIG
 #define PICOSCOPE_CONFIG
@@ -104,6 +105,12 @@ struct TriggerConfigs{
     uint32_t autoTriggerMicroSeconds;
 };
 
+struct DataAcquisitionModule {
+    struct SampleConfigs sample_config;
+    struct ChannelConfigs channel_configs[CHANNEL_NUM];
+    struct TriggerConfigs trigger_config;
+	epicsEventId triggerReadyEvent;
+};
 /** Get the channel from the record formatted "OSCXXXX-XX:CH[A-B]:" and return index in channels array */
 int find_channel_index_from_record(const char* record_name, struct ChannelConfigs* channels[]);
 

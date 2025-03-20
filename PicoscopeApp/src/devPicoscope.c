@@ -1524,6 +1524,7 @@ uint32_t waveform_size_max;
 struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
 
 struct waveformRecord* pLog;
+struct DataAcquisitionModule *dataAcquisitionModule;
 
 static long init_record_waveform(struct waveformRecord * pwaveform)
 {
@@ -1563,6 +1564,7 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
     {    
 
         case START_RETRIEVE_WAVEFORM:
+            dataAcquisitionModule = malloc(sizeof(struct DataAcquisitionModule));
             pWaveformStart = pwaveform;
             break;
       
@@ -1598,21 +1600,15 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 
     return 0;
 }
-
-struct CaptureThreadData {
-    struct SampleConfigs sample_config;
-    struct ChannelConfigs channel_configs[CHANNEL_NUM];
-    struct TriggerConfigs trigger_config;
-};
-static int allocate_capture_data(struct CaptureThreadData *data_ptr);
+static int allocate_capture_data(struct DataAcquisitionModule *data_ptr);
 void captureThreadFunc(void *arg) {
     epicsMutexLock(epics_acquisition_thread_mutex);
-    struct CaptureThreadData *data = (struct CaptureThreadData *)arg;
+    dataAcquisitionModule = (struct DataAcquisitionModule *)arg;
     epicsThreadId id = epicsThreadGetIdSelf();
     printf("Start ID is %ld\n", id->tid);
 
     // Setup Picoscope
-    uint32_t status = setup_picoscope(waveform, data->channel_configs, data->sample_config, data->trigger_config);
+    uint32_t status = setup_picoscope(dataAcquisitionModule, waveform);
     if (status != 0) {
         log_message("", "Error configuring picoscope for data capture.", status);
         printf("captureThreadFunc Cleanup ID is %ld\n", id->tid);
@@ -1626,8 +1622,8 @@ void captureThreadFunc(void *arg) {
     while (dataAcquisitionFlag == 1) {
         double time_indisposed_ms = 0;
 
-        waveform_size_actual = data->sample_config.num_samples;
-        status = run_block_capture(data->sample_config, &time_indisposed_ms, &waveform_size_actual);
+        waveform_size_actual = dataAcquisitionModule->sample_config.num_samples;
+        status = run_block_capture(dataAcquisitionModule, &time_indisposed_ms, &waveform_size_actual);
         if (status != 0) {
             log_message("", "Error capturing data block.", status);
             break;
@@ -1636,7 +1632,7 @@ void captureThreadFunc(void *arg) {
 
         // Process the UPDATE_WAVEFORM subroutine to update waveform
         for (size_t i = 0; i < CHANNEL_NUM; i++) {
-            if (is_Channel_On(data->channel_configs[i].channel)) {
+            if (is_Channel_On(dataAcquisitionModule->channel_configs[i].channel)) {
                 dbProcess((struct dbCommon *)pRecordUpdateWaveform[i]);
             }
         }
@@ -1665,13 +1661,12 @@ read_waveform(struct waveformRecord *pwaveform) {
             dataAcquisitionFlag = 1;
             epicsMutexUnlock(epics_acquisition_flag_mutex);
 
-            struct CaptureThreadData *data = malloc(sizeof(struct CaptureThreadData));
-            if (allocate_capture_data(data) != 0) {
+            if (allocate_capture_data(dataAcquisitionModule) != 0) {
                 return -1;
             }
             // Create capture thread
             epicsThreadId capture_thread = epicsThreadCreate("captureThread", epicsThreadPriorityMedium,
-                                                             0, (EPICSTHREADFUNC)captureThreadFunc, data);
+                                                             0, (EPICSTHREADFUNC)captureThreadFunc, dataAcquisitionModule);
             if (!capture_thread) {
                 errlogPrintf("%s: Failed to create capture thread\n", pwaveform->name);
                 epicsMutexLock(epics_acquisition_flag_mutex);
@@ -1695,7 +1690,7 @@ read_waveform(struct waveformRecord *pwaveform) {
             epicsMutexLock(epics_acquisition_flag_mutex);
             dataAcquisitionFlag = 0;
             epicsMutexUnlock(epics_acquisition_flag_mutex);
-            interrupt_block_capture();
+    		epicsEventSignal(dataAcquisitionModule->triggerReadyEvent);
             break;
 
         default:
@@ -1710,9 +1705,9 @@ read_waveform(struct waveformRecord *pwaveform) {
 }
 
 static int
-allocate_capture_data(struct CaptureThreadData *data) {
+allocate_capture_data(struct DataAcquisitionModule *data) {
     if (!data) {
-        errlogPrintf("CaptureThreadData pointer is null\n");
+        errlogPrintf("DataAcquisitionModule pointer is null\n");
         epicsMutexLock(epics_acquisition_flag_mutex);
         dataAcquisitionFlag = 0;
         epicsMutexUnlock(epics_acquisition_flag_mutex);
@@ -1725,6 +1720,7 @@ allocate_capture_data(struct CaptureThreadData *data) {
         data->channel_configs[i] = *channels[i];
     }
     data->trigger_config = *trigger_config;
+	data->triggerReadyEvent = epicsEventCreate(0);
 
     // Check and adjust sample size
     if (data->sample_config.num_samples > waveform_size_max) {
