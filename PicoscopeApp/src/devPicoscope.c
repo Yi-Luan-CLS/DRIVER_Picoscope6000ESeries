@@ -68,7 +68,7 @@ enum ioType
     SET_AUTO_TRIGGER_US, 
     GET_AUTO_TRIGGER_US,
 
-    // mbbo/mbbi
+    // mbbio
     SET_RESOLUTION,
     GET_RESOLUTION,
     SET_DOWN_SAMPLE_RATIO_MODE,
@@ -90,7 +90,7 @@ enum ioType
     GET_RANGE,
     SET_BANDWIDTH, 
     GET_BANDWIDTH,
-    };
+};
 
 enum ioFlag
     {
@@ -137,28 +137,6 @@ static struct aioType
         {"set_auto_trigger_us", isOutput, SET_AUTO_TRIGGER_US, ""},
         {"get_auto_trigger_us", isInput, GET_AUTO_TRIGGER_US, ""},
 
-        // mbbo/mbbi
-        {"set_resolution", isOutput, SET_RESOLUTION, ""},
-        {"get_resolution", isInput, GET_RESOLUTION, ""},
-        {"set_down_sampling_ratio_mode", isOutput, SET_DOWN_SAMPLE_RATIO_MODE, ""},
-        {"get_down_sampling_ratio_mode", isInput, GET_DOWN_SAMPLE_RATIO_MODE, ""},
-        {"set_trigger_type", isOutput, SET_TRIGGER_TYPE, ""},
-        {"get_trigger_type", isInput, GET_TRIGGER_TYPE, ""},
-        {"set_trigger_direction", isOutput, SET_TRIGGER_DIRECTION, ""},
-        {"get_trigger_direction", isInput, GET_TRIGGER_DIRECTION, ""}, 
-        {"set_time_per_division_unit", isOutput, SET_TIME_PER_DIVISION_UNIT, ""},
-        {"get_time_per_division_unit", isInput, GET_TIME_PER_DIVISION_UNIT, ""},
-        {"set_time_per_division", isOutput, SET_TIME_PER_DIVISION, ""},
-        {"get_time_per_division", isInput, GET_TIME_PER_DIVISION, ""},
-        {"set_trigger_channel", isOutput, SET_TRIGGER_CHANNEL, ""},
-        {"get_trigger_channel", isInput, GET_TRIGGER_CHANNEL, ""},
-        {"get_trigger_mode", isInput, GET_TRIGGER_MODE, ""},
-        {"set_coupling", isOutput, SET_COUPLING, "" },
-        {"get_coupling", isInput, GET_COUPLING, ""},
-        {"set_range", isOutput, SET_RANGE,   "" }, 
-        {"get_range", isInput, GET_RANGE, ""},
-        {"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
-        {"get_bandwidth", isInput, GET_BANDWIDTH, "" }, 
 
     };
 
@@ -326,12 +304,6 @@ read_ai (struct aiRecord *pai){
             }
             pai->val = 1; 
             break;
-
-        case GET_RESOLUTION: 
-            result = get_resolution(&resolution);
-
-            pai->val = resolution;  
-            break; 
 
         // Channel configuration fbk
         case GET_CHANNEL_STATUS: 
@@ -522,10 +494,6 @@ init_record_ao (struct aoRecord *pao)
             device_serial_number = (int8_t*)pao->name;
             break; 
 
-        case SET_RESOLUTION: 
-            resolution = (int)pao->val; 
-            break;
-
         case SET_NUM_SAMPLES: 
             sample_configurations->num_samples = (int)pao->val; 
             break; 
@@ -621,13 +589,6 @@ write_ao (struct aoRecord *pao)
 
     switch (vdp->ioType)
     {        
-        case SET_RESOLUTION: 
-            resolution = (int)pao->val; 
-            result = set_device_resolution(resolution); 
-            if (result !=0) {
-                log_message(pao->name, "Error setting device resolution.", result);
-            }
-            break;
         
         case SET_NUM_DIVISIONS: 
             int16_t previous_num_divisions = sample_configurations->timebase_configs.num_divisions; 
@@ -846,6 +807,72 @@ int find_channel_index_from_record(const char* record_name, struct ChannelConfig
 }
 
 
+
+ //------------------------------ MBBI/MBBO INITIALIZATION ------------------------------//
+
+struct mbbioType
+{
+	char *label;
+	enum ioFlag flag;
+	enum ioType ioType;
+    char *cmdp;
+} MbbioType[] =
+{
+		/* string			              in/out		 function		              command */
+        {"set_resolution",                isOutput,     SET_RESOLUTION,                 ""},
+        {"get_resolution",                isInput,      GET_RESOLUTION,                 ""},
+        {"set_down_sampling_ratio_mode",  isOutput,     SET_DOWN_SAMPLE_RATIO_MODE,     ""},
+        {"get_down_sampling_ratio_mode",  isInput,      GET_DOWN_SAMPLE_RATIO_MODE,     ""},
+        {"set_trigger_type",              isOutput,     SET_TRIGGER_TYPE,               ""},
+        {"get_trigger_type",              isInput,      GET_TRIGGER_TYPE,               ""},
+        {"set_trigger_direction",         isOutput,     SET_TRIGGER_DIRECTION,          ""},
+        {"get_trigger_direction",         isInput,      GET_TRIGGER_DIRECTION,          ""}, 
+        {"set_time_per_division_unit",    isOutput,     SET_TIME_PER_DIVISION_UNIT,     ""},
+        {"get_time_per_division_unit",    isInput,      GET_TIME_PER_DIVISION_UNIT,     ""},
+        {"set_time_per_division",         isOutput,     SET_TIME_PER_DIVISION,          ""},
+        {"get_time_per_division",         isInput,      GET_TIME_PER_DIVISION,          ""},
+        {"set_trigger_channel",           isOutput,     SET_TRIGGER_CHANNEL,            ""},       
+        {"get_trigger_channel",           isInput,      GET_TRIGGER_CHANNEL,            ""},       
+        {"get_trigger_mode",              isInput,      GET_TRIGGER_MODE,               ""},
+        {"set_coupling",                  isOutput,     SET_COUPLING,                   ""},
+        {"get_coupling",                  isInput,      GET_COUPLING,                   ""},
+        {"set_range",                     isOutput,     SET_RANGE,                      ""}, 
+        {"get_range",                     isInput,      GET_RANGE,                      ""},
+        {"set_bandwidth",                 isOutput,     SET_BANDWIDTH,                  ""}, 
+        {"get_bandwidth",                 isInput,      GET_BANDWIDTH,                  ""}, 
+
+};
+
+
+#define MBBIO_TYPE_SIZE    (sizeof (MbbioType) / sizeof (struct mbbioType))
+
+struct PicoscopeMbbioData
+    {   
+        int16_t handle; // Device ID assigned by Picoscope API
+        enum ioType ioType;
+        char *cmdPrefix;
+        char paramLabel[32];
+        int paramValid;
+    };
+
+static enum ioType
+findMbbioType(enum ioFlag ioFlag, char *param, char **cmdString)
+{
+	unsigned int i;
+
+	for (i = 0; i < MBBIO_TYPE_SIZE; i ++){
+		if (strncmp(param, MbbioType[i].label,strlen(MbbioType[i].label)) == 0  &&
+				MbbioType[i].flag == ioFlag)
+		{
+			*cmdString = MbbioType[i].cmdp;
+			return MbbioType[i].ioType;
+		}
+	}
+
+	return UNKNOWN_IOTYPE;
+}
+
+
 /****************************************************************************************
  * Multi-Bit Binary Output Records - mbbo
  ****************************************************************************************/
@@ -908,7 +935,7 @@ init_record_mbbo (struct mbboRecord *pmbbo)
             return -1;
         }
 
-    vdp->ioType = findAioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
+    vdp->ioType = findMbbioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
 
     if (vdp->ioType == UNKNOWN_IOTYPE)
     {
@@ -1293,7 +1320,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
             return -1;
         }
 
-    vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
+    vdp->ioType = findMbbioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
     if (vdp->ioType == UNKNOWN_IOTYPE){
         printf("%s: Invalid type: \"@%s\"\n", pmbbi->name, vdp->paramLabel);
         return(S_db_badField);
@@ -1409,7 +1436,9 @@ read_mbbi(struct mbbiRecord *pmbbi){
             return 0;
     }
     return 0; 
-}    
+}   
+
+ //------------------------------ END MBBI/MBBO  ------------------------------//
 
 
 /****************************************************************************************
