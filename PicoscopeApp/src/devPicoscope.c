@@ -39,61 +39,65 @@ enum ioType
     UNKNOWN_IOTYPE, // default case, must be 0 
     OPEN_PICOSCOPE,
     GET_DEVICE_STATUS,
-    SET_RESOLUTION,
-    GET_RESOLUTION,
     SET_NUM_SAMPLES,
     GET_NUM_SAMPLES,
     SET_DOWN_SAMPLE_RATIO,
     GET_DOWN_SAMPLE_RATIO,
-    SET_DOWN_SAMPLE_RATIO_MODE,
-    GET_DOWN_SAMPLE_RATIO_MODE,
     SET_TRIGGER_POSITION_RATIO,
     GET_TRIGGER_POSITION_RATIO,
     GET_DEVICE_INFO,
     SET_CHANNEL_ON,
     GET_CHANNEL_STATUS,
-    SET_COUPLING,
-    GET_COUPLING,
-    SET_RANGE, 
-    GET_RANGE,
     SET_ANALOG_OFFSET,
     GET_ANALOG_OFFSET,
-    SET_BANDWIDTH, 
-    GET_BANDWIDTH,
     START_RETRIEVE_WAVEFORM,
     GET_ACQUISITION_STATUS,
     STOP_RETRIEVE_WAVEFORM,
     UPDATE_WAVEFORM,
     DEVICE_TO_OPEN,
-    SET_TRIGGER_DIRECTION,
-    GET_TRIGGER_DIRECTION,
-    SET_TRIGGER_CHANNEL,
-    GET_TRIGGER_CHANNEL,
-    GET_TRIGGER_MODE,
     SET_TRIGGER_UPPER,
     GET_TRIGGER_UPPER,
     SET_TRIGGER_LOWER,
     GET_TRIGGER_LOWER,
     GET_SAMPLE_INTERVAL,
-    SET_TIME_PER_DIVISION_UNIT, 
-    GET_TIME_PER_DIVISION_UNIT, 
-    SET_TIME_PER_DIVISION, 
-    GET_TIME_PER_DIVISION, 
     SET_NUM_DIVISIONS,
     GET_NUM_DIVISIONS, 
     GET_SAMPLE_RATE, 
     GET_TIMEBASE,
     GET_LOG, 
+    SET_AUTO_TRIGGER_US, 
+    GET_AUTO_TRIGGER_US,
+
+    // mbbo/mbbi
+    SET_RESOLUTION,
+    GET_RESOLUTION,
+    SET_DOWN_SAMPLE_RATIO_MODE,
+    GET_DOWN_SAMPLE_RATIO_MODE,
+    SET_TRIGGER_DIRECTION,
+    GET_TRIGGER_DIRECTION,
     SET_TRIGGER_TYPE, 
     GET_TRIGGER_TYPE, 
-    SET_AUTO_TRIGGER_US, 
-    GET_AUTO_TRIGGER_US
+    SET_TIME_PER_DIVISION_UNIT, 
+    GET_TIME_PER_DIVISION_UNIT, 
+    SET_TIME_PER_DIVISION, 
+    GET_TIME_PER_DIVISION,
+    SET_TRIGGER_CHANNEL,
+    GET_TRIGGER_CHANNEL, 
+    GET_TRIGGER_MODE,
+    SET_COUPLING,
+    GET_COUPLING,
+    SET_RANGE, 
+    GET_RANGE,
+    SET_BANDWIDTH, 
+    GET_BANDWIDTH,
     };
+
 enum ioFlag
     {
     isOutput = 0,
     isInput = 1
     };
+
 static struct aioType
     {
         char *label;
@@ -104,56 +108,57 @@ static struct aioType
     {
         {"open_picoscope", isOutput, OPEN_PICOSCOPE, ""},
         {"get_device_status", isInput, GET_DEVICE_STATUS, ""},
-        {"set_resolution", isOutput, SET_RESOLUTION, ""},
-        {"get_resolution", isInput, GET_RESOLUTION, ""},
         {"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
         {"get_num_samples", isInput, GET_NUM_SAMPLES, ""},
         {"get_timebase", isInput, GET_TIMEBASE, ""},
         {"set_down_sampling_ratio", isOutput, SET_DOWN_SAMPLE_RATIO, ""},
         {"get_down_sampling_ratio", isInput, GET_DOWN_SAMPLE_RATIO, ""},
-        {"set_down_sampling_ratio_mode", isOutput, SET_DOWN_SAMPLE_RATIO_MODE, ""},
-        {"get_down_sampling_ratio_mode", isInput, GET_DOWN_SAMPLE_RATIO_MODE, ""},
         {"set_trigger_position_ratio", isOutput, SET_TRIGGER_POSITION_RATIO, "" },
         {"get_trigger_position_ratio", isInput, GET_TRIGGER_POSITION_RATIO, "" },
-         {"get_device_info", isInput, GET_DEVICE_INFO, "" },
+        {"get_device_info", isInput, GET_DEVICE_INFO, "" },
         {"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
         {"get_channel_status", isInput, GET_CHANNEL_STATUS, ""}, 
-        {"set_coupling", isOutput, SET_COUPLING, "" },
-        {"get_coupling", isInput, GET_COUPLING, ""},
-        {"set_range", isOutput, SET_RANGE,   "" }, 
-        {"get_range", isInput, GET_RANGE, ""},
         {"set_analog_offset", isOutput, SET_ANALOG_OFFSET, ""},
         {"get_analog_offset", isInput, GET_ANALOG_OFFSET, ""},
-        {"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
-        {"get_bandwidth", isInput, GET_BANDWIDTH, "" }, 
         {"start_retrieve_waveform", isInput, START_RETRIEVE_WAVEFORM, "" },
         {"get_acquisition_status", isInput, GET_ACQUISITION_STATUS, "" },
         {"stop_retrieve_waveform", isInput, STOP_RETRIEVE_WAVEFORM, "" },
         {"update_waveform", isInput, UPDATE_WAVEFORM, "" },
         {"device_to_open", isOutput, DEVICE_TO_OPEN, ""},
-        {"set_trigger_direction", isOutput, SET_TRIGGER_DIRECTION, ""},
-        {"get_trigger_direction", isInput, GET_TRIGGER_DIRECTION, ""},
-        {"set_trigger_channel", isOutput, SET_TRIGGER_CHANNEL, ""},
-        {"get_trigger_channel", isInput, GET_TRIGGER_CHANNEL, ""},
-        {"get_trigger_mode", isInput, GET_TRIGGER_MODE, ""},
         {"set_trigger_upper", isOutput, SET_TRIGGER_UPPER, ""},
         {"get_trigger_upper", isInput, GET_TRIGGER_UPPER, ""},
         {"set_trigger_lower", isOutput, SET_TRIGGER_LOWER, ""},
         {"get_trigger_lower", isInput, GET_TRIGGER_LOWER, ""},
         {"get_sample_interval", isInput, GET_SAMPLE_INTERVAL, "" },
         {"get_sample_rate", isInput, GET_SAMPLE_RATE, ""},
+        {"set_num_divisions", isOutput, SET_NUM_DIVISIONS, ""},
+        {"get_num_divisions", isInput, GET_NUM_DIVISIONS, ""},
+        {"get_log", isInput, GET_LOG, ""}, 
+        {"set_auto_trigger_us", isOutput, SET_AUTO_TRIGGER_US, ""},
+        {"get_auto_trigger_us", isInput, GET_AUTO_TRIGGER_US, ""},
+
+        // mbbo/mbbi
+        {"set_resolution", isOutput, SET_RESOLUTION, ""},
+        {"get_resolution", isInput, GET_RESOLUTION, ""},
+        {"set_down_sampling_ratio_mode", isOutput, SET_DOWN_SAMPLE_RATIO_MODE, ""},
+        {"get_down_sampling_ratio_mode", isInput, GET_DOWN_SAMPLE_RATIO_MODE, ""},
+        {"set_trigger_type", isOutput, SET_TRIGGER_TYPE, ""},
+        {"get_trigger_type", isInput, GET_TRIGGER_TYPE, ""},
+        {"set_trigger_direction", isOutput, SET_TRIGGER_DIRECTION, ""},
+        {"get_trigger_direction", isInput, GET_TRIGGER_DIRECTION, ""}, 
         {"set_time_per_division_unit", isOutput, SET_TIME_PER_DIVISION_UNIT, ""},
         {"get_time_per_division_unit", isInput, GET_TIME_PER_DIVISION_UNIT, ""},
         {"set_time_per_division", isOutput, SET_TIME_PER_DIVISION, ""},
         {"get_time_per_division", isInput, GET_TIME_PER_DIVISION, ""},
-        {"set_num_divisions", isOutput, SET_NUM_DIVISIONS, ""},
-        {"get_num_divisions", isInput, GET_NUM_DIVISIONS, ""},
-        {"get_log", isInput, GET_LOG, ""}, 
-        {"set_trigger_type", isOutput, SET_TRIGGER_TYPE, ""},
-        {"get_trigger_type", isInput, GET_TRIGGER_TYPE, ""}, 
-        {"set_auto_trigger_us", isOutput, SET_AUTO_TRIGGER_US, ""},
-        {"get_auto_trigger_us", isInput, GET_AUTO_TRIGGER_US, ""}
-
+        {"set_trigger_channel", isOutput, SET_TRIGGER_CHANNEL, ""},
+        {"get_trigger_channel", isInput, GET_TRIGGER_CHANNEL, ""},
+        {"get_trigger_mode", isInput, GET_TRIGGER_MODE, ""},
+        {"set_coupling", isOutput, SET_COUPLING, "" },
+        {"get_coupling", isInput, GET_COUPLING, ""},
+        {"set_range", isOutput, SET_RANGE,   "" }, 
+        {"get_range", isInput, GET_RANGE, ""},
+        {"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
+        {"get_bandwidth", isInput, GET_BANDWIDTH, "" }, 
 
     };
 
@@ -209,7 +214,10 @@ mbboRecord* pTriggerDirection;
 
 mbbiRecord* pTriggerDirectionFbk;
 mbbiRecord* pTriggerType;
-aiRecord* pTriggerFbk[4];
+mbbiRecord* pTriggerChannelFbk;
+mbbiRecord* pTriggerModeFbk;
+
+aiRecord* pTriggerFbk[2];
 
 typedef long (*DEVSUPFUN_AI)(struct aiRecord *);
 
@@ -278,20 +286,13 @@ init_record_ai (struct aiRecord *pai)
 
     switch(vdp->ioType)
     {
-        case GET_TRIGGER_CHANNEL:
+
+        case GET_TRIGGER_UPPER:
             pTriggerFbk[0] = pai;
             break;
 
-        case GET_TRIGGER_MODE:
-            pTriggerFbk[1] = pai;
-            break;
-
-        case GET_TRIGGER_UPPER:
-            pTriggerFbk[2] = pai;
-            break;
-
         case GET_TRIGGER_LOWER:
-            pTriggerFbk[3] = pai;
+            pTriggerFbk[1] = pai;
             break;
 
         default:
@@ -344,27 +345,6 @@ read_ai (struct aiRecord *pai){
             pai->val = channel_status;
             break; 
 
-        case GET_COUPLING: 
-            record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
-
-            pai->val = channels[channel_index]->coupling;
-            break; 
-
-        case GET_RANGE: 
-            record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
-
-            pai->val = channels[channel_index]->range; 
-            break; 
-
-        case GET_BANDWIDTH: 
-            record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
-
-            pai->val = channels[channel_index]->bandwidth; 
-            break; 
-
         case GET_ANALOG_OFFSET: 
             record_name = pai->name; 
             channel_index = find_channel_index_from_record(record_name, channels); 
@@ -381,11 +361,6 @@ read_ai (struct aiRecord *pai){
             pai->val = sample_configurations->down_sample_ratio; 
             break; 
 
-        case GET_DOWN_SAMPLE_RATIO_MODE: 
-            pai->val = sample_configurations->down_sample_ratio_mode; 
-            
-            break;
-
         case GET_TRIGGER_POSITION_RATIO: 
             pai->val = sample_configurations->trigger_position_ratio;
             break; 
@@ -393,14 +368,6 @@ read_ai (struct aiRecord *pai){
         case GET_NUM_DIVISIONS: 
             pai->val = sample_configurations->timebase_configs.num_divisions;
             break; 
-        
-        case GET_TIME_PER_DIVISION: 
-            pai->val = sample_configurations->timebase_configs.time_per_division; 
-            break; 
-        
-        case GET_TIME_PER_DIVISION_UNIT: 
-            pai->val = sample_configurations->timebase_configs.time_per_division_unit; 
-            break;
         
         case GET_SAMPLE_RATE: 
             pai->val = sample_configurations->timebase_configs.sample_rate; 
@@ -416,23 +383,6 @@ read_ai (struct aiRecord *pai){
         
         case GET_ACQUISITION_STATUS:
             pai->val = (float)dataAcquisitionFlag;
-            break;
-
-            
-        case GET_TRIGGER_CHANNEL:
-            if (trigger_config->channel == TRIGGER_AUX){
-                pai->val = 4;
-            }
-            else if (trigger_config->channel == NO_CHANNEL){
-                pai->val = 5;
-            }
-            else {
-                pai->val = trigger_config->channel;
-            }
-            break;
-
-        case GET_TRIGGER_MODE:
-            pai->val = trigger_config->thresholdMode;
             break;
 
         case GET_TRIGGER_UPPER:
@@ -510,7 +460,7 @@ static long
 init_record_ao (struct aoRecord *pao)
 {    
     uint32_t result;
-    
+
     char* record_name; 
     int channel_index; 
 
@@ -584,10 +534,6 @@ init_record_ao (struct aoRecord *pao)
             sample_configurations->down_sample_ratio = (int)pao->val; 
             break; 
         
-        case SET_DOWN_SAMPLE_RATIO_MODE: 
-            sample_configurations->down_sample_ratio_mode = (int)pao->val; 
-            break; 
-
         case SET_TRIGGER_POSITION_RATIO:
             sample_configurations->trigger_position_ratio = (int)pao->val;
             break;
@@ -601,14 +547,6 @@ init_record_ao (struct aoRecord *pao)
             sample_configurations->timebase_configs.sample_rate = 0; 
             break; 
 
-        case SET_TIME_PER_DIVISION_UNIT: 
-            sample_configurations->timebase_configs.time_per_division_unit = (int) pao->val; 
-            break;
-
-        case SET_TIME_PER_DIVISION: 
-            sample_configurations->timebase_configs.time_per_division = (int) pao->val; 
-            break; 
-
         case OPEN_PICOSCOPE: 
             // On initialization open picoscope with default resolution. 
             result = open_picoscope(resolution, device_serial_number);
@@ -618,20 +556,6 @@ init_record_ao (struct aoRecord *pao)
             }
             break;
         
-        // Following cases are specific to a channel
-        case SET_COUPLING:    
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
-            
-            channels[channel_index]->coupling = (int)pao->val;
-            break;
-
-        case SET_RANGE: 
-             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
-            
-            channels[channel_index]->range = (int)pao->val;
-            break;
 
         case SET_ANALOG_OFFSET: 
             record_name = pao->name;
@@ -647,13 +571,6 @@ init_record_ao (struct aoRecord *pao)
             pao->drvl = min_analog_offset;
             break;
 
-        case SET_BANDWIDTH: 
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
-
-            channels[channel_index]->bandwidth = (int)pao->val;
-            break;
-
         case SET_CHANNEL_ON:    
 
             record_name = pao->name;
@@ -664,10 +581,6 @@ init_record_ao (struct aoRecord *pao)
             if (result != 0) {
                 printf("Error setting channel %s off.\n", record_name);
             }
-            break;
-
-        case SET_TRIGGER_CHANNEL:
-            trigger_config->channel = (enum Channel) pao->val;
             break;
 
         case SET_TRIGGER_UPPER:
@@ -716,52 +629,6 @@ write_ao (struct aoRecord *pao)
             }
             break;
         
-        case SET_TIME_PER_DIVISION_UNIT: 
-            int16_t previous_time_per_division_unit = sample_configurations->timebase_configs.time_per_division_unit;
-            sample_configurations->timebase_configs.time_per_division_unit = (int) pao->val; 
-
-            result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
-                &sample_interval, 
-                &timebase, 
-                &sample_rate
-            ); 
-
-            if (result != 0) {
-                log_message(pao->name, "Error setting time per division unit.", result);
-                sample_configurations->timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
-                break; 
-            }
-            
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;  
-            break; 
-
-        case SET_TIME_PER_DIVISION: 
-            double previous_time_per_division = sample_configurations->timebase_configs.time_per_division; 
-            sample_configurations->timebase_configs.time_per_division = (int) pao->val; 
-
-            result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
-                &sample_interval, 
-                &timebase, 
-                &sample_rate
-            ); 
-            
-            if (result != 0) {
-                log_message(pao->name, "Error setting time per division.", result);
-                sample_configurations->timebase_configs.time_per_division = previous_time_per_division; 
-                break; 
-            }
-
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;  
-            break; 
-
         case SET_NUM_DIVISIONS: 
             int16_t previous_num_divisions = sample_configurations->timebase_configs.num_divisions; 
             sample_configurations->timebase_configs.num_divisions = (int) pao->val; 
@@ -813,10 +680,6 @@ write_ao (struct aoRecord *pao)
             sample_configurations->down_sample_ratio = (int)pao->val; 
             break; 
         
-        case SET_DOWN_SAMPLE_RATIO_MODE: 
-            sample_configurations->down_sample_ratio_mode = (int)pao->val;
-            break; 
-
         case SET_TRIGGER_POSITION_RATIO:
             sample_configurations->trigger_position_ratio = (float)pao->val;
             break;  
@@ -840,50 +703,6 @@ write_ao (struct aoRecord *pao)
                 }
             }
             break;
-
-           // Following cases are specific to a channel
-        case SET_COUPLING:    
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels); 
-
-            dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
-    
-            int16_t previous_coupling = channels[channel_index]->coupling; 
-            channels[channel_index]->coupling = (int)pao->val;
-
-            channel_status = get_channel_status(channels[channel_index]->channel); 
-            if (channel_status == 1) {
-                result = set_channel_on(channels[channel_index]);
-                // If channel is not succesfully set on, return to previous value 
-                if (result != 0) {
-                    log_message(pao->name, "Error setting coupling.", result);
-                    channels[channel_index]->coupling = previous_coupling;
-                }
-            }
-            break;
-
-        case SET_RANGE:
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
-            
-
-            int16_t previous_range = channels[channel_index]->range; 
-
-            channels[channel_index]->range = (int)pao->val;
-
-            dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
-
-            channel_status = get_channel_status(channels[channel_index]->channel); 
-            if (channel_status == 1){
-                result = set_channel_on(channels[channel_index]);
-                // If channel is not succesfully set on, return to previous value 
-                if (result != 0) {
-                    log_message(pao->name, "Error setting voltage range.", result);
-                    channels[channel_index]->range = previous_range;
-                }
-            }
-            break;
-
         case SET_ANALOG_OFFSET: 
             record_name = pao->name;
             channel_index = find_channel_index_from_record(record_name, channels);     
@@ -909,25 +728,6 @@ write_ao (struct aoRecord *pao)
                 if (result != 0) {
                     log_message(pao->name, "Error setting analog offset.", result);
                     channels[channel_index]->analog_offset = previous_analog_offset;
-                }
-            }
-            break;
-
-        case SET_BANDWIDTH: 
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
-            
-            int16_t previous_bandwidth = channels[channel_index]->bandwidth;
-
-            channels[channel_index]->bandwidth = (int)pao->val;
-
-            channel_status = get_channel_status(channels[channel_index]->channel); 
-            if (channel_status == 1) {
-                result = set_channel_on(channels[channel_index]);
-                // If channel is not succesfully set on, return to previous value 
-                if (result != 0) {
-                    log_message(pao->name, "Error setting bandwidth.", result);
-                    channels[channel_index]->bandwidth = previous_bandwidth;
                 }
             }
             break;
@@ -970,43 +770,6 @@ write_ao (struct aoRecord *pao)
             sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
             sample_configurations->timebase_configs.timebase = timebase;
             sample_configurations->timebase_configs.sample_rate = sample_rate;  
-            break;
-
-        case SET_TRIGGER_CHANNEL:
-            trigger_config->channel = (enum Channel) pao->val;
-            if (trigger_config->channel == TRIGGER_AUX)
-            {    
-                trigger_config->triggerType = SIMPLE_EDGE;
-                trigger_config->thresholdMode = LEVEL; 
-                trigger_config->thresholdLower = 0; 
-                trigger_config->thresholdUpper = 0; 
-                trigger_config->thresholdDirection = NONE; 
-                
-                dbProcess((struct dbCommon *)pTriggerType); 
-                dbProcess((struct dbCommon *)pTriggerDirectionFbk);
-                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
-                {
-                    dbProcess((struct dbCommon *)pTriggerFbk[i]);
-                }
-            }
-            else if (trigger_config->channel == NO_CHANNEL) {
-                trigger_config->triggerType = NO_TRIGGER;
-                trigger_config->thresholdMode = LEVEL; 
-                trigger_config->thresholdLower = 0; 
-                trigger_config->thresholdUpper = 0; 
-                trigger_config->thresholdDirection = NONE; 
-
-                dbProcess((struct dbCommon *)pTriggerType); 
-                dbProcess((struct dbCommon *)pTriggerDirectionFbk);
-                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
-                {
-                    dbProcess((struct dbCommon *)pTriggerFbk[i]);
-                }
-            }
-            else { 
-                trigger_config->triggerType = SIMPLE_EDGE;
-                dbProcess((struct dbCommon *)pTriggerType); 
-            }
             break;
 
         case SET_TRIGGER_UPPER:
@@ -1117,7 +880,10 @@ epicsExportAddress(dset, devPicoscopeMbbo);
 
 static long
 init_record_mbbo (struct mbboRecord *pmbbo)
-{    
+{ 
+    char* record_name; 
+    int channel_index; 
+
     struct instio  *pinst;
     struct PicoscopeData *vdp;
 
@@ -1153,17 +919,53 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     pmbbo->udf = FALSE;
 
     switch (vdp->ioType)
-    {        
+    {      
+        case SET_COUPLING:    
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, channels);     
+            
+            channels[channel_index]->coupling = (int)pmbbo->rval;
+            break;
+
+        case SET_RANGE: 
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, channels);     
+            
+            channels[channel_index]->range = (int)pmbbo->rval;
+            break;
+        
+        case SET_BANDWIDTH: 
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, channels);     
+
+            channels[channel_index]->bandwidth = (int)pmbbo->rval;
+            break;
+
+        case SET_TIME_PER_DIVISION: 
+            sample_configurations->timebase_configs.time_per_division = (int) pmbbo->rval; 
+            break; 
+
+        case SET_TIME_PER_DIVISION_UNIT: 
+            sample_configurations->timebase_configs.time_per_division_unit = (int) pmbbo->val; 
+            break;
+
+        case SET_DOWN_SAMPLE_RATIO_MODE: 
+            sample_configurations->down_sample_ratio_mode = (int)pmbbo->rval;
+            break; 
+
+        case SET_TRIGGER_CHANNEL:
+           trigger_config->channel = (enum Channel) pmbbo->val;
+           break;
 
         case SET_TRIGGER_TYPE: 
             trigger_config->triggerType = (int) pmbbo->rval; 
-            printf("Trigger type init %d\n", trigger_config->triggerType);
             break; 
         
         case SET_TRIGGER_DIRECTION:
             trigger_config->thresholdDirection = (enum ThresholdDirection) pmbbo->val;
             pTriggerDirection = pmbbo;
             break;
+
 
         default:
             return 0;
@@ -1175,14 +977,181 @@ init_record_mbbo (struct mbboRecord *pmbbo)
 
 static long
 write_mbbo (struct mbboRecord *pmbbo)
-{
+{   
+    char* record_name; 
+    int channel_index; 
+    uint32_t timebase = 0; 
+    double sample_interval, sample_rate = 0; 
+    
     struct PicoscopeData *vdp = (struct PicoscopeData *)pmbbo->dpvt;
     int returnState = 0; 
 
     switch (vdp->ioType)
     {        
+
+        case SET_RESOLUTION: 
+            int16_t resolution = (int)pmbbo->rval; 
+            result = set_device_resolution(resolution); 
+            if (result !=0) {
+                log_message(pmbbo->name, "Error setting device resolution.", result);
+            }
+            break;  
+
+        case SET_COUPLING:    
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, channels); 
+
+            dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
+    
+            int16_t previous_coupling = channels[channel_index]->coupling; 
+            channels[channel_index]->coupling = (int)pmbbo->rval;
+
+            uint32_t channel_status = get_channel_status(channels[channel_index]->channel); 
+            if (channel_status == 1) {
+                result = set_channel_on(channels[channel_index]);
+                // If channel is not succesfully set on, return to previous value 
+                if (result != 0) {
+                    log_message(pmbbo->name, "Error setting coupling.", result);
+                    channels[channel_index]->coupling = previous_coupling;
+                }
+            }
+            break;
+
+        case SET_RANGE:
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, channels);     
+
+            int16_t previous_range = channels[channel_index]->range; 
+
+            channels[channel_index]->range = (int)pmbbo->rval;
+
+            dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
+
+            channel_status = get_channel_status(channels[channel_index]->channel); 
+            if (channel_status == 1){
+                result = set_channel_on(channels[channel_index]);
+                // If channel is not succesfully set on, return to previous value 
+                if (result != 0) {
+                    log_message(pmbbo->name, "Error setting voltage range.", result);
+                    channels[channel_index]->range = previous_range;
+                }
+            }
+            break;
+
+        
+        case SET_BANDWIDTH: 
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, channels);     
+            
+            int16_t previous_bandwidth = channels[channel_index]->bandwidth;
+
+            channels[channel_index]->bandwidth = (int)pmbbo->rval;
+
+            channel_status = get_channel_status(channels[channel_index]->channel); 
+            if (channel_status == 1) {
+                result = set_channel_on(channels[channel_index]);
+                // If channel is not succesfully set on, return to previous value 
+                if (result != 0) {
+                    log_message(pmbbo->name, "Error setting bandwidth.", result);
+                    channels[channel_index]->bandwidth = previous_bandwidth;
+                }
+            }
+            break;
+
+        case SET_TIME_PER_DIVISION: 
+            double previous_time_per_division = sample_configurations->timebase_configs.time_per_division; 
+            sample_configurations->timebase_configs.time_per_division = (int) pmbbo->rval; 
+
+            result = get_valid_timebase_configs(
+                sample_configurations->timebase_configs, 
+                sample_configurations->num_samples,
+                &sample_interval, 
+                &timebase, 
+                &sample_rate
+            ); 
+            
+            if (result != 0) {
+                log_message(pmbbo->name, "Error setting time per division.", result);
+                sample_configurations->timebase_configs.time_per_division = previous_time_per_division; 
+                break; 
+            }
+
+            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
+            sample_configurations->timebase_configs.timebase = timebase;
+            sample_configurations->timebase_configs.sample_rate = sample_rate;  
+            break; 
+
+        case SET_TIME_PER_DIVISION_UNIT: 
+            int16_t previous_time_per_division_unit = sample_configurations->timebase_configs.time_per_division_unit;
+            sample_configurations->timebase_configs.time_per_division_unit = (int) pmbbo->val; 
+
+            result = get_valid_timebase_configs(
+                sample_configurations->timebase_configs, 
+                sample_configurations->num_samples,
+                &sample_interval, 
+                &timebase, 
+                &sample_rate
+            ); 
+
+            if (result != 0) {
+                log_message(pmbbo->name, "Error setting time per division unit.", result);
+                sample_configurations->timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
+                break; 
+            }
+
+            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
+            sample_configurations->timebase_configs.timebase = timebase;
+            sample_configurations->timebase_configs.sample_rate = sample_rate;  
+            break; 
+
+
+        case SET_DOWN_SAMPLE_RATIO_MODE: 
+            sample_configurations->down_sample_ratio_mode = (int)pmbbo->rval;
+            break;
+        
+        case SET_TRIGGER_CHANNEL:
+            trigger_config->channel = (enum Channel) pmbbo->rval;
+            if (trigger_config->channel == TRIGGER_AUX)
+            {    
+                trigger_config->triggerType = SIMPLE_EDGE;
+                trigger_config->thresholdMode = LEVEL; 
+                trigger_config->thresholdLower = 0; 
+                trigger_config->thresholdUpper = 0; 
+                trigger_config->thresholdDirection = NONE; 
+                
+                dbProcess((struct dbCommon *)pTriggerType); 
+                dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+                dbProcess((struct dbCommon *)pTriggerModeFbk);
+
+                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+                {
+                    dbProcess((struct dbCommon *)pTriggerFbk[i]);
+                }
+            }
+            else if (trigger_config->channel == NO_CHANNEL) {
+                trigger_config->triggerType = NO_TRIGGER;
+                trigger_config->thresholdMode = LEVEL; 
+                trigger_config->thresholdLower = 0; 
+                trigger_config->thresholdUpper = 0; 
+                trigger_config->thresholdDirection = NONE; 
+
+                dbProcess((struct dbCommon *)pTriggerType); 
+                dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+                dbProcess((struct dbCommon *)pTriggerModeFbk);
+
+                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+                {
+                    dbProcess((struct dbCommon *)pTriggerFbk[i]);
+                }
+            }
+            else { 
+                trigger_config->triggerType = SIMPLE_EDGE;
+                dbProcess((struct dbCommon *)pTriggerType); 
+            }
+
+            break;
+
         case SET_TRIGGER_TYPE: 
-            printf("set trigger type %d\n", (int)pmbbo->val); 
             trigger_config->triggerType = (int)pmbbo->val; 
             
             if (trigger_config->triggerType == NO_TRIGGER){
@@ -1192,8 +1161,11 @@ write_mbbo (struct mbboRecord *pmbbo)
                 trigger_config->thresholdMode = LEVEL;             
                 trigger_config->thresholdLower = 0; 
                 trigger_config->thresholdUpper = 0; 
-    
+                
+                dbProcess((struct dbCommon *)pTriggerChannelFbk);
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+                dbProcess((struct dbCommon *)pTriggerModeFbk);
+
                 for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
                     {
                         dbProcess((struct dbCommon *)pTriggerFbk[i]);
@@ -1205,8 +1177,12 @@ write_mbbo (struct mbboRecord *pmbbo)
                     trigger_config->channel = TRIGGER_AUX;
                 } 
                 trigger_config->thresholdMode = LEVEL;         
-                trigger_config->thresholdLower = 0;     
+                trigger_config->thresholdLower = 0;    
+
+                dbProcess((struct dbCommon *)pTriggerChannelFbk);
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+                dbProcess((struct dbCommon *)pTriggerModeFbk);
+
                 for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
                     {
                         dbProcess((struct dbCommon *)pTriggerFbk[i]);
@@ -1327,6 +1303,20 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
 
     switch (vdp->ioType) {
 
+        case GET_RESOLUTION:
+            int16_t resolution; 
+            get_resolution(&resolution);
+            pmbbi->val = resolution;  
+            break; 
+
+        case GET_TRIGGER_CHANNEL:
+            pTriggerChannelFbk = pmbbi;
+            break;
+
+        case GET_TRIGGER_MODE:
+            pTriggerModeFbk = pmbbi;
+            break;
+
         case GET_TRIGGER_TYPE: 
             pTriggerType = pmbbi;
             break;  
@@ -1334,7 +1324,6 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
         case GET_TRIGGER_DIRECTION:
             pTriggerDirectionFbk = pmbbi; 
             break;  
-
         default: 
             return 0; 
     } 
@@ -1344,11 +1333,65 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
 
 static long
 read_mbbi(struct mbbiRecord *pmbbi){
-
+    
+    char* record_name; 
+    int channel_index; 
+    
     struct PicoscopeData *vdp = (struct PicoscopeData *)pmbbi->dpvt;
 
     switch (vdp->ioType)
     {
+        case GET_RESOLUTION: 
+            int16_t resolution;
+            uint32_t result = get_resolution(&resolution);
+            if (result != 0) {
+                log_message(pmbbi->name, "Error getting device resolution.", result); 
+                break; 
+            }
+            pmbbi->rval = resolution;  
+            break; 
+        
+        case GET_COUPLING: 
+            record_name = pmbbi->name; 
+            channel_index = find_channel_index_from_record(record_name, channels); 
+
+            pmbbi->rval = channels[channel_index]->coupling;
+            break; 
+
+        case GET_RANGE: 
+            record_name = pmbbi->name; 
+            channel_index = find_channel_index_from_record(record_name, channels); 
+
+            pmbbi->rval = channels[channel_index]->range; 
+            break; 
+
+        case GET_BANDWIDTH: 
+            record_name = pmbbi->name; 
+            channel_index = find_channel_index_from_record(record_name, channels); 
+
+            pmbbi->rval = channels[channel_index]->bandwidth; 
+            break; 
+
+        case GET_TRIGGER_MODE:
+            pmbbi->val = trigger_config->thresholdMode;
+            break;
+
+        case GET_TRIGGER_CHANNEL:
+            pmbbi->rval = trigger_config->channel;
+            break;
+
+        case GET_TIME_PER_DIVISION: 
+            pmbbi->rval = sample_configurations->timebase_configs.time_per_division; 
+            break; 
+
+        case GET_TIME_PER_DIVISION_UNIT: 
+            pmbbi->rval = sample_configurations->timebase_configs.time_per_division_unit; 
+            break;
+
+        case GET_DOWN_SAMPLE_RATIO_MODE: 
+            pmbbi->rval = sample_configurations->down_sample_ratio_mode; 
+            break;
+        
         case GET_TRIGGER_DIRECTION:
             if (trigger_config->triggerType == NO_TRIGGER){
                 pmbbi->rval = -1; // no trigger direction
