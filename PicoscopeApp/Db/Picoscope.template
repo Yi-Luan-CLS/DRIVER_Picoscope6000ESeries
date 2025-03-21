@@ -2,50 +2,33 @@
 #### PVs used to configure channels 
 ################################################################
 record(bo, "$(OSC):CH$(channel):ON") {
-    field(DTYP, "Soft Channel")
+    field(DTYP, "Picoscope")
     field(DESC, "Set channel $(channel) on/off")
-    field(VAL,  "0")
+    field(VAL,  "1")
     field(ZNAM, "OFF")        
     field(ONAM, "ON") 
+
+    field(OUT, "@L:set_channel_on")
     field(FLNK,  "$(OSC):CH$(channel):fanout")
 }
 
 record(fanout, "$(OSC):CH$(channel):fanout") {
     field(SELM, "All")
     field(LNK1, "$(OSC):CH$(channel):analog_offset:fbk")
-    field(LNK2, "$(OSC):CH$(channel):ON:set")
+    field(LNK2, "$(OSC):CH$(channel):ON:fbk")
     field(LNK3, "$(OSC):CH$(channel):coupling:fbk")
     field(LNK4, "$(OSC):CH$(channel):range:fbk")
     field(LNK5, "$(OSC):CH$(channel):bandwidth:fbk")
     field(LNK6, "$(OSC):timebase:fbk:fanout")
 }
 
-record(ao, "$(OSC):CH$(channel):ON:set") {
-    field(DTYP, "Picoscope")
-    field(DOL, "$(OSC):CH$(channel):ON.RVAL")
-    field(SCAN, "Passive")
-    field(OIF, "Full")
-    field(OMSL, "closed_loop")
-    field(VAL, "0")
-    field(OUT, "@L:set_channel_on")
-    field(FLNK, "$(OSC):CH$(channel):ON:fbk:get")
-}
-
-record(ai, "$(OSC):CH$(channel):ON:fbk:get"){
-    field(DTYP, "Picoscope")
-
-    field(INP, "@L:get_channel_status")
-    field(FLNK, "$(OSC):CH$(channel):ON:fbk")
-}
-
 record(bi, "$(OSC):CH$(channel):ON:fbk") {
-    field(DTYP, "Soft Channel")
-    
+    field(DTYP, "Picoscope")
+
     field(ZNAM, "OFF")        
     field(ONAM, "ON") 
 
-    field(SCAN, "Passive")
-    field(INP, "$(OSC):CH$(channel):ON:fbk:get")
+    field(INP, "@L:get_channel_status")
 }
 
 record(mbbo, "$(OSC):CH$(channel):coupling") {

@@ -37,8 +37,6 @@ epicsMutexId epics_acquisition_restart_mutex;
 enum ioType
     {
     UNKNOWN_IOTYPE, // default case, must be 0 
-    OPEN_PICOSCOPE,
-    GET_DEVICE_STATUS,
     SET_NUM_SAMPLES,
     GET_NUM_SAMPLES,
     SET_DOWN_SAMPLE_RATIO,
@@ -46,8 +44,7 @@ enum ioType
     SET_TRIGGER_POSITION_RATIO,
     GET_TRIGGER_POSITION_RATIO,
     GET_DEVICE_INFO,
-    SET_CHANNEL_ON,
-    GET_CHANNEL_STATUS,
+
     SET_ANALOG_OFFSET,
     GET_ANALOG_OFFSET,
     START_RETRIEVE_WAVEFORM,
@@ -67,6 +64,13 @@ enum ioType
     GET_LOG, 
     SET_AUTO_TRIGGER_US, 
     GET_AUTO_TRIGGER_US,
+
+
+    // bio 
+    OPEN_PICOSCOPE,
+    GET_DEVICE_STATUS,
+    SET_CHANNEL_ON,
+    GET_CHANNEL_STATUS,
 
     // mbbio
     SET_RESOLUTION,
@@ -106,8 +110,6 @@ static struct aioType
         char *cmdp;
     } AioType[] =
     {
-        {"open_picoscope", isOutput, OPEN_PICOSCOPE, ""},
-        {"get_device_status", isInput, GET_DEVICE_STATUS, ""},
         {"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
         {"get_num_samples", isInput, GET_NUM_SAMPLES, ""},
         {"get_timebase", isInput, GET_TIMEBASE, ""},
@@ -116,8 +118,6 @@ static struct aioType
         {"set_trigger_position_ratio", isOutput, SET_TRIGGER_POSITION_RATIO, "" },
         {"get_trigger_position_ratio", isInput, GET_TRIGGER_POSITION_RATIO, "" },
         {"get_device_info", isInput, GET_DEVICE_INFO, "" },
-        {"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
-        {"get_channel_status", isInput, GET_CHANNEL_STATUS, ""}, 
         {"set_analog_offset", isOutput, SET_ANALOG_OFFSET, ""},
         {"get_analog_offset", isInput, GET_ANALOG_OFFSET, ""},
         {"start_retrieve_waveform", isInput, START_RETRIEVE_WAVEFORM, "" },
@@ -284,9 +284,7 @@ init_record_ai (struct aiRecord *pai)
 
 static long
 read_ai (struct aiRecord *pai){
-    
-    uint32_t result; 
-    
+        
     char* record_name; 
     int channel_index; 
 
@@ -294,28 +292,7 @@ read_ai (struct aiRecord *pai){
 
     switch (vdp->ioType)
     {
-        // Device configuration fbk
-        case GET_DEVICE_STATUS:
-            result = ping_picoscope(); 
-            if ( result != 0 ) {
-                log_message(pai->name, "Cannot ping device.", result);
-                pai->val = 0;
-                break;
-            }
-            pai->val = 1; 
-            break;
-
         // Channel configuration fbk
-        case GET_CHANNEL_STATUS: 
-            record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
-
-            int16_t channel_status = get_channel_status(channels[channel_index]->channel); 
-            if (channel_status == -1) {
-                log_message(pai->name, "Cannot get channel status.", channel_status);
-            }
-            pai->val = channel_status;
-            break; 
 
         case GET_ANALOG_OFFSET: 
             record_name = pai->name; 
@@ -431,10 +408,6 @@ struct aoRecord* pAnalogOffestRecords[CHANNEL_NUM];
 static long
 init_record_ao (struct aoRecord *pao)
 {    
-    uint32_t result;
-
-    char* record_name; 
-    int channel_index; 
 
     // Allocate memory for each channel
     for (int i = 0; i < 4; i++) {
@@ -513,42 +486,6 @@ init_record_ao (struct aoRecord *pao)
             sample_configurations->timebase_configs.timebase = 0; 
             sample_configurations->timebase_configs.sample_interval_secs = 0; 
             sample_configurations->timebase_configs.sample_rate = 0; 
-            break; 
-
-        case OPEN_PICOSCOPE: 
-            // On initialization open picoscope with default resolution. 
-            result = open_picoscope(resolution, device_serial_number);
-            if (result != 0) {
-                printf("Error opening picoscope with serial number %s\n", device_serial_number);
-                pao->val = 0; // Cannot connect to picoscope, set PV to OFF. 
-            }
-            break;
-        
-
-        case SET_ANALOG_OFFSET: 
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
-            
-            pAnalogOffestRecords[channel_index] = pao; 
-
-            double max_analog_offset = 0; 
-            double min_analog_offset = 0; 
-            result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
-            
-            pao->drvh = max_analog_offset; 
-            pao->drvl = min_analog_offset;
-            break;
-
-        case SET_CHANNEL_ON:    
-
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels); 
-
-            // On initalization, set all channels off. 
-            result = set_channel_off((int)channels[channel_index]->channel);
-            if (result != 0) {
-                printf("Error setting channel %s off.\n", record_name);
-            }
             break;
 
         case SET_TRIGGER_UPPER:
@@ -644,26 +581,7 @@ write_ao (struct aoRecord *pao)
         case SET_TRIGGER_POSITION_RATIO:
             sample_configurations->trigger_position_ratio = (float)pao->val;
             break;  
-            
-        case OPEN_PICOSCOPE: 
-            int pv_value = (int)pao->val; 
-            char message[100]; 
-            
-            if (pv_value == 1){
-                result = open_picoscope(resolution, device_serial_number);
-                if (result != 0) {
-                    sprintf(message, "Error opening picoscope with serial number %s.", device_serial_number);
-                    log_message(pao->name, message, result);
-
-                }
-            } else {
-                result = close_picoscope(); 
-                if (result != 0) {
-                    sprintf(message, "Error closing picoscope with serial number %s.", device_serial_number);
-                    log_message(pao->name, message, result);
-                }
-            }
-            break;
+        
         case SET_ANALOG_OFFSET: 
             record_name = pao->name;
             channel_index = find_channel_index_from_record(record_name, channels);     
@@ -691,46 +609,6 @@ write_ao (struct aoRecord *pao)
                     channels[channel_index]->analog_offset = previous_analog_offset;
                 }
             }
-            break;
-
-        case SET_CHANNEL_ON:    
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels); 
-
-            pv_value = pao->val;
-
-            // If PV value is 1 (ON) set channel on 
-            if (pv_value == 1) { 
-                result = set_channel_on(channels[channel_index]);
-                if (result != 0) {
-                    log_message(pao->name, "Error setting channel on.", result);
-                    pao->val = 0; 
-                }
-            } 
-            else {
-                result = set_channel_off((int)channels[channel_index]->channel);
-                if (result != 0) {
-                    log_message(pao->name, "Error setting channel off.", result);
-                    pao->val = 0; 
-                }
-            }    
-
-            // Update timebase configs that are affected by the number of channels on. 
-            result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
-                &sample_interval, 
-                &timebase, 
-                &sample_rate
-            );                     
-            
-            if (result != 0){
-                log_message(pao->name, "Error setting timebase configurations.", result);
-            }
-
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;  
             break;
 
         case SET_TRIGGER_UPPER:
@@ -806,6 +684,367 @@ int find_channel_index_from_record(const char* record_name, struct ChannelConfig
     return -1;  // Channel not found
 }
 
+ //-------------------------------- BI/BO INITIALIZATION --------------------------------//
+#include <biRecord.h>
+#include <boRecord.h>
+
+
+struct bioType 
+{
+    char *label; 
+    enum ioFlag flag; 
+    enum ioType ioType; 
+    int onCmd; 
+    int offCmd;
+} BioType [] =
+{
+
+    {"open_picoscope",     isOutput,   OPEN_PICOSCOPE,      1,    0 },
+    {"get_device_status",  isInput,    GET_DEVICE_STATUS,   1,    0 },
+    {"set_channel_on",     isOutput,   SET_CHANNEL_ON,      1,    0 },
+    {"get_channel_status", isInput,    GET_CHANNEL_STATUS,  1,    0 },
+
+};
+
+#define BIO_TYPE_SIZE    (sizeof (BioType) / sizeof (struct bioType))
+
+static enum ioType findBioType(enum ioFlag ioFlag, char *param, int *onCmd, int *offCmd);
+
+struct PicoscopeBioData
+    {   
+        int16_t handle; // Device ID assigned by Picoscope API
+        enum ioType ioType;
+        char *cmdPrefix;
+        char paramLabel[32];
+        int paramValid;
+        int onCmd;
+	    int offCmd;
+    };
+
+static enum ioType
+findBioType(enum ioFlag ioFlag, char *param,  int *onCmd, int *offCmd)
+{
+	unsigned int i;
+
+	for (i = 0; i < BIO_TYPE_SIZE; i ++){
+		if (strncmp(param, BioType[i].label, strlen(BioType[i].label)) == 0  &&
+		    BioType[i].flag == ioFlag)
+		    	{
+			*onCmd  = BioType[i].onCmd;
+			*offCmd = BioType[i].offCmd;
+			return BioType[i].ioType;
+			}
+	}
+	printf("%s UNKNOWN_IOTYPE\n", param);
+	return UNKNOWN_IOTYPE;
+}
+
+/****************************************************************************************
+ * Binary Output Records - bo
+ ****************************************************************************************/
+
+typedef long (*DEVSUPFUN_BO)(struct boRecord *);
+
+static long init_record_bo(struct boRecord *pbo);
+static long write_bo(struct boRecord *pbo);
+
+struct
+	{
+	long         number;
+	DEVSUPFUN_BO report;
+	DEVSUPFUN_BO init;
+	DEVSUPFUN_BO init_record;
+	DEVSUPFUN_BO get_ioint_info;
+	DEVSUPFUN_BO write_bo;
+	} devPicoscopeBo =
+	{
+		5,
+		NULL,
+		NULL,
+		init_record_bo,
+		NULL,
+		write_bo,
+	};
+
+epicsExportAddress(dset, devPicoscopeBo);
+
+static long
+init_record_bo (struct boRecord *pbo)
+{
+    char *record_name;
+    int channel_index;
+
+    struct instio  *pinst;
+	struct PicoscopeBioData *vdp;
+
+    if (pbo->out.type != INST_IO){
+            printf("%s: INP field type should be INST_IO\n", pbo->name);
+            return(S_db_badField);
+    }
+    pbo->dpvt = calloc(sizeof(struct PicoscopeBioData), 1);
+    if (pbo->dpvt == NULL){
+            printf("%s: Failed to allocated memory\n", pbo->name);
+            return -1;
+    }
+
+    pinst = &(pbo->out.value.instio);
+    vdp = (struct PicoscopeBioData *)pbo->dpvt;
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+        {
+            printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+        }
+
+
+	vdp->ioType = findBioType(isOutput, vdp->paramLabel, &vdp->onCmd, &vdp->offCmd);
+
+
+    switch (vdp->ioType) {
+
+        case OPEN_PICOSCOPE: 
+            // On initialization open picoscope with default resolution. 
+            result = open_picoscope(resolution, device_serial_number);
+            if (result != 0) {
+                printf("Error opening picoscope with serial number %s\n", device_serial_number);
+                pbo->val = 0; // Cannot connect to picoscope, set PV to OFF. 
+            }
+            break;
+
+        case SET_CHANNEL_ON:    
+            record_name = pbo->name;
+            channel_index = find_channel_index_from_record(record_name, channels); 
+
+            // On initalization, set all channels off. 
+            result = set_channel_off((int)channels[channel_index]->channel);
+            if (result != 0) {
+                printf("Error setting channel %s off.\n", record_name);
+            }
+            break;
+
+        default:
+            return -1; 
+    }
+	
+    return 0; 
+}
+
+static long
+write_bo (struct boRecord *pbo)
+{
+	int pv_value;
+    char *record_name;
+    int channel_index;
+    uint32_t timebase = 0; 
+    double sample_interval, sample_rate = 0;    
+	
+    struct PicoscopeBioData *vdp = (struct PicoscopeBioData *)pbo->dpvt;
+    int returnStatus = -1; 
+    int rbv = 1; 
+
+	switch (vdp->ioType){
+        
+        case OPEN_PICOSCOPE: 
+            pv_value = (int)pbo->val; 
+            char message[100]; 
+            
+            if (pv_value == 1){
+                result = open_picoscope(resolution, device_serial_number);
+                if (result != 0) {
+                    sprintf(message, "Error opening picoscope with serial number %s.", device_serial_number);
+                    log_message(pbo->name, message, result);
+                    rbv = 0; 
+                }
+            } else {
+                result = close_picoscope(); 
+                if (result != 0) {
+                    sprintf(message, "Error closing picoscope with serial number %s.", device_serial_number);
+                    log_message(pbo->name, message, result);
+                }
+            }
+            break;
+
+        case SET_CHANNEL_ON:    
+            record_name = pbo->name;
+            channel_index = find_channel_index_from_record(record_name, channels); 
+
+            pv_value = pbo->val;
+
+            // If PV value is 1 (ON) set channel on 
+            if (pv_value == 1) { 
+                result = set_channel_on(channels[channel_index]);
+                if (result != 0) {
+                    log_message(pbo->name, "Error setting channel on.", result);
+                    pbo->val = 0; 
+                    rbv = 0; 
+                }
+            } 
+            else {
+                result = set_channel_off((int)channels[channel_index]->channel);
+                if (result != 0) {
+                    log_message(pbo->name, "Error setting channel off.", result);
+                    pbo->val = 0; 
+                }
+            }    
+
+            // Update timebase configs that are affected by the number of channels on. 
+            result = get_valid_timebase_configs(
+                sample_configurations->timebase_configs, 
+                sample_configurations->num_samples,
+                &sample_interval, 
+                &timebase, 
+                &sample_rate
+            );                     
+            
+            if (result != 0){
+                log_message(pbo->name, "Error setting timebase configurations.", result);
+            }
+
+            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
+            sample_configurations->timebase_configs.timebase = timebase;
+            sample_configurations->timebase_configs.sample_rate = sample_rate;  
+            break;
+
+		
+        default:
+			returnStatus = -1;
+			break;
+	}
+
+	if (returnStatus <= 0 ){
+		if (recGblSetSevr(pbo, WRITE_ALARM, INVALID_ALARM)  &&  errVerbose
+				&& (pbo->stat != WRITE_ALARM  ||  pbo->sevr != INVALID_ALARM))
+			printf("%s: Write error (bo)\n\n", pbo->name);
+		return 2;
+	}
+    
+    pbo->rbv = rbv;
+
+	return 0;
+}
+
+
+/****************************************************************************************
+ * Binary Input Records - bi
+ ****************************************************************************************/
+typedef long (*DEVSUPFUN_BI)(struct biRecord *);
+
+static long init_bi(int pass);
+static long init_record_bi(struct biRecord *pbi);
+static long read_bi(struct biRecord *pbi);
+    
+struct 
+{
+    long         number;                          
+    DEVSUPFUN_BI report;
+    long (*init)(int pass);
+    DEVSUPFUN_BI init_record;
+    DEVSUPFUN_BI get_ioint_info;
+    DEVSUPFUN_BI read;
+} devPicoscopeBi =
+	{
+		5,
+		NULL,
+		init_bi,
+		init_record_bi,
+		NULL,
+		read_bi
+	};
+
+epicsExportAddress(dset, devPicoscopeBi);
+
+static long
+init_bi(int pass)
+{
+	if (pass >= 1)
+		return 0;
+	return 0;
+}
+
+static long
+init_record_bi(struct biRecord *pbi)
+{
+    struct instio  *pinst;
+	struct PicoscopeBioData *vdp;
+
+    if (pbi->inp.type != INST_IO){
+            printf("%s: INP field type should be INST_IO\n", pbi->name);
+            return(S_db_badField);
+    }
+    pbi->dpvt = calloc(sizeof(struct PicoscopeBioData), 1);
+    if (pbi->dpvt == (void *)0){
+            printf("%s: Failed to allocated memory\n", pbi->name);
+            return -1;
+    }
+ 
+    pinst = &(pbi->inp.value.instio);
+    vdp = (struct PicoscopeBioData *)pbi->dpvt;
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+        {
+            printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+        }
+
+	vdp->ioType = findBioType(isInput, vdp->paramLabel, &vdp->onCmd, &vdp->offCmd);
+
+	return 0;
+}
+
+static long
+read_bi (struct biRecord *pbi)
+{
+    char *record_name;
+    int channel_index;
+
+	struct PicoscopeBioData *vdp;
+	vdp = (struct PicoscopeBioData *)pbi->dpvt;
+
+    int returnStatus = -1; 
+
+	switch (vdp->ioType)
+		{
+        case GET_DEVICE_STATUS:
+            result = ping_picoscope(); 
+            if ( result != 0 ) {
+                log_message(pbi->name, "Cannot ping device.", result);
+                pbi->val = 0;
+                break;
+            }
+            pbi->val = 1; 
+            pbi->rval = 1; 
+
+            break;
+
+        case GET_CHANNEL_STATUS: 
+            record_name = pbi->name; 
+            channel_index = find_channel_index_from_record(record_name, channels); 
+
+            int16_t channel_status = get_channel_status(channels[channel_index]->channel); 
+            if (channel_status == -1) {
+                log_message(pbi->name, "Cannot get channel status.", channel_status);
+            }
+            pbi->val = channel_status;
+            pbi->rval = channel_status;
+            
+            break; 
+
+		default:
+            returnStatus = -1; 
+		}
+
+	if (returnStatus <= 0){
+		if (recGblSetSevr(pbi, READ_ALARM, INVALID_ALARM)  &&  errVerbose
+		    &&  (pbi->stat != READ_ALARM  ||  pbi->sevr != INVALID_ALARM))
+			printf("%s: Read Error\n", pbi->name);
+		return 2;
+	}
+
+	return 0;
+}
+
+
+
+ //------------------------------------- END BI/BO --------------------------------------//
+
 
 
  //------------------------------ MBBI/MBBO INITIALIZATION ------------------------------//
@@ -877,7 +1116,6 @@ findMbbioType(enum ioFlag ioFlag, char *param, char **cmdString)
  * Multi-Bit Binary Output Records - mbbo
  ****************************************************************************************/
 
-
 typedef long (*DEVSUPFUN_MBBO)(struct mbboRecord*);
 
 static long init_record_mbbo(struct mbboRecord *pmbbo);
@@ -912,14 +1150,14 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     int channel_index; 
 
     struct instio  *pinst;
-    struct PicoscopeData *vdp;
+    struct PicoscopeMbbioData *vdp;
 
     if (pmbbo->out.type != INST_IO)
     {
         errlogPrintf("%s: INP field type should be INST_IO\n", pmbbo->name);
         return(S_db_badField);
     }
-    pmbbo->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+    pmbbo->dpvt = calloc(sizeof(struct PicoscopeMbbioData), 1);
     if (pmbbo->dpvt == (void *)0)
     {
         errlogPrintf("%s: Failed to allocated memory\n", pmbbo->name);
@@ -927,7 +1165,7 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     }
   
     pinst = &(pmbbo->out.value.instio);
-    vdp = (struct PicoscopeData *)pmbbo->dpvt;
+    vdp = (struct PicoscopeMbbioData *)pmbbo->dpvt;
 
     if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
         {
@@ -1010,7 +1248,7 @@ write_mbbo (struct mbboRecord *pmbbo)
     uint32_t timebase = 0; 
     double sample_interval, sample_rate = 0; 
     
-    struct PicoscopeData *vdp = (struct PicoscopeData *)pmbbo->dpvt;
+    struct PicoscopeMbbioData *vdp = (struct PicoscopeMbbioData *)pmbbo->dpvt;
     int returnState = 0; 
 
     switch (vdp->ioType)
@@ -1295,7 +1533,7 @@ static long
 init_record_mbbi(struct mbbiRecord * pmbbi)
 {
     struct instio  *pinst;
-    struct PicoscopeData *vdp;
+    struct PicoscopeMbbioData *vdp;
 
     if (pmbbi->inp.type != INST_IO)
     {
@@ -1303,7 +1541,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
         return(S_db_badField);
     }
     
-    pmbbi->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+    pmbbi->dpvt = calloc(sizeof(struct PicoscopeMbbioData), 1);
     
     if (pmbbi->dpvt == (void *)0)
     {
@@ -1312,7 +1550,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
     }
     
     pinst = &(pmbbi->inp.value.instio);
-    vdp = (struct PicoscopeData *)pmbbi->dpvt;
+    vdp = (struct PicoscopeMbbioData *)pmbbi->dpvt;
 
     if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
         {
@@ -1364,7 +1602,7 @@ read_mbbi(struct mbbiRecord *pmbbi){
     char* record_name; 
     int channel_index; 
     
-    struct PicoscopeData *vdp = (struct PicoscopeData *)pmbbi->dpvt;
+    struct PicoscopeMbbioData *vdp = (struct PicoscopeMbbioData *)pmbbi->dpvt;
 
     switch (vdp->ioType)
     {

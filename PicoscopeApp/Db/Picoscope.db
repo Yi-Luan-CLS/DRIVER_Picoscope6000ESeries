@@ -41,48 +41,30 @@ record(mbbi, "$(OSC):resolution:fbk") {
 }
 
 record(bo, "$(OSC):ON") {
-    field(DTYP, "Soft Channel")
+    field(DTYP, "Picoscope")
     field(DESC, "Turn picoscope on/off.")
     field(ZNAM, "OFF")        
     field(ONAM, "ON") 
 
-    field(VAL,  "1")
+    field(RVAL,  "1")
+    field(OUT, "@L:open_picoscope")
     field(FLNK,  "$(OSC):ON:fanout")
 }
 
 record(fanout, "$(OSC):ON:fanout") {
     field(SELM, "All")
-    field(LNK1, "$(OSC):ON:set")
-    field(LNK2, "$(OSC):device_info")
-    field(LNK3, "$(OSC):ON:fbk:get")
-}
-
-record(ao, "$(OSC):ON:set") {
-    field(DTYP, "Picoscope")
-    field(DOL, "$(OSC):ON.RVAL")
-    field(SCAN, "Passive")
-    field(OIF, "Full")
-    field(OMSL, "closed_loop")
-    field(VAL,  "1")
-
-    field(OUT, "@L:open_picoscope")
-}
-
-record(ai, "$(OSC):ON:fbk:get") {
-    field(DTYP, "Picoscope")
-    field(SCAN, "10 second")
-    field(INP, "@L:get_device_status")
-    field(FLNK, "$(OSC):ON:fbk.PROC")
+    field(LNK1, "$(OSC):device_info")
+    field(LNK2, "$(OSC):ON:fbk")
 }
 
 record(bi, "$(OSC):ON:fbk") {
-    field(DTYP, "Soft Channel")
+    field(DTYP, "Picoscope")
 
     field(ZNAM, "OFF")
     field(ONAM, "ON")
     
-    field(SCAN, "Passive")
-    field(INP, "$(OSC):ON:fbk:get")
+    field(SCAN, "10 second")
+    field(INP, "@L:get_device_status")
 }
 
 record(stringin, "$(OSC):device_info") {
