@@ -524,7 +524,8 @@ uint32_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uin
 typedef struct {
     PICO_STATUS callbackStatus; // Status from the callback
     int dataReady;
-    struct PS6000AModule* mp
+    struct PS6000AModule* mp;
+
 } BlockReadyCallbackParams;
 PICO_STATUS setup_picoscope(struct PS6000AModule* mp, int16_t* waveform_buffer[CHANNEL_NUM]);
 PICO_STATUS init_block_ready_callback_params(struct PS6000AModule* mp);
@@ -788,6 +789,19 @@ void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, void *pParame
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
 PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_indisposed_ms) {
+    struct timeval tv;
+    struct tm *tm_info;
+    gettimeofday(&tv, NULL); 
+    tm_info = localtime(&tv.tv_sec);
+    printf("start_block_capture: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
+         tm_info->tm_year + 1900,
+         tm_info->tm_mon + 1,    
+         tm_info->tm_mday,       
+         tm_info->tm_hour,       
+         tm_info->tm_min,        
+         tm_info->tm_sec,        
+         tv.tv_usec); 
+
     PICO_STATUS ps6000aRunBlockStatus;
     PICO_STATUS ps6000aStopStatus;
     struct SampleConfigs sample_config = mp->sample_config;
@@ -837,6 +851,18 @@ PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_indispose
  */
 PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp)
 {
+    struct timeval tv;
+    struct tm *tm_info;
+    gettimeofday(&tv, NULL); 
+    tm_info = localtime(&tv.tv_sec);
+    printf("wait_for_capture_completion: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
+         tm_info->tm_year + 1900,
+         tm_info->tm_mon + 1,    
+         tm_info->tm_mday,       
+         tm_info->tm_hour,       
+         tm_info->tm_min,        
+         tm_info->tm_sec,        
+         tv.tv_usec); 
     PICO_STATUS status = PICO_OK;
     while (1)
     {
@@ -852,18 +878,18 @@ PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp)
     }
 
    // printf("Capture finished.\n");
-    struct timeval tv;
-    struct tm *tm_info;
-    gettimeofday(&tv, NULL); 
-    tm_info = localtime(&tv.tv_sec);
+    struct timeval tv1;
+    struct tm *tm_info1;
+    gettimeofday(&tv1, NULL); 
+    tm_info1 = localtime(&tv1.tv_sec);
     printf("Capture finished: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
-         tm_info->tm_year + 1900,
-         tm_info->tm_mon + 1,    
-         tm_info->tm_mday,       
-         tm_info->tm_hour,       
-         tm_info->tm_min,        
-         tm_info->tm_sec,        
-         tv.tv_usec); 
+         tm_info1->tm_year + 1900,
+         tm_info1->tm_mon + 1,    
+         tm_info1->tm_mday,       
+         tm_info1->tm_hour,       
+         tm_info1->tm_min,        
+         tm_info1->tm_sec,        
+         tv1.tv_usec); 
     status = retrieve_waveform_data(mp);
 
     if (status != PICO_OK) {
