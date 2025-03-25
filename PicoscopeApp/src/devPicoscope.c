@@ -1623,6 +1623,18 @@ void captureThreadFunc(void *arg) {
     }
 
     while (dataAcquisitionFlag == 1) {
+        struct timeval tv;
+        struct tm *tm_info;
+        gettimeofday(&tv, NULL); 
+        tm_info = localtime(&tv.tv_sec);
+        printf("New loop: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
+             tm_info->tm_year + 1900,
+             tm_info->tm_mon + 1,    
+             tm_info->tm_mday,       
+             tm_info->tm_hour,       
+             tm_info->tm_min,        
+             tm_info->tm_sec,        
+             tv.tv_usec);
         double time_indisposed_ms = 0;
 
         waveform_size_actual = dataAcquisitionModule->sample_config.num_samples;
@@ -1700,6 +1712,7 @@ read_waveform(struct waveformRecord *pwaveform) {
                  tm_info->tm_min,        
                  tm_info->tm_sec,        
                  tv.tv_usec); 
+            printf("-----------------------------\n");
             epicsMutexUnlock(epics_acquisition_flag_mutex);
             break;
 
