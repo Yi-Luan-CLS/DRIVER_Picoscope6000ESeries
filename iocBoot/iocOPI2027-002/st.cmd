@@ -17,6 +17,7 @@ Picoscope_registerRecordDeviceDriver pdbbase
 ## SERIAL_NUM is the serial number of the Picoscope to be opened by this application
 dbLoadRecords("PicoscopeApp/Db/Picoscope.db", "OSC=OSC1022-11, SERIAL_NUM=JR624/0023")
 dbLoadTemplate("PicoscopeApp/Db/Picoscope.substitutions", "OSC=OSC1022-11")
+PS6000ASetup("OSC1022-11")
 
 cd "${TOP}/iocBoot/${IOC}"
 iocInit

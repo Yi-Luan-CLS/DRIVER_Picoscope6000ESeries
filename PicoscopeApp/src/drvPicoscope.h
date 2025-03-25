@@ -1,6 +1,20 @@
 #include "picoscopeConfig.h"
+#include <epicsEvent.h>
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
+
+typedef struct PS6000AModule {
+    char* serial_num;
+    struct SampleConfigs sample_config;
+    struct ChannelConfigs channel_configs[CHANNEL_NUM];
+    struct TriggerConfigs trigger_config;
+    uint64_t sample_collected;
+	epicsEventId triggerReadyEvent;
+}PS6000AModule;
+
+PS6000AModule* PS6000ACreateModule(char* serial_num);
+
+PS6000AModule* PS6000AGetModule(char* serial_num);
 
 uint32_t get_device_info(int8_t** device_info);
 
@@ -40,16 +54,15 @@ uint32_t get_analog_offset_limits(
 uint32_t is_Channel_On(enum Channel channel);
 
 uint32_t setup_picoscope(
-    struct DataAcquisitionModule* dataAcquisitionModule,
+    struct PS6000AModule* mp,
     int16_t* waveform_buffer[CHANNEL_NUM]
     );
 
 // uint32_t interrupt_block_capture();
 
 uint32_t run_block_capture(
-    struct DataAcquisitionModule* dataAcquisitionModule,
-    double* time_indisposed_ms,
-    uint64_t* waveform_size_actual
+    struct PS6000AModule* mp,
+    double* time_indisposed_ms
     );
 
 uint32_t get_analogue_offset_limits(

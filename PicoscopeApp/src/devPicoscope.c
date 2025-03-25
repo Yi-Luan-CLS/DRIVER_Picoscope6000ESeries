@@ -165,6 +165,7 @@ struct PicoscopeData
         char *cmdPrefix;
         char paramLabel[32];
         int paramValid;
+        struct PS6000AModule* mp;
     };
 
 static enum ioType findAioType(enum ioFlag ioFlag, char *param, char **cmdString);
@@ -197,7 +198,7 @@ void log_message(char pv_name[], char error_message[], uint32_t status_code);
 
 struct ChannelConfigs* channels[4] = {NULL}; // List of Picoscope channels and their configurations
 struct TriggerConfigs* trigger_config = {NULL};
-struct SampleConfigs* sample_configurations = NULL; // Configurations for data capture
+// struct SampleConfigs* sample_configurations = NULL; // Configurations for data capture
 
 /****************************************************************************************
  * AI Record
@@ -275,6 +276,7 @@ init_record_ai (struct aiRecord *pai)
         printf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
         return(S_db_badField);
     }
+    vdp->mp = PS6000AGetModule("OSC1022-11");
 
     switch(vdp->ioType)
     {
@@ -312,6 +314,7 @@ read_ai (struct aiRecord *pai){
     int channel_index; 
 
     struct PicoscopeData *vdp = (struct PicoscopeData *)pai->dpvt;
+    // vdp->mp = PS6000AGetModule("OSC1022-11");
 
     switch (vdp->ioType)
     {
@@ -374,44 +377,44 @@ read_ai (struct aiRecord *pai){
 
         // Data configuration fbk 
         case GET_NUM_SAMPLES: 
-            pai->val = sample_configurations->num_samples; 
+            pai->val = vdp->mp->sample_config.num_samples; 
             break; 
 
         case GET_DOWN_SAMPLE_RATIO: 
-            pai->val = sample_configurations->down_sample_ratio; 
+            pai->val = vdp->mp->sample_config.down_sample_ratio; 
             break; 
 
         case GET_DOWN_SAMPLE_RATIO_MODE: 
-            pai->val = sample_configurations->down_sample_ratio_mode; 
+            pai->val = vdp->mp->sample_config.down_sample_ratio_mode; 
             
             break;
 
         case GET_TRIGGER_POSITION_RATIO: 
-            pai->val = sample_configurations->trigger_position_ratio;
+            pai->val = vdp->mp->sample_config.trigger_position_ratio;
             break; 
 
         case GET_NUM_DIVISIONS: 
-            pai->val = sample_configurations->timebase_configs.num_divisions;
+            pai->val = vdp->mp->sample_config.timebase_configs.num_divisions;
             break; 
         
         case GET_TIME_PER_DIVISION: 
-            pai->val = sample_configurations->timebase_configs.time_per_division; 
+            pai->val = vdp->mp->sample_config.timebase_configs.time_per_division; 
             break; 
         
         case GET_TIME_PER_DIVISION_UNIT: 
-            pai->val = sample_configurations->timebase_configs.time_per_division_unit; 
+            pai->val = vdp->mp->sample_config.timebase_configs.time_per_division_unit; 
             break;
         
         case GET_SAMPLE_RATE: 
-            pai->val = sample_configurations->timebase_configs.sample_rate; 
+            pai->val = vdp->mp->sample_config.timebase_configs.sample_rate; 
             break;
             
         case GET_TIMEBASE: 
-            pai->val = sample_configurations->timebase_configs.timebase; 
+            pai->val = vdp->mp->sample_config.timebase_configs.timebase; 
             break; 
         
         case GET_SAMPLE_INTERVAL: 
-            pai->val = sample_configurations->timebase_configs.sample_interval_secs; 
+            pai->val = vdp->mp->sample_config.timebase_configs.sample_interval_secs; 
             break; 
         
         case GET_ACQUISITION_STATUS:
@@ -420,31 +423,31 @@ read_ai (struct aiRecord *pai){
 
             
         case GET_TRIGGER_CHANNEL:
-            if (trigger_config->channel == TRIGGER_AUX){
+            if (vdp->mp->trigger_config.channel == TRIGGER_AUX){
                 pai->val = 4;
             }
-            else if (trigger_config->channel == NO_CHANNEL){
+            else if (vdp->mp->trigger_config.channel == NO_CHANNEL){
                 pai->val = 5;
             }
             else {
-                pai->val = trigger_config->channel;
+                pai->val = vdp->mp->trigger_config.channel;
             }
             break;
 
         case GET_TRIGGER_MODE:
-            pai->val = trigger_config->thresholdMode;
+            pai->val = vdp->mp->trigger_config.thresholdMode;
             break;
 
         case GET_TRIGGER_UPPER:
-            pai->val = trigger_config->thresholdUpper;
+            pai->val = vdp->mp->trigger_config.thresholdUpper;
             break;
 
         case GET_TRIGGER_LOWER:
-            pai->val = trigger_config->thresholdLower;
+            pai->val = vdp->mp->trigger_config.thresholdLower;
             break;
 
         case GET_AUTO_TRIGGER_US: 
-            pai->val = trigger_config->autoTriggerMicroSeconds; 
+            pai->val = vdp->mp->trigger_config.autoTriggerMicroSeconds; 
             break; 
 
         default:
@@ -528,9 +531,9 @@ init_record_ao (struct aoRecord *pao)
     channels[2]->channel = CHANNEL_C;
     channels[3]->channel = CHANNEL_D;
 
-    if (sample_configurations == NULL) {
-        sample_configurations = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
-    }    
+    // if (sample_configurations == NULL) {
+    //     sample_configurations = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
+    // }    
 
     struct instio  *pinst;
     struct PicoscopeData *vdp;
@@ -563,7 +566,7 @@ init_record_ao (struct aoRecord *pao)
         errlogPrintf("%s: Invalid type: \"%s\"\n", pao->name, vdp->paramLabel);
         return(S_db_badField);
     }
-
+    vdp->mp = PS6000AGetModule("OSC1022-11");
     pao->udf = FALSE;
 
     switch (vdp->ioType)    
@@ -577,36 +580,36 @@ init_record_ao (struct aoRecord *pao)
             break;
 
         case SET_NUM_SAMPLES: 
-            sample_configurations->num_samples = (int)pao->val; 
+            vdp->mp->sample_config.num_samples = (int)pao->val; 
             break; 
 
         case SET_DOWN_SAMPLE_RATIO: 
-            sample_configurations->down_sample_ratio = (int)pao->val; 
+            vdp->mp->sample_config.down_sample_ratio = (int)pao->val; 
             break; 
         
         case SET_DOWN_SAMPLE_RATIO_MODE: 
-            sample_configurations->down_sample_ratio_mode = (int)pao->val; 
+            vdp->mp->sample_config.down_sample_ratio_mode = (int)pao->val; 
             break; 
 
         case SET_TRIGGER_POSITION_RATIO:
-            sample_configurations->trigger_position_ratio = (int)pao->val;
+            vdp->mp->sample_config.trigger_position_ratio = (int)pao->val;
             break;
 
         case SET_NUM_DIVISIONS: 
-            sample_configurations->timebase_configs.num_divisions = (int) pao->val; 
+            vdp->mp->sample_config.timebase_configs.num_divisions = (int) pao->val; 
 
             // Initialize timebase feedback only information to 0. 
-            sample_configurations->timebase_configs.timebase = 0; 
-            sample_configurations->timebase_configs.sample_interval_secs = 0; 
-            sample_configurations->timebase_configs.sample_rate = 0; 
+            vdp->mp->sample_config.timebase_configs.timebase = 0; 
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = 0; 
+            vdp->mp->sample_config.timebase_configs.sample_rate = 0; 
             break; 
 
         case SET_TIME_PER_DIVISION_UNIT: 
-            sample_configurations->timebase_configs.time_per_division_unit = (int) pao->val; 
+            vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pao->val; 
             break;
 
         case SET_TIME_PER_DIVISION: 
-            sample_configurations->timebase_configs.time_per_division = (int) pao->val; 
+            vdp->mp->sample_config.timebase_configs.time_per_division = (int) pao->val; 
             break; 
 
         case OPEN_PICOSCOPE: 
@@ -667,19 +670,19 @@ init_record_ao (struct aoRecord *pao)
             break;
 
         case SET_TRIGGER_CHANNEL:
-            trigger_config->channel = (enum Channel) pao->val;
+            vdp->mp->trigger_config.channel = (enum Channel) pao->val;
             break;
 
         case SET_TRIGGER_UPPER:
-            trigger_config->thresholdUpper = (int16_t) pao->val;
+            vdp->mp->trigger_config.thresholdUpper = (int16_t) pao->val;
             break;
 
         case SET_TRIGGER_LOWER:
-            trigger_config->thresholdLower = (int16_t) pao->val;
+            vdp->mp->trigger_config.thresholdLower = (int16_t) pao->val;
             break;
 
         case SET_AUTO_TRIGGER_US: 
-            trigger_config->autoTriggerMicroSeconds = (uint32_t) pao->val; 
+            vdp->mp->trigger_config.autoTriggerMicroSeconds = (uint32_t) pao->val; 
             break; 
 
         default:
@@ -717,12 +720,12 @@ write_ao (struct aoRecord *pao)
             break;
         
         case SET_TIME_PER_DIVISION_UNIT: 
-            int16_t previous_time_per_division_unit = sample_configurations->timebase_configs.time_per_division_unit;
-            sample_configurations->timebase_configs.time_per_division_unit = (int) pao->val; 
+            int16_t previous_time_per_division_unit = vdp->mp->sample_config.timebase_configs.time_per_division_unit;
+            vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pao->val; 
 
             result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -730,22 +733,22 @@ write_ao (struct aoRecord *pao)
 
             if (result != 0) {
                 log_message(pao->name, "Error setting time per division unit.", result);
-                sample_configurations->timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
+                vdp->mp->sample_config.timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
                 break; 
             }
             
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;  
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
             break; 
 
         case SET_TIME_PER_DIVISION: 
-            double previous_time_per_division = sample_configurations->timebase_configs.time_per_division; 
-            sample_configurations->timebase_configs.time_per_division = (int) pao->val; 
+            double previous_time_per_division = vdp->mp->sample_config.timebase_configs.time_per_division; 
+            vdp->mp->sample_config.timebase_configs.time_per_division = (int) pao->val; 
 
             result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -753,22 +756,22 @@ write_ao (struct aoRecord *pao)
             
             if (result != 0) {
                 log_message(pao->name, "Error setting time per division.", result);
-                sample_configurations->timebase_configs.time_per_division = previous_time_per_division; 
+                vdp->mp->sample_config.timebase_configs.time_per_division = previous_time_per_division; 
                 break; 
             }
 
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;  
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
             break; 
 
         case SET_NUM_DIVISIONS: 
-            int16_t previous_num_divisions = sample_configurations->timebase_configs.num_divisions; 
-            sample_configurations->timebase_configs.num_divisions = (int) pao->val; 
+            int16_t previous_num_divisions = vdp->mp->sample_config.timebase_configs.num_divisions; 
+            vdp->mp->sample_config.timebase_configs.num_divisions = (int) pao->val; 
 
             result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -776,23 +779,23 @@ write_ao (struct aoRecord *pao)
 
             if (result != 0) {
                 log_message(pao->name, "Error setting the number of divisions.", result);
-                sample_configurations->timebase_configs.num_divisions = previous_num_divisions; 
+                vdp->mp->sample_config.timebase_configs.num_divisions = previous_num_divisions; 
                 break; 
             }
 
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;  
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
             break; 
 
         case SET_NUM_SAMPLES:
 
-            uint64_t previous_num_samples = sample_configurations->num_samples; 
-            sample_configurations->num_samples = (int) pao->val; 
+            uint64_t previous_num_samples = vdp->mp->sample_config.num_samples; 
+            vdp->mp->sample_config.num_samples = (int) pao->val; 
  
              result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -800,25 +803,25 @@ write_ao (struct aoRecord *pao)
 
             if (result != 0) {
                 log_message(pao->name, "Error setting the number of samples.", result);
-                sample_configurations->num_samples = previous_num_samples; 
+                vdp->mp->sample_config.num_samples = previous_num_samples; 
                 break; 
             }
 
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;
             break;  
             
         case SET_DOWN_SAMPLE_RATIO: 
-            sample_configurations->down_sample_ratio = (int)pao->val; 
+            vdp->mp->sample_config.down_sample_ratio = (int)pao->val; 
             break; 
         
         case SET_DOWN_SAMPLE_RATIO_MODE: 
-            sample_configurations->down_sample_ratio_mode = (int)pao->val;
+            vdp->mp->sample_config.down_sample_ratio_mode = (int)pao->val;
             break; 
 
         case SET_TRIGGER_POSITION_RATIO:
-            sample_configurations->trigger_position_ratio = (float)pao->val;
+            vdp->mp->sample_config.trigger_position_ratio = (float)pao->val;
             break;  
             
         case OPEN_PICOSCOPE: 
@@ -956,8 +959,8 @@ write_ao (struct aoRecord *pao)
 
             // Update timebase configs that are affected by the number of channels on. 
             result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -967,20 +970,20 @@ write_ao (struct aoRecord *pao)
                 log_message(pao->name, "Error setting timebase configurations.", result);
             }
 
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;  
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
             break;
 
         case SET_TRIGGER_CHANNEL:
-            trigger_config->channel = (enum Channel) pao->val;
-            if (trigger_config->channel == TRIGGER_AUX)
+            vdp->mp->trigger_config.channel = (enum Channel) pao->val;
+            if (vdp->mp->trigger_config.channel == TRIGGER_AUX)
             {    
-                trigger_config->triggerType = SIMPLE_EDGE;
-                trigger_config->thresholdMode = LEVEL; 
-                trigger_config->thresholdLower = 0; 
-                trigger_config->thresholdUpper = 0; 
-                trigger_config->thresholdDirection = NONE; 
+                vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
+                vdp->mp->trigger_config.thresholdMode = LEVEL; 
+                vdp->mp->trigger_config.thresholdLower = 0; 
+                vdp->mp->trigger_config.thresholdUpper = 0; 
+                vdp->mp->trigger_config.thresholdDirection = NONE; 
                 
                 dbProcess((struct dbCommon *)pTriggerType); 
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
@@ -989,12 +992,12 @@ write_ao (struct aoRecord *pao)
                     dbProcess((struct dbCommon *)pTriggerFbk[i]);
                 }
             }
-            else if (trigger_config->channel == NO_CHANNEL) {
-                trigger_config->triggerType = NO_TRIGGER;
-                trigger_config->thresholdMode = LEVEL; 
-                trigger_config->thresholdLower = 0; 
-                trigger_config->thresholdUpper = 0; 
-                trigger_config->thresholdDirection = NONE; 
+            else if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
+                vdp->mp->trigger_config.triggerType = NO_TRIGGER;
+                vdp->mp->trigger_config.thresholdMode = LEVEL; 
+                vdp->mp->trigger_config.thresholdLower = 0; 
+                vdp->mp->trigger_config.thresholdUpper = 0; 
+                vdp->mp->trigger_config.thresholdDirection = NONE; 
 
                 dbProcess((struct dbCommon *)pTriggerType); 
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
@@ -1004,26 +1007,26 @@ write_ao (struct aoRecord *pao)
                 }
             }
             else { 
-                trigger_config->triggerType = SIMPLE_EDGE;
+                vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
                 dbProcess((struct dbCommon *)pTriggerType); 
             }
             break;
 
         case SET_TRIGGER_UPPER:
-            trigger_config->thresholdUpper = (int16_t) pao->val;
+            vdp->mp->trigger_config.thresholdUpper = (int16_t) pao->val;
             break;
 
         case SET_TRIGGER_LOWER:
-            trigger_config->thresholdLower = (int16_t) pao->val;
+            vdp->mp->trigger_config.thresholdLower = (int16_t) pao->val;
             break;
 
         case SET_AUTO_TRIGGER_US: 
         
-            if (trigger_config->triggerType == NO_TRIGGER){ 
-                trigger_config->autoTriggerMicroSeconds = 0; 
+            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){ 
+                vdp->mp->trigger_config.autoTriggerMicroSeconds = 0; 
             } 
             else {
-                trigger_config->autoTriggerMicroSeconds = (uint32_t) pao->val; 
+                vdp->mp->trigger_config.autoTriggerMicroSeconds = (uint32_t) pao->val; 
             }
             break; 
 
@@ -1149,6 +1152,7 @@ init_record_mbbo (struct mbboRecord *pmbbo)
         errlogPrintf("%s: Invalid type: \"%s\"\n", pmbbo->name, vdp->paramLabel);
         return(S_db_badField);
     }
+    vdp->mp = PS6000AGetModule("OSC1022-11");
 
     pmbbo->udf = FALSE;
 
@@ -1156,12 +1160,12 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     {        
 
         case SET_TRIGGER_TYPE: 
-            trigger_config->triggerType = (int) pmbbo->rval; 
-            printf("Trigger type init %d\n", trigger_config->triggerType);
+            vdp->mp->trigger_config.triggerType = (int) pmbbo->rval; 
+            printf("Trigger type init %d\n", vdp->mp->trigger_config.triggerType);
             break; 
         
         case SET_TRIGGER_DIRECTION:
-            trigger_config->thresholdDirection = (enum ThresholdDirection) pmbbo->val;
+            vdp->mp->trigger_config.thresholdDirection = (enum ThresholdDirection) pmbbo->val;
             pTriggerDirection = pmbbo;
             break;
 
@@ -1183,15 +1187,15 @@ write_mbbo (struct mbboRecord *pmbbo)
     {        
         case SET_TRIGGER_TYPE: 
             printf("set trigger type %d\n", (int)pmbbo->val); 
-            trigger_config->triggerType = (int)pmbbo->val; 
+            vdp->mp->trigger_config.triggerType = (int)pmbbo->val; 
             
-            if (trigger_config->triggerType == NO_TRIGGER){
+            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
                 
                 // Update configurations for no trigger 
-                trigger_config->channel = NO_CHANNEL; 
-                trigger_config->thresholdMode = LEVEL;             
-                trigger_config->thresholdLower = 0; 
-                trigger_config->thresholdUpper = 0; 
+                vdp->mp->trigger_config.channel = NO_CHANNEL; 
+                vdp->mp->trigger_config.thresholdMode = LEVEL;             
+                vdp->mp->trigger_config.thresholdLower = 0; 
+                vdp->mp->trigger_config.thresholdUpper = 0; 
     
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
                 for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
@@ -1200,12 +1204,12 @@ write_mbbo (struct mbboRecord *pmbbo)
                     }
 
             }        
-            else if (trigger_config->triggerType == SIMPLE_EDGE) {
-                if (trigger_config->channel == NO_CHANNEL) {
-                    trigger_config->channel = TRIGGER_AUX;
+            else if (vdp->mp->trigger_config.triggerType == SIMPLE_EDGE) {
+                if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
+                    vdp->mp->trigger_config.channel = TRIGGER_AUX;
                 } 
-                trigger_config->thresholdMode = LEVEL;         
-                trigger_config->thresholdLower = 0;     
+                vdp->mp->trigger_config.thresholdMode = LEVEL;         
+                vdp->mp->trigger_config.thresholdLower = 0;     
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
                 for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
                     {
@@ -1213,9 +1217,9 @@ write_mbbo (struct mbboRecord *pmbbo)
                     }
 
             }
-            //else if (trigger_config->triggerType == WINDOW) {
-            //    trigger_config->channel = CHANNEL_A; 
-            //    trigger_config->thresholdMode = WINDOW;             
+            //else if (vdp->mp->trigger_config.triggerType == WINDOW) {
+            //    vdp->mp->trigger_config.channel = CHANNEL_A; 
+            //    vdp->mp->trigger_config.thresholdMode = WINDOW;             
               //
             //    dbProcess((struct dbCommon *)pTriggerDirectionFbk);
             //    for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
@@ -1228,11 +1232,11 @@ write_mbbo (struct mbboRecord *pmbbo)
 
         case SET_TRIGGER_DIRECTION:
             
-            if (trigger_config->triggerType == NO_TRIGGER) {
-                trigger_config->thresholdDirection = NONE; 
+            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER) {
+                vdp->mp->trigger_config.thresholdDirection = NONE; 
             }
             else {
-                trigger_config->thresholdDirection = (enum ThresholdDirection) pmbbo->rval;
+                vdp->mp->trigger_config.thresholdDirection = (enum ThresholdDirection) pmbbo->rval;
             }
             break;
         
@@ -1322,6 +1326,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
         printf("%s: Invalid type: \"@%s\"\n", pmbbi->name, vdp->paramLabel);
         return(S_db_badField);
     }
+    vdp->mp = PS6000AGetModule("OSC1022-11");
     
     pmbbi->udf = FALSE;
 
@@ -1350,16 +1355,16 @@ read_mbbi(struct mbbiRecord *pmbbi){
     switch (vdp->ioType)
     {
         case GET_TRIGGER_DIRECTION:
-            if (trigger_config->triggerType == NO_TRIGGER){
+            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
                 pmbbi->rval = -1; // no trigger direction
             }
             else {
-                pmbbi->rval = trigger_config->thresholdDirection; 
+                pmbbi->rval = vdp->mp->trigger_config.thresholdDirection; 
             }
             break;
         
         case GET_TRIGGER_TYPE: 
-            pmbbi->rval = trigger_config->triggerType; 
+            pmbbi->rval = vdp->mp->trigger_config.triggerType; 
             break; 
 
         default:
@@ -1433,6 +1438,7 @@ init_record_stringin(struct stringinRecord * pstringin)
         printf("%s: Invalid type: \"@%s\"\n", pstringin->name, vdp->paramLabel);
         return(S_db_badField);
     }
+    vdp->mp = PS6000AGetModule("OSC1022-11");
     
     pstringin->udf = FALSE;
 
@@ -1522,7 +1528,6 @@ struct{
 epicsExportAddress(dset, devPicoscopeWaveform);
 
 int16_t* waveform[CHANNEL_NUM];
-uint64_t waveform_size_actual;
 uint32_t waveform_size_max;
 struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
 
@@ -1561,13 +1566,14 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
         errlogPrintf("%s: Invalid type: \"@%s\"\n", pwaveform->name, vdp->paramLabel);
         return(S_db_badField);
     }
+    vdp->mp = PS6000AGetModule("OSC1022-11");
+
     pwaveform->udf = FALSE;
 
     switch (vdp->ioType)
     {    
 
         case START_RETRIEVE_WAVEFORM:
-            dataAcquisitionModule = malloc(sizeof(struct DataAcquisitionModule));
             pWaveformStart = pwaveform;
             break;
       
@@ -1603,15 +1609,14 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 
     return 0;
 }
-static int allocate_capture_data(struct DataAcquisitionModule *data_ptr);
+static int allocate_capture_data(struct PS6000AModule *data_ptr);
 void captureThreadFunc(void *arg) {
     epicsMutexLock(epics_acquisition_thread_mutex);
-    dataAcquisitionModule = (struct DataAcquisitionModule *)arg;
+    PS6000AModule* mp = (struct PS6000AModule *)arg;
     epicsThreadId id = epicsThreadGetIdSelf();
     printf("Start ID is %ld\n", id->tid);
-
     // Setup Picoscope
-    uint32_t status = setup_picoscope(dataAcquisitionModule, waveform);
+    uint32_t status = setup_picoscope(mp, waveform);
     if (status != 0) {
         log_message("", "Error configuring picoscope for data capture.", status);
         printf("captureThreadFunc Cleanup ID is %ld\n", id->tid);
@@ -1625,8 +1630,8 @@ void captureThreadFunc(void *arg) {
     while (dataAcquisitionFlag == 1) {
         double time_indisposed_ms = 0;
 
-        waveform_size_actual = dataAcquisitionModule->sample_config.num_samples;
-        status = run_block_capture(dataAcquisitionModule, &time_indisposed_ms, &waveform_size_actual);
+        mp->sample_collected = mp->sample_config.num_samples;
+        status = run_block_capture(mp, &time_indisposed_ms);
         if (status != 0) {
             log_message("", "Error capturing data block.", status);
             break;
@@ -1634,9 +1639,8 @@ void captureThreadFunc(void *arg) {
 
         // Process the UPDATE_WAVEFORM subroutine to update waveform
         for (size_t i = 0; i < CHANNEL_NUM; i++) {
-            if (is_Channel_On(dataAcquisitionModule->channel_configs[i].channel)) {
+            if (is_Channel_On(mp->channel_configs[i].channel)) {
                 dbProcess((struct dbCommon *)pRecordUpdateWaveform[i]);
-
             }
         }
     }
@@ -1663,13 +1667,13 @@ read_waveform(struct waveformRecord *pwaveform) {
             }
             dataAcquisitionFlag = 1;
             epicsMutexUnlock(epics_acquisition_flag_mutex);
-
-            if (allocate_capture_data(dataAcquisitionModule) != 0) {
-                return -1;
+	        vdp->mp->triggerReadyEvent = epicsEventCreate(0);
+            for (size_t i = 0; i < CHANNEL_NUM; i++) {
+                vdp->mp->channel_configs[i] = *channels[i];
             }
             // Create capture thread
             epicsThreadId capture_thread = epicsThreadCreate("captureThread", epicsThreadPriorityMedium,
-                                                             0, (EPICSTHREADFUNC)captureThreadFunc, dataAcquisitionModule);
+                                                             0, (EPICSTHREADFUNC)captureThreadFunc, vdp->mp);
             if (!capture_thread) {
                 errlogPrintf("%s: Failed to create capture thread\n", pwaveform->name);
                 epicsMutexLock(epics_acquisition_flag_mutex);
@@ -1683,8 +1687,8 @@ read_waveform(struct waveformRecord *pwaveform) {
             int channel_index = find_channel_index_from_record(pwaveform->name, channels);
             epicsMutexLock(epics_acquisition_flag_mutex);
             if (dataAcquisitionFlag == 1) {
-                memcpy(pwaveform->bptr, waveform[channel_index], waveform_size_actual * sizeof(int16_t));
-                pwaveform->nord = waveform_size_actual;
+                memcpy(pwaveform->bptr, waveform[channel_index], vdp->mp->sample_collected * sizeof(int16_t));
+                pwaveform->nord = vdp->mp->sample_collected;
             }
             struct timeval tv;
             struct tm *tm_info;
@@ -1707,7 +1711,7 @@ read_waveform(struct waveformRecord *pwaveform) {
             epicsMutexLock(epics_acquisition_flag_mutex);
             dataAcquisitionFlag = 0;
             epicsMutexUnlock(epics_acquisition_flag_mutex);
-    		epicsEventSignal(dataAcquisitionModule->triggerReadyEvent);
+    		epicsEventSignal(vdp->mp->triggerReadyEvent);
             break;
 
         default:
@@ -1722,9 +1726,9 @@ read_waveform(struct waveformRecord *pwaveform) {
 }
 
 static int
-allocate_capture_data(struct DataAcquisitionModule *data) {
+allocate_capture_data(struct PS6000AModule *data) {
     if (!data) {
-        errlogPrintf("DataAcquisitionModule pointer is null\n");
+        errlogPrintf("PS6000AModule pointer is null\n");
         epicsMutexLock(epics_acquisition_flag_mutex);
         dataAcquisitionFlag = 0;
         epicsMutexUnlock(epics_acquisition_flag_mutex);
@@ -1732,7 +1736,7 @@ allocate_capture_data(struct DataAcquisitionModule *data) {
     }
 
     // Copy configurations into the struct
-    data->sample_config = *sample_configurations;
+    // data->sample_config = *sample_configurations;
     for (size_t i = 0; i < CHANNEL_NUM; i++) {
         data->channel_configs[i] = *channels[i];
     }
