@@ -44,6 +44,6 @@ include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD RULES AFTER THIS LINE
 SNCSEQ=$(TOP)/PicoscopeApp/src/picoscope
-USR_CPPFLAGS += -I$(SNCSEQ)/include/libps6000a
+USR_CPPFLAGS += -Ofast -I$(SNCSEQ)/include/libps6000a
 USR_LDFLAGS +=  -L$(SNCSEQ)/lib
 USR_CPPFLAGS += -DUSE_TYPED_RSET 
