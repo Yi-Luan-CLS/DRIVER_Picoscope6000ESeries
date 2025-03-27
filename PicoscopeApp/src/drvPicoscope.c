@@ -14,7 +14,7 @@
 #include <pthread.h>
 #include "drvPicoscope.h"
 #define MAX_PICO 10
-static PS6000AModule *PS6000AModuleList[MAX_PICO];
+static PS6000AModule *PS6000AModuleList[MAX_PICO] = {NULL};
 int16_t handle = 0; // The identifier of the connected picoscope
 pthread_mutex_t block_ready_mutex;
 pthread_mutex_t ps6000a_call_mutex;
@@ -949,31 +949,53 @@ PICO_STATUS stop_capturing() {
 
 struct PS6000AModule*
 PS6000AGetModule(char* serial_num){
-    return PS6000AModuleList[0];
+    for (size_t i = 0; i < MAX_PICO; i++) {
+        if (PS6000AModuleList[i] != NULL && strcmp(serial_num, PS6000AModuleList[i]->serial_num) == 0) {
+            return PS6000AModuleList[i];
+        }
+    }
+    log_error("PS6000AGetModule", PICO_NOT_FOUND, __FILE__, __LINE__);
+    return NULL;
 }
 
 struct PS6000AModule*
 PS6000ACreateModule(char* serial_num){
-    struct PS6000AModule* ps6000a_module_ptr;
-    ps6000a_module_ptr = calloc(1, sizeof(PS6000AModule));
-    ps6000a_module_ptr->serial_num = serial_num;
-	ps6000a_module_ptr->triggerReadyEvent = epicsEventCreate(0);
-    PS6000AModuleList[0] = ps6000a_module_ptr;
-    return ps6000a_module_ptr;
+    struct PS6000AModule* mp = calloc(1, sizeof(struct PS6000AModule));
+    if (!mp) {
+        log_error("PS6000ACreateModule calloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
+        return NULL;
+    }
+    mp->serial_num = strdup(serial_num);
+    if (!mp->serial_num) {
+        free(mp);
+        log_error("PS6000ACreateModule strdup", PICO_MEMORY_FAIL, __FILE__, __LINE__);
+        return NULL;
+    }
+    mp->triggerReadyEvent = epicsEventCreate(0);
+
+    for (size_t i = 0; i < MAX_PICO; i++) {
+        if (PS6000AModuleList[i] == NULL) {
+            PS6000AModuleList[i] = mp;
+            return mp;
+        }
+    }
+    free(mp->serial_num);
+    free(mp);
+    log_error("PS6000ACreateModule", PICO_NO_APPS_AVAILABLE, __FILE__, __LINE__);
+    return NULL;
 }
 
 static int
-PS6000ASetup(char* serial_num)
-{
-
-	printf("PS6000ASetup(%s)\n", serial_num);
-	PS6000ACreateModule(serial_num);
-    
-	// if( (mp = GetModulePointer(serial_number)) == NULL ){
-	// 	printf("Module does not exist, lets go make one\n");
-	// }
-
-	return 0;
+PS6000ASetup(char* serial_num){
+    printf("PS6000ASetup(%s)\n", serial_num);
+    struct PS6000AModule* mp = PS6000AGetModule(serial_num);
+    if (!mp) {
+        printf("Module does not exist, lets go make one\n");
+        if ((mp = PS6000ACreateModule(serial_num)) == NULL) {
+            return PICO_MEMORY_FAIL;
+        }
+    }
+    return 0;
 }
 
 static void
