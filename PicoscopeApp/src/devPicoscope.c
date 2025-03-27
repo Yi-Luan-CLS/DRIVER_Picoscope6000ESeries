@@ -181,7 +181,7 @@ void log_message(char pv_name[], char error_message[], uint32_t status_code);
 
 struct ChannelConfigs* channels[4] = {NULL}; // List of Picoscope channels and their configurations
 struct TriggerConfigs* trigger_config = {NULL};
-// struct SampleConfigs* sample_configurations = NULL; // Configurations for data capture
+// struct SampleConfigs* sample_config = NULL; // Configurations for data capture
 
 /****************************************************************************************
  * AI Record
@@ -296,7 +296,6 @@ read_ai (struct aiRecord *pai){
     switch (vdp->ioType)
     {
         // Channel configuration fbk
-
         case GET_ANALOG_OFFSET: 
             record_name = pai->name; 
             channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
@@ -459,6 +458,13 @@ init_record_ao (struct aoRecord *pao)
         case SET_NUM_SAMPLES: 
             vdp->mp->sample_config.num_samples = (int)pao->val; 
             break; 
+
+        case SET_ANALOG_OFFSET: 
+            char* record_name = pao->name;
+            int channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
+            
+            pAnalogOffestRecords[channel_index] = pao; 
+            break;
 
         case SET_DOWN_SAMPLE_RATIO: 
             vdp->mp->sample_config.down_sample_ratio = (int)pao->val; 
@@ -708,6 +714,7 @@ struct PicoscopeBioData
         int paramValid;
         int onCmd;
 	    int offCmd;
+        struct PS6000AModule* mp;
     };
 
 static enum ioType
@@ -786,7 +793,8 @@ init_record_bo (struct boRecord *pbo)
 
 
 	vdp->ioType = findBioType(isOutput, vdp->paramLabel, &vdp->onCmd, &vdp->offCmd);
-
+    
+    vdp->mp = PS6000AGetModule("OSC1022-11");
 
     switch (vdp->ioType) {
 
@@ -801,10 +809,10 @@ init_record_bo (struct boRecord *pbo)
 
         case SET_CHANNEL_ON:    
             record_name = pbo->name;
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
             // On initalization, set all channels off. 
-            result = set_channel_off((int)channels[channel_index]->channel);
+            result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel);
             if (result != 0) {
                 printf("Error setting channel %s off.\n", record_name);
             }
@@ -854,13 +862,13 @@ write_bo (struct boRecord *pbo)
 
         case SET_CHANNEL_ON:    
             record_name = pbo->name;
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
             pv_value = pbo->val;
 
             // If PV value is 1 (ON) set channel on 
             if (pv_value == 1) { 
-                result = set_channel_on(channels[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
                 if (result != 0) {
                     log_message(pbo->name, "Error setting channel on.", result);
                     pbo->val = 0; 
@@ -868,17 +876,16 @@ write_bo (struct boRecord *pbo)
                 }
             } 
             else {
-                result = set_channel_off((int)channels[channel_index]->channel);
+                result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel);
                 if (result != 0) {
                     log_message(pbo->name, "Error setting channel off.", result);
                     pbo->val = 0; 
                 }
             }    
-
             // Update timebase configs that are affected by the number of channels on. 
             result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -888,9 +895,10 @@ write_bo (struct boRecord *pbo)
                 log_message(pbo->name, "Error setting timebase configurations.", result);
             }
 
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;  
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
+
             break;
 
 		
@@ -974,6 +982,8 @@ init_record_bi(struct biRecord *pbi)
         }
 
 	vdp->ioType = findBioType(isInput, vdp->paramLabel, &vdp->onCmd, &vdp->offCmd);
+    
+    vdp->mp = PS6000AGetModule("OSC1022-11");
 
 	return 0;
 }
@@ -1005,9 +1015,9 @@ read_bi (struct biRecord *pbi)
 
         case GET_CHANNEL_STATUS: 
             record_name = pbi->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
-            int16_t channel_status = get_channel_status(channels[channel_index]->channel); 
+            int16_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == -1) {
                 log_message(pbi->name, "Cannot get channel status.", channel_status);
             }
@@ -1081,6 +1091,7 @@ struct PicoscopeMbbioData
         char *cmdPrefix;
         char paramLabel[32];
         int paramValid;
+        struct PS6000AModule* mp;
     };
 
 static enum ioType
@@ -1177,39 +1188,39 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     {      
         case SET_COUPLING:    
             record_name = pmbbo->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
             
-            channels[channel_index]->coupling = (int)pmbbo->rval;
+            vdp->mp->channel_configs[channel_index].coupling = (int)pmbbo->rval;
             break;
 
         case SET_RANGE: 
             record_name = pmbbo->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
             
-            channels[channel_index]->range = (int)pmbbo->rval;
+            vdp->mp->channel_configs[channel_index].range = (int)pmbbo->rval;
             break;
         
         case SET_BANDWIDTH: 
             record_name = pmbbo->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
 
-            channels[channel_index]->bandwidth = (int)pmbbo->rval;
+            vdp->mp->channel_configs[channel_index].bandwidth = (int)pmbbo->rval;
             break;
 
         case SET_TIME_PER_DIVISION: 
-            sample_configurations->timebase_configs.time_per_division = (int) pmbbo->rval; 
+            vdp->mp->sample_config.timebase_configs.time_per_division = (int) pmbbo->rval; 
             break; 
 
         case SET_TIME_PER_DIVISION_UNIT: 
-            sample_configurations->timebase_configs.time_per_division_unit = (int) pmbbo->val; 
+            vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pmbbo->val; 
             break;
 
         case SET_DOWN_SAMPLE_RATIO_MODE: 
-            sample_configurations->down_sample_ratio_mode = (int)pmbbo->rval;
+            vdp->mp->sample_config.down_sample_ratio_mode = (int)pmbbo->rval;
             break; 
 
         case SET_TRIGGER_CHANNEL:
-           trigger_config->channel = (enum Channel) pmbbo->val;
+           vdp->mp->trigger_config.channel  = (enum Channel) pmbbo->val;
            break;
 
         case SET_TRIGGER_TYPE: 
@@ -1237,7 +1248,7 @@ write_mbbo (struct mbboRecord *pmbbo)
     int channel_index; 
     uint32_t timebase = 0; 
     double sample_interval, sample_rate = 0; 
-    
+
     struct PicoscopeMbbioData *vdp = (struct PicoscopeMbbioData *)pmbbo->dpvt;
     int returnState = 0; 
 
@@ -1254,41 +1265,41 @@ write_mbbo (struct mbboRecord *pmbbo)
 
         case SET_COUPLING:    
             record_name = pmbbo->name;
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
             dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
     
-            int16_t previous_coupling = channels[channel_index]->coupling; 
-            channels[channel_index]->coupling = (int)pmbbo->rval;
+            int16_t previous_coupling = vdp->mp->channel_configs[channel_index].coupling; 
+            vdp->mp->channel_configs[channel_index].coupling = (int)pmbbo->rval;
 
-            uint32_t channel_status = get_channel_status(channels[channel_index]->channel); 
+            uint32_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(channels[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting coupling.", result);
-                    channels[channel_index]->coupling = previous_coupling;
+                    vdp->mp->channel_configs[channel_index].coupling = previous_coupling;
                 }
             }
             break;
 
         case SET_RANGE:
             record_name = pmbbo->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
 
-            int16_t previous_range = channels[channel_index]->range; 
+            int16_t previous_range = vdp->mp->channel_configs[channel_index].range; 
 
-            channels[channel_index]->range = (int)pmbbo->rval;
+            vdp->mp->channel_configs[channel_index].range = (int)pmbbo->rval;
 
             dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
 
-            channel_status = get_channel_status(channels[channel_index]->channel); 
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1){
-                result = set_channel_on(channels[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting voltage range.", result);
-                    channels[channel_index]->range = previous_range;
+                    vdp->mp->channel_configs[channel_index].range = previous_range;
                 }
             }
             break;
@@ -1296,30 +1307,30 @@ write_mbbo (struct mbboRecord *pmbbo)
         
         case SET_BANDWIDTH: 
             record_name = pmbbo->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
             
-            int16_t previous_bandwidth = channels[channel_index]->bandwidth;
+            int16_t previous_bandwidth = vdp->mp->channel_configs[channel_index].bandwidth;
 
-            channels[channel_index]->bandwidth = (int)pmbbo->rval;
+            vdp->mp->channel_configs[channel_index].bandwidth = (int)pmbbo->rval;
 
-            channel_status = get_channel_status(channels[channel_index]->channel); 
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(channels[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting bandwidth.", result);
-                    channels[channel_index]->bandwidth = previous_bandwidth;
+                    vdp->mp->channel_configs[channel_index].bandwidth = previous_bandwidth;
                 }
             }
             break;
 
         case SET_TIME_PER_DIVISION: 
-            double previous_time_per_division = sample_configurations->timebase_configs.time_per_division; 
-            sample_configurations->timebase_configs.time_per_division = (int) pmbbo->rval; 
+            double previous_time_per_division = vdp->mp->sample_config.timebase_configs.time_per_division; 
+            vdp->mp->sample_config.timebase_configs.time_per_division = (int) pmbbo->rval; 
 
             result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -1327,22 +1338,22 @@ write_mbbo (struct mbboRecord *pmbbo)
             
             if (result != 0) {
                 log_message(pmbbo->name, "Error setting time per division.", result);
-                sample_configurations->timebase_configs.time_per_division = previous_time_per_division; 
+                vdp->mp->sample_config.timebase_configs.time_per_division = previous_time_per_division; 
                 break; 
             }
 
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;  
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
             break; 
 
         case SET_TIME_PER_DIVISION_UNIT: 
-            int16_t previous_time_per_division_unit = sample_configurations->timebase_configs.time_per_division_unit;
-            sample_configurations->timebase_configs.time_per_division_unit = (int) pmbbo->val; 
+            int16_t previous_time_per_division_unit = vdp->mp->sample_config.timebase_configs.time_per_division_unit;
+            vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pmbbo->val; 
 
             result = get_valid_timebase_configs(
-                sample_configurations->timebase_configs, 
-                sample_configurations->num_samples,
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -1350,29 +1361,29 @@ write_mbbo (struct mbboRecord *pmbbo)
 
             if (result != 0) {
                 log_message(pmbbo->name, "Error setting time per division unit.", result);
-                sample_configurations->timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
+                vdp->mp->sample_config.timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
                 break; 
             }
 
-            sample_configurations->timebase_configs.sample_interval_secs = sample_interval;
-            sample_configurations->timebase_configs.timebase = timebase;
-            sample_configurations->timebase_configs.sample_rate = sample_rate;  
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
             break; 
 
 
         case SET_DOWN_SAMPLE_RATIO_MODE: 
-            sample_configurations->down_sample_ratio_mode = (int)pmbbo->rval;
+            vdp->mp->sample_config.down_sample_ratio_mode = (int)pmbbo->rval;
             break;
         
         case SET_TRIGGER_CHANNEL:
-            trigger_config->channel = (enum Channel) pmbbo->rval;
-            if (trigger_config->channel == TRIGGER_AUX)
+            vdp->mp->trigger_config.channel = (enum Channel) pmbbo->rval;
+            if (vdp->mp->trigger_config.channel == TRIGGER_AUX)
             {    
-                trigger_config->triggerType = SIMPLE_EDGE;
-                trigger_config->thresholdMode = LEVEL; 
-                trigger_config->thresholdLower = 0; 
-                trigger_config->thresholdUpper = 0; 
-                trigger_config->thresholdDirection = NONE; 
+                vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
+                vdp->mp->trigger_config.thresholdMode = LEVEL; 
+                vdp->mp->trigger_config.thresholdLower = 0; 
+                vdp->mp->trigger_config.thresholdUpper = 0; 
+                vdp->mp->trigger_config.thresholdDirection = NONE; 
                 
                 dbProcess((struct dbCommon *)pTriggerType); 
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
@@ -1383,12 +1394,12 @@ write_mbbo (struct mbboRecord *pmbbo)
                     dbProcess((struct dbCommon *)pTriggerFbk[i]);
                 }
             }
-            else if (trigger_config->channel == NO_CHANNEL) {
-                trigger_config->triggerType = NO_TRIGGER;
-                trigger_config->thresholdMode = LEVEL; 
-                trigger_config->thresholdLower = 0; 
-                trigger_config->thresholdUpper = 0; 
-                trigger_config->thresholdDirection = NONE; 
+            else if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
+                vdp->mp->trigger_config.triggerType = NO_TRIGGER;
+                vdp->mp->trigger_config.thresholdMode = LEVEL; 
+                vdp->mp->trigger_config.thresholdLower = 0; 
+                vdp->mp->trigger_config.thresholdUpper = 0; 
+                vdp->mp->trigger_config.thresholdDirection = NONE; 
 
                 dbProcess((struct dbCommon *)pTriggerType); 
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
@@ -1400,7 +1411,7 @@ write_mbbo (struct mbboRecord *pmbbo)
                 }
             }
             else { 
-                trigger_config->triggerType = SIMPLE_EDGE;
+                vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
                 dbProcess((struct dbCommon *)pTriggerType); 
             }
 
@@ -1609,43 +1620,43 @@ read_mbbi(struct mbbiRecord *pmbbi){
         
         case GET_COUPLING: 
             record_name = pmbbi->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
-            pmbbi->rval = channels[channel_index]->coupling;
+            pmbbi->rval = vdp->mp->channel_configs[channel_index].coupling;
             break; 
 
         case GET_RANGE: 
             record_name = pmbbi->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
-            pmbbi->rval = channels[channel_index]->range; 
+            pmbbi->rval = vdp->mp->channel_configs[channel_index].range; 
             break; 
 
         case GET_BANDWIDTH: 
             record_name = pmbbi->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
-            pmbbi->rval = channels[channel_index]->bandwidth; 
+            pmbbi->rval = vdp->mp->channel_configs[channel_index].bandwidth; 
             break; 
 
         case GET_TRIGGER_MODE:
-            pmbbi->val = trigger_config->thresholdMode;
+            pmbbi->val = vdp->mp->trigger_config.thresholdMode;
             break;
 
         case GET_TRIGGER_CHANNEL:
-            pmbbi->rval = trigger_config->channel;
+            pmbbi->rval = vdp->mp->trigger_config.channel;
             break;
 
         case GET_TIME_PER_DIVISION: 
-            pmbbi->rval = sample_configurations->timebase_configs.time_per_division; 
+            pmbbi->rval = vdp->mp->sample_config.timebase_configs.time_per_division; 
             break; 
 
         case GET_TIME_PER_DIVISION_UNIT: 
-            pmbbi->rval = sample_configurations->timebase_configs.time_per_division_unit; 
+            pmbbi->rval = vdp->mp->sample_config.timebase_configs.time_per_division_unit; 
             break;
 
         case GET_DOWN_SAMPLE_RATIO_MODE: 
-            pmbbi->rval = sample_configurations->down_sample_ratio_mode; 
+            pmbbi->rval = vdp->mp->sample_config.down_sample_ratio_mode; 
             break;
         
         case GET_TRIGGER_DIRECTION:
@@ -1664,6 +1675,7 @@ read_mbbi(struct mbbiRecord *pmbbi){
         default:
             return 0;
     }
+
     return 0; 
 }   
 

@@ -118,7 +118,7 @@ record(mbbo, "$(OSC):down_sample_ratio_mode") {
     field(FRST, "TRIGGER")                  field(FRVL, "0x40000000")
     field(FVST, "RAW")                      field(FVVL, "0x80000000")
 
-    field(VAL, "5")
+    field(RVAL, "0x80000000")
     field(OUT, "@L:set_down_sampling_ratio_mode")
     field(FLNK, "$(OSC):down_sample_ratio_mode:fbk")
 }
@@ -134,6 +134,7 @@ record(mbbi, "$(OSC):down_sample_ratio_mode:fbk") {
     field(FRST, "TRIGGER")                  field(FRVL, "0x40000000")
     field(FVST, "RAW")                      field(FVVL, "0x80000000")
     
+    field(VAL, "5")
     field(INP, "@L:get_down_sampling_ratio_mode")
 }
 
@@ -199,6 +200,7 @@ record(mbbo, "$(OSC):time_per_division") {
     field(TEST, "2000")     field(TEVL, "2000")
     field(ELST, "5000")     field(ELVL, "5000")
 
+    field(RVAL, "1")
     field(OUT, "@L:set_time_per_division")
     field(FLNK, "$(OSC):timebase:fbk:fanout")
 }
@@ -220,6 +222,7 @@ record(mbbi, "$(OSC):time_per_division:fbk") {
     field(TEST, "2000")     field(TEVL, "2000")
     field(ELST, "5000")     field(ELVL, "5000")
 
+    field(VAL, "1")
     field(INP, "@L:get_time_per_division")
 } 
 

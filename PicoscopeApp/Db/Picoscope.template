@@ -115,7 +115,6 @@ record(mbbi, "$(OSC):CH$(channel):bandwidth:fbk") {
     field(ONST, "BW_20MHZ")       field(ONVL, "20000000")
     
     field(INP, "@L:get_bandwidth")
-    field(FLNK, "$(OSC):CH$(channel):bandwidth:fbk")
 }
 
 record(ao, "$(OSC):CH$(channel):analog_offset") {
