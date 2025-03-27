@@ -18,8 +18,6 @@ PS6000AModule* PS6000AGetModule(char* serial_num);
 
 uint32_t get_device_info(int8_t** device_info);
 
-uint32_t connect_picoscope();
-
 uint32_t open_picoscope(int16_t resolution, int8_t* serial_num); 
 
 uint32_t ping_picoscope();

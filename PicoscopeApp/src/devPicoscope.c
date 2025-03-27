@@ -338,9 +338,9 @@ read_ai (struct aiRecord *pai){
         // Channel configuration fbk
         case GET_CHANNEL_STATUS: 
             record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
-            int16_t channel_status = get_channel_status(channels[channel_index]->channel); 
+            int16_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == -1) {
                 log_message(pai->name, "Cannot get channel status.", channel_status);
             }
@@ -349,30 +349,30 @@ read_ai (struct aiRecord *pai){
 
         case GET_COUPLING: 
             record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
-            pai->val = channels[channel_index]->coupling;
+            pai->val = vdp->mp->channel_configs[channel_index].coupling;
             break; 
 
         case GET_RANGE: 
             record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
-            pai->val = channels[channel_index]->range; 
+            pai->val = vdp->mp->channel_configs[channel_index].range; 
             break; 
 
         case GET_BANDWIDTH: 
             record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
-            pai->val = channels[channel_index]->bandwidth; 
+            pai->val = vdp->mp->channel_configs[channel_index].bandwidth; 
             break; 
 
         case GET_ANALOG_OFFSET: 
             record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
-            pai->val = channels[channel_index]->analog_offset; 
+            pai->val = vdp->mp->channel_configs[channel_index].analog_offset; 
             break; 
 
         // Data configuration fbk 
@@ -517,24 +517,6 @@ init_record_ao (struct aoRecord *pao)
     char* record_name; 
     int channel_index; 
 
-    // Allocate memory for each channel
-    for (int i = 0; i < 4; i++) {
-        if (channels[i] == NULL) {
-            channels[i] = (struct ChannelConfigs*)malloc(sizeof(struct ChannelConfigs));
-        }
-        if (trigger_config == NULL) {
-            trigger_config = (struct TriggerConfigs*)malloc(sizeof(struct TriggerConfigs));
-        }
-    }
-    channels[0]->channel = CHANNEL_A;
-    channels[1]->channel = CHANNEL_B;
-    channels[2]->channel = CHANNEL_C;
-    channels[3]->channel = CHANNEL_D;
-
-    // if (sample_configurations == NULL) {
-    //     sample_configurations = (struct SampleConfigs*)malloc(sizeof(struct SampleConfigs));
-    // }    
-
     struct instio  *pinst;
     struct PicoscopeData *vdp;
 
@@ -568,6 +550,10 @@ init_record_ao (struct aoRecord *pao)
     }
     vdp->mp = PS6000AGetModule("OSC1022-11");
     pao->udf = FALSE;
+    vdp->mp->channel_configs[0].channel = CHANNEL_A;
+    vdp->mp->channel_configs[1].channel = CHANNEL_B;
+    vdp->mp->channel_configs[2].channel = CHANNEL_C;
+    vdp->mp->channel_configs[3].channel = CHANNEL_D;
 
     switch (vdp->ioType)    
     {    
@@ -624,27 +610,27 @@ init_record_ao (struct aoRecord *pao)
         // Following cases are specific to a channel
         case SET_COUPLING:    
             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
-            
-            channels[channel_index]->coupling = (int)pao->val;
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
+
+            vdp->mp->channel_configs[channel_index].coupling = (int)pao->val;
             break;
 
         case SET_RANGE: 
-             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            record_name = pao->name;
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
             
-            channels[channel_index]->range = (int)pao->val;
+            vdp->mp->channel_configs[channel_index].range = (int)pao->val;
             break;
 
         case SET_ANALOG_OFFSET: 
             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
             
             pAnalogOffestRecords[channel_index] = pao; 
 
             double max_analog_offset = 0; 
             double min_analog_offset = 0; 
-            result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
+            result = get_analog_offset_limits(vdp->mp->channel_configs[channel_index].range, vdp->mp->channel_configs[channel_index].coupling, &max_analog_offset, &min_analog_offset);
             
             pao->drvh = max_analog_offset; 
             pao->drvl = min_analog_offset;
@@ -652,18 +638,18 @@ init_record_ao (struct aoRecord *pao)
 
         case SET_BANDWIDTH: 
             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
 
-            channels[channel_index]->bandwidth = (int)pao->val;
+            vdp->mp->channel_configs[channel_index].bandwidth = (int)pao->val;
             break;
 
         case SET_CHANNEL_ON:    
 
             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
             // On initalization, set all channels off. 
-            result = set_channel_off((int)channels[channel_index]->channel);
+            result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel);
             if (result != 0) {
                 printf("Error setting channel %s off.\n", record_name);
             }
@@ -847,55 +833,55 @@ write_ao (struct aoRecord *pao)
            // Following cases are specific to a channel
         case SET_COUPLING:    
             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
             dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
     
-            int16_t previous_coupling = channels[channel_index]->coupling; 
-            channels[channel_index]->coupling = (int)pao->val;
+            int16_t previous_coupling = vdp->mp->channel_configs[channel_index].coupling; 
+            vdp->mp->channel_configs[channel_index].coupling = (int)pao->val;
 
-            channel_status = get_channel_status(channels[channel_index]->channel); 
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(channels[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pao->name, "Error setting coupling.", result);
-                    channels[channel_index]->coupling = previous_coupling;
+                    vdp->mp->channel_configs[channel_index].coupling = previous_coupling;
                 }
             }
             break;
 
         case SET_RANGE:
             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
             
 
-            int16_t previous_range = channels[channel_index]->range; 
+            int16_t previous_range = vdp->mp->channel_configs[channel_index].range; 
 
-            channels[channel_index]->range = (int)pao->val;
+            vdp->mp->channel_configs[channel_index].range = (int)pao->val;
 
             dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
 
-            channel_status = get_channel_status(channels[channel_index]->channel); 
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1){
-                result = set_channel_on(channels[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pao->name, "Error setting voltage range.", result);
-                    channels[channel_index]->range = previous_range;
+                    vdp->mp->channel_configs[channel_index].range = previous_range;
                 }
             }
             break;
 
         case SET_ANALOG_OFFSET: 
             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
             
-            int16_t previous_analog_offset = channels[channel_index]->coupling;
+            int16_t previous_analog_offset = vdp->mp->channel_configs[channel_index].coupling;
 
             double max_analog_offset = 0; 
             double min_analog_offset = 0; 
-            result = get_analog_offset_limits(channels[channel_index]->range, channels[channel_index]->coupling, &max_analog_offset, &min_analog_offset);
+            result = get_analog_offset_limits(vdp->mp->channel_configs[channel_index].range, vdp->mp->channel_configs[channel_index].coupling, &max_analog_offset, &min_analog_offset);
             if (result != 0) {
                 log_message(pao->name, "Error getting analog offset limits.", result);
             }
@@ -903,54 +889,54 @@ write_ao (struct aoRecord *pao)
             pao->drvh = max_analog_offset; 
             pao->drvl = min_analog_offset;
 
-            channels[channel_index]->analog_offset = pao->val; 
+            vdp->mp->channel_configs[channel_index].analog_offset = pao->val; 
             
-            channel_status = get_channel_status(channels[channel_index]->channel); 
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(channels[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pao->name, "Error setting analog offset.", result);
-                    channels[channel_index]->analog_offset = previous_analog_offset;
+                    vdp->mp->channel_configs[channel_index].analog_offset = previous_analog_offset;
                 }
             }
             break;
 
         case SET_BANDWIDTH: 
             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels);     
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
             
-            int16_t previous_bandwidth = channels[channel_index]->bandwidth;
+            int16_t previous_bandwidth = vdp->mp->channel_configs[channel_index].bandwidth;
 
-            channels[channel_index]->bandwidth = (int)pao->val;
+            vdp->mp->channel_configs[channel_index].bandwidth = (int)pao->val;
 
-            channel_status = get_channel_status(channels[channel_index]->channel); 
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(channels[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pao->name, "Error setting bandwidth.", result);
-                    channels[channel_index]->bandwidth = previous_bandwidth;
+                    vdp->mp->channel_configs[channel_index].bandwidth = previous_bandwidth;
                 }
             }
             break;
 
         case SET_CHANNEL_ON:    
             record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, channels); 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
             pv_value = pao->val;
 
             // If PV value is 1 (ON) set channel on 
             if (pv_value == 1) { 
-                result = set_channel_on(channels[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
                 if (result != 0) {
                     log_message(pao->name, "Error setting channel on.", result);
                     pao->val = 0; 
                 }
             } 
             else {
-                result = set_channel_off((int)channels[channel_index]->channel);
+                result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel);
                 if (result != 0) {
                     log_message(pao->name, "Error setting channel off.", result);
                     pao->val = 0; 
@@ -1057,7 +1043,7 @@ write_ao (struct aoRecord *pao)
  * 
  * @returns Index of channel in the channels array if successful, otherwise returns -1 
  * */
-inline int find_channel_index_from_record(const char* record_name, struct ChannelConfigs* channels[]) {
+inline int find_channel_index_from_record(const char* record_name, struct ChannelConfigs channel_configs[CHANNEL_NUM]) {
     char channel_str[4];
     sscanf(record_name, "%*[^:]:%4[^:]", channel_str);  // Extract the channel part, e.g., "CHA", "CHB", etc.
 
@@ -1077,7 +1063,7 @@ inline int find_channel_index_from_record(const char* record_name, struct Channe
 
     // Find the index of the channel in the list
     for (int i = 0; i < 4; i++) {
-        if (channels[i]->channel == channel) {
+        if (channel_configs[i].channel == channel) {
             return i;  // Return index if channel matches
         }
     }
@@ -1528,11 +1514,9 @@ struct{
 epicsExportAddress(dset, devPicoscopeWaveform);
 
 int16_t* waveform[CHANNEL_NUM];
-uint32_t waveform_size_max;
 struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
 
 struct waveformRecord* pLog;
-struct DataAcquisitionModule *dataAcquisitionModule;
 
 static long init_record_waveform(struct waveformRecord * pwaveform)
 {
@@ -1583,14 +1567,13 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
             break; 
 
         case UPDATE_WAVEFORM:
-            int channel_index = find_channel_index_from_record(pwaveform->name, channels);
+            int channel_index = find_channel_index_from_record(pwaveform->name, vdp->mp->channel_configs); 
             pRecordUpdateWaveform[channel_index] = pwaveform;
             waveform[channel_index] = calloc(pwaveform->nelm, sizeof(int16_t));
             if (!waveform[channel_index]) {
                 errlogPrintf("%s: Waveform memory allocation failed\n", pwaveform->name);
                 return -1;
             }
-            waveform_size_max = pwaveform->nelm;
             break;
 
         case STOP_RETRIEVE_WAVEFORM:
@@ -1609,8 +1592,9 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 
     return 0;
 }
-static int allocate_capture_data(struct PS6000AModule *data_ptr);
-void captureThreadFunc(void *arg) {
+
+void
+captureThreadFunc(void *arg) {
     epicsMutexLock(epics_acquisition_thread_mutex);
     PS6000AModule* mp = (struct PS6000AModule *)arg;
     epicsThreadId id = epicsThreadGetIdSelf();
@@ -1628,20 +1612,6 @@ void captureThreadFunc(void *arg) {
     }
 
     while (dataAcquisitionFlag == 1) {
-        // struct timeval tv;
-        // struct tm *tm_info;
-        // gettimeofday(&tv, NULL); 
-        // tm_info = localtime(&tv.tv_sec);
-        //     printf("-----------------------------\n");
-
-        // printf("New loop: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
-        //      tm_info->tm_year + 1900,
-        //      tm_info->tm_mon + 1,    
-        //      tm_info->tm_mday,       
-        //      tm_info->tm_hour,       
-        //      tm_info->tm_min,        
-        //      tm_info->tm_sec,        
-        //      tv.tv_usec);
         double time_indisposed_ms = 0;
 
         mp->sample_collected = mp->sample_config.num_samples;
@@ -1666,6 +1636,7 @@ void captureThreadFunc(void *arg) {
     epicsMutexUnlock(epics_acquisition_flag_mutex);
     epicsMutexUnlock(epics_acquisition_thread_mutex);
 }
+
 static long
 read_waveform(struct waveformRecord *pwaveform) {
     struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
@@ -1682,9 +1653,7 @@ read_waveform(struct waveformRecord *pwaveform) {
             dataAcquisitionFlag = 1;
             epicsMutexUnlock(epics_acquisition_flag_mutex);
 	        vdp->mp->triggerReadyEvent = epicsEventCreate(0);
-            for (size_t i = 0; i < CHANNEL_NUM; i++) {
-                vdp->mp->channel_configs[i] = *channels[i];
-            }
+
             // Create capture thread
             epicsThreadId capture_thread = epicsThreadCreate("captureThread", epicsThreadPriorityMedium,
                                                              0, (EPICSTHREADFUNC)captureThreadFunc, vdp->mp);
@@ -1698,26 +1667,12 @@ read_waveform(struct waveformRecord *pwaveform) {
             break;
 
         case UPDATE_WAVEFORM:
-            int channel_index = find_channel_index_from_record(pwaveform->name, channels);
+            int channel_index = find_channel_index_from_record(pwaveform->name, vdp->mp->channel_configs); 
             epicsMutexLock(epics_acquisition_flag_mutex);
             if (dataAcquisitionFlag == 1) {
                 memcpy(pwaveform->bptr, waveform[channel_index], vdp->mp->sample_collected * sizeof(int16_t));
                 pwaveform->nord = vdp->mp->sample_collected;
             }
-            // struct timeval tv;
-            // struct tm *tm_info;
-                
-            // gettimeofday(&tv, NULL); 
-            // tm_info = localtime(&tv.tv_sec);
-            // printf("%s: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
-                //  pwaveform->name,
-                //  tm_info->tm_year + 1900,
-                //  tm_info->tm_mon + 1,    
-                //  tm_info->tm_mday,       
-                //  tm_info->tm_hour,       
-                //  tm_info->tm_min,        
-                //  tm_info->tm_sec,        
-                //  tv.tv_usec); 
             epicsMutexUnlock(epics_acquisition_flag_mutex);
             break;
 
@@ -1739,34 +1694,6 @@ read_waveform(struct waveformRecord *pwaveform) {
     return 0;
 }
 
-static int
-allocate_capture_data(struct PS6000AModule *data) {
-    if (!data) {
-        errlogPrintf("PS6000AModule pointer is null\n");
-        epicsMutexLock(epics_acquisition_flag_mutex);
-        dataAcquisitionFlag = 0;
-        epicsMutexUnlock(epics_acquisition_flag_mutex);
-        return -1;
-    }
-
-    // Copy configurations into the struct
-    // data->sample_config = *sample_configurations;
-    for (size_t i = 0; i < CHANNEL_NUM; i++) {
-        data->channel_configs[i] = *channels[i];
-    }
-    data->trigger_config = *trigger_config;
-	data->triggerReadyEvent = epicsEventCreate(0);
-
-    // Check and adjust sample size
-    if (data->sample_config.num_samples > waveform_size_max) {
-        printf("Sample size (%ld) exceeds the maximum available size (%d) for Picoscope. Setting sample size to the maximum value.\n",
-               data->sample_config.num_samples, waveform_size_max);
-        data->sample_config.num_samples = waveform_size_max;
-        printf("2 %d\n", waveform_size_max);
-    }
-
-    return 0;
-}
 /**
  * A function to update the log PV with the latest error message. Causes the 
  * waveform PV pLog to process. 
