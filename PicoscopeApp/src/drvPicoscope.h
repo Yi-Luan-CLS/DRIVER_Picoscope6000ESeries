@@ -5,11 +5,14 @@
 
 typedef struct PS6000AModule {
     char* serial_num;
+	epicsEventId triggerReadyEvent;
+    int16_t* waveform[CHANNEL_NUM];
+
     struct SampleConfigs sample_config;
     struct ChannelConfigs channel_configs[CHANNEL_NUM];
     struct TriggerConfigs trigger_config;
+
     uint64_t sample_collected;
-	epicsEventId triggerReadyEvent;
 }PS6000AModule;
 
 PS6000AModule* PS6000ACreateModule(char* serial_num);
