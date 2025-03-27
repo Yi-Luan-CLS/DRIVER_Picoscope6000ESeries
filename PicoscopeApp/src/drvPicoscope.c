@@ -866,7 +866,7 @@ inline PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp)
     while (1)
     {
         int returnStatus = epicsEventWait((epicsEventId)mp->triggerReadyEvent);
-        if (returnStatus == epicsEventWaitOK){  /* signal recieved */
+        if (returnStatus == epicsEventWaitOK){
             break;
         }
     }
@@ -958,7 +958,6 @@ PS6000ACreateModule(char* serial_num){
     ps6000a_module_ptr = calloc(1, sizeof(PS6000AModule));
     ps6000a_module_ptr->serial_num = serial_num;
 	ps6000a_module_ptr->triggerReadyEvent = epicsEventCreate(0);
-
     PS6000AModuleList[0] = ps6000a_module_ptr;
     return ps6000a_module_ptr;
 }
