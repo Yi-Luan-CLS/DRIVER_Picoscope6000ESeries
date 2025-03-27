@@ -7,3 +7,4 @@ device(stringin, INST_IO, devPicoscopeStringin, "Picoscope")
 device(mbbo, INST_IO, devPicoscopeMbbo, "Picoscope")
 device(mbbi, INST_IO, devPicoscopeMbbi, "Picoscope")
 
+registrar(registerPS6000A)
