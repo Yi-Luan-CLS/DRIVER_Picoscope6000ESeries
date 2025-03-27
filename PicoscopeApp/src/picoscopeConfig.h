@@ -106,6 +106,6 @@ struct TriggerConfigs{
 };
 
 /** Get the channel from the record formatted "OSCXXXX-XX:CH[A-B]:" and return index in channels array */
-int find_channel_index_from_record(const char* record_name, struct ChannelConfigs* channels[]);
+int find_channel_index_from_record(const char* record_name, struct ChannelConfigs channel_configs[CHANNEL_NUM]);
 
 #endif
