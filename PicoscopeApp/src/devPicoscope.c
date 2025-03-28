@@ -37,63 +37,71 @@ epicsMutexId epics_acquisition_restart_mutex;
 enum ioType
     {
     UNKNOWN_IOTYPE, // default case, must be 0 
-    OPEN_PICOSCOPE,
-    GET_DEVICE_STATUS,
-    SET_RESOLUTION,
-    GET_RESOLUTION,
     SET_NUM_SAMPLES,
     GET_NUM_SAMPLES,
     SET_DOWN_SAMPLE_RATIO,
     GET_DOWN_SAMPLE_RATIO,
-    SET_DOWN_SAMPLE_RATIO_MODE,
-    GET_DOWN_SAMPLE_RATIO_MODE,
     SET_TRIGGER_POSITION_RATIO,
     GET_TRIGGER_POSITION_RATIO,
     GET_DEVICE_INFO,
-    SET_CHANNEL_ON,
-    GET_CHANNEL_STATUS,
-    SET_COUPLING,
-    GET_COUPLING,
-    SET_RANGE, 
-    GET_RANGE,
+
     SET_ANALOG_OFFSET,
     GET_ANALOG_OFFSET,
-    SET_BANDWIDTH, 
-    GET_BANDWIDTH,
     START_RETRIEVE_WAVEFORM,
     GET_ACQUISITION_STATUS,
     STOP_RETRIEVE_WAVEFORM,
     UPDATE_WAVEFORM,
     DEVICE_TO_OPEN,
-    SET_TRIGGER_DIRECTION,
-    GET_TRIGGER_DIRECTION,
-    SET_TRIGGER_CHANNEL,
-    GET_TRIGGER_CHANNEL,
-    GET_TRIGGER_MODE,
     SET_TRIGGER_UPPER,
     GET_TRIGGER_UPPER,
     SET_TRIGGER_LOWER,
     GET_TRIGGER_LOWER,
     GET_SAMPLE_INTERVAL,
-    SET_TIME_PER_DIVISION_UNIT, 
-    GET_TIME_PER_DIVISION_UNIT, 
-    SET_TIME_PER_DIVISION, 
-    GET_TIME_PER_DIVISION, 
     SET_NUM_DIVISIONS,
     GET_NUM_DIVISIONS, 
     GET_SAMPLE_RATE, 
     GET_TIMEBASE,
     GET_LOG, 
+    SET_AUTO_TRIGGER_US, 
+    GET_AUTO_TRIGGER_US,
+
+
+    // bio 
+    OPEN_PICOSCOPE,
+    GET_DEVICE_STATUS,
+    SET_CHANNEL_ON,
+    GET_CHANNEL_STATUS,
+
+    // mbbio
+    SET_RESOLUTION,
+    GET_RESOLUTION,
+    SET_DOWN_SAMPLE_RATIO_MODE,
+    GET_DOWN_SAMPLE_RATIO_MODE,
+    SET_TRIGGER_DIRECTION,
+    GET_TRIGGER_DIRECTION,
     SET_TRIGGER_TYPE, 
     GET_TRIGGER_TYPE, 
-    SET_AUTO_TRIGGER_US, 
-    GET_AUTO_TRIGGER_US
-    };
+    SET_TIME_PER_DIVISION_UNIT, 
+    GET_TIME_PER_DIVISION_UNIT, 
+    SET_TIME_PER_DIVISION, 
+    GET_TIME_PER_DIVISION,
+    SET_TRIGGER_CHANNEL,
+    GET_TRIGGER_CHANNEL, 
+    GET_TRIGGER_MODE,
+    SET_COUPLING,
+    GET_COUPLING,
+    SET_RANGE, 
+    GET_RANGE,
+    SET_BANDWIDTH, 
+    GET_BANDWIDTH,
+};
+
 enum ioFlag
     {
     isOutput = 0,
     isInput = 1
     };
+
 static struct aioType
     {
         char *label;
@@ -102,57 +110,32 @@ static struct aioType
         char *cmdp;
     } AioType[] =
     {
-        {"open_picoscope", isOutput, OPEN_PICOSCOPE, ""},
-        {"get_device_status", isInput, GET_DEVICE_STATUS, ""},
-        {"set_resolution", isOutput, SET_RESOLUTION, ""},
-        {"get_resolution", isInput, GET_RESOLUTION, ""},
         {"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
         {"get_num_samples", isInput, GET_NUM_SAMPLES, ""},
         {"get_timebase", isInput, GET_TIMEBASE, ""},
         {"set_down_sampling_ratio", isOutput, SET_DOWN_SAMPLE_RATIO, ""},
         {"get_down_sampling_ratio", isInput, GET_DOWN_SAMPLE_RATIO, ""},
-        {"set_down_sampling_ratio_mode", isOutput, SET_DOWN_SAMPLE_RATIO_MODE, ""},
-        {"get_down_sampling_ratio_mode", isInput, GET_DOWN_SAMPLE_RATIO_MODE, ""},
         {"set_trigger_position_ratio", isOutput, SET_TRIGGER_POSITION_RATIO, "" },
         {"get_trigger_position_ratio", isInput, GET_TRIGGER_POSITION_RATIO, "" },
-         {"get_device_info", isInput, GET_DEVICE_INFO, "" },
-        {"set_channel_on", isOutput, SET_CHANNEL_ON, ""}, 
-        {"get_channel_status", isInput, GET_CHANNEL_STATUS, ""}, 
-        {"set_coupling", isOutput, SET_COUPLING, "" },
-        {"get_coupling", isInput, GET_COUPLING, ""},
-        {"set_range", isOutput, SET_RANGE,   "" }, 
-        {"get_range", isInput, GET_RANGE, ""},
+        {"get_device_info", isInput, GET_DEVICE_INFO, "" },
         {"set_analog_offset", isOutput, SET_ANALOG_OFFSET, ""},
         {"get_analog_offset", isInput, GET_ANALOG_OFFSET, ""},
-        {"set_bandwidth", isOutput, SET_BANDWIDTH, "" }, 
-        {"get_bandwidth", isInput, GET_BANDWIDTH, "" }, 
         {"start_retrieve_waveform", isInput, START_RETRIEVE_WAVEFORM, "" },
         {"get_acquisition_status", isInput, GET_ACQUISITION_STATUS, "" },
         {"stop_retrieve_waveform", isInput, STOP_RETRIEVE_WAVEFORM, "" },
         {"update_waveform", isInput, UPDATE_WAVEFORM, "" },
         {"device_to_open", isOutput, DEVICE_TO_OPEN, ""},
-        {"set_trigger_direction", isOutput, SET_TRIGGER_DIRECTION, ""},
-        {"get_trigger_direction", isInput, GET_TRIGGER_DIRECTION, ""},
-        {"set_trigger_channel", isOutput, SET_TRIGGER_CHANNEL, ""},
-        {"get_trigger_channel", isInput, GET_TRIGGER_CHANNEL, ""},
-        {"get_trigger_mode", isInput, GET_TRIGGER_MODE, ""},
         {"set_trigger_upper", isOutput, SET_TRIGGER_UPPER, ""},
         {"get_trigger_upper", isInput, GET_TRIGGER_UPPER, ""},
         {"set_trigger_lower", isOutput, SET_TRIGGER_LOWER, ""},
         {"get_trigger_lower", isInput, GET_TRIGGER_LOWER, ""},
         {"get_sample_interval", isInput, GET_SAMPLE_INTERVAL, "" },
         {"get_sample_rate", isInput, GET_SAMPLE_RATE, ""},
-        {"set_time_per_division_unit", isOutput, SET_TIME_PER_DIVISION_UNIT, ""},
-        {"get_time_per_division_unit", isInput, GET_TIME_PER_DIVISION_UNIT, ""},
-        {"set_time_per_division", isOutput, SET_TIME_PER_DIVISION, ""},
-        {"get_time_per_division", isInput, GET_TIME_PER_DIVISION, ""},
         {"set_num_divisions", isOutput, SET_NUM_DIVISIONS, ""},
         {"get_num_divisions", isInput, GET_NUM_DIVISIONS, ""},
         {"get_log", isInput, GET_LOG, ""}, 
-        {"set_trigger_type", isOutput, SET_TRIGGER_TYPE, ""},
-        {"get_trigger_type", isInput, GET_TRIGGER_TYPE, ""}, 
         {"set_auto_trigger_us", isOutput, SET_AUTO_TRIGGER_US, ""},
-        {"get_auto_trigger_us", isInput, GET_AUTO_TRIGGER_US, ""}
+        {"get_auto_trigger_us", isInput, GET_AUTO_TRIGGER_US, ""},
 
 
     };
@@ -198,7 +181,7 @@ void log_message(char pv_name[], char error_message[], uint32_t status_code);
 
 struct ChannelConfigs* channels[4] = {NULL}; // List of Picoscope channels and their configurations
 struct TriggerConfigs* trigger_config = {NULL};
-// struct SampleConfigs* sample_configurations = NULL; // Configurations for data capture
+// struct SampleConfigs* sample_config = NULL; // Configurations for data capture
 
 /****************************************************************************************
  * AI Record
@@ -210,7 +193,10 @@ mbboRecord* pTriggerDirection;
 
 mbbiRecord* pTriggerDirectionFbk;
 mbbiRecord* pTriggerType;
-aiRecord* pTriggerFbk[4];
+mbbiRecord* pTriggerChannelFbk;
+mbbiRecord* pTriggerModeFbk;
+
+aiRecord* pTriggerFbk[2];
 
 typedef long (*DEVSUPFUN_AI)(struct aiRecord *);
 
@@ -280,20 +266,13 @@ init_record_ai (struct aiRecord *pai)
 
     switch(vdp->ioType)
     {
-        case GET_TRIGGER_CHANNEL:
+
+        case GET_TRIGGER_UPPER:
             pTriggerFbk[0] = pai;
             break;
 
-        case GET_TRIGGER_MODE:
-            pTriggerFbk[1] = pai;
-            break;
-
-        case GET_TRIGGER_UPPER:
-            pTriggerFbk[2] = pai;
-            break;
-
         case GET_TRIGGER_LOWER:
-            pTriggerFbk[3] = pai;
+            pTriggerFbk[1] = pai;
             break;
 
         default:
@@ -307,9 +286,7 @@ init_record_ai (struct aiRecord *pai)
 
 static long
 read_ai (struct aiRecord *pai){
-    
-    uint32_t result; 
-    
+        
     char* record_name; 
     int channel_index; 
 
@@ -318,56 +295,7 @@ read_ai (struct aiRecord *pai){
 
     switch (vdp->ioType)
     {
-        // Device configuration fbk
-        case GET_DEVICE_STATUS:
-            result = ping_picoscope(); 
-            if ( result != 0 ) {
-                log_message(pai->name, "Cannot ping device.", result);
-                pai->val = 0;
-                break;
-            }
-            pai->val = 1; 
-            break;
-
-        case GET_RESOLUTION: 
-            result = get_resolution(&resolution);
-
-            pai->val = resolution;  
-            break; 
-
         // Channel configuration fbk
-        case GET_CHANNEL_STATUS: 
-            record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
-
-            int16_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
-            if (channel_status == -1) {
-                log_message(pai->name, "Cannot get channel status.", channel_status);
-            }
-            pai->val = channel_status;
-            break; 
-
-        case GET_COUPLING: 
-            record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
-
-            pai->val = vdp->mp->channel_configs[channel_index].coupling;
-            break; 
-
-        case GET_RANGE: 
-            record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
-
-            pai->val = vdp->mp->channel_configs[channel_index].range; 
-            break; 
-
-        case GET_BANDWIDTH: 
-            record_name = pai->name; 
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
-
-            pai->val = vdp->mp->channel_configs[channel_index].bandwidth; 
-            break; 
-
         case GET_ANALOG_OFFSET: 
             record_name = pai->name; 
             channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
@@ -384,11 +312,6 @@ read_ai (struct aiRecord *pai){
             pai->val = vdp->mp->sample_config.down_sample_ratio; 
             break; 
 
-        case GET_DOWN_SAMPLE_RATIO_MODE: 
-            pai->val = vdp->mp->sample_config.down_sample_ratio_mode; 
-            
-            break;
-
         case GET_TRIGGER_POSITION_RATIO: 
             pai->val = vdp->mp->sample_config.trigger_position_ratio;
             break; 
@@ -396,14 +319,6 @@ read_ai (struct aiRecord *pai){
         case GET_NUM_DIVISIONS: 
             pai->val = vdp->mp->sample_config.timebase_configs.num_divisions;
             break; 
-        
-        case GET_TIME_PER_DIVISION: 
-            pai->val = vdp->mp->sample_config.timebase_configs.time_per_division; 
-            break; 
-        
-        case GET_TIME_PER_DIVISION_UNIT: 
-            pai->val = vdp->mp->sample_config.timebase_configs.time_per_division_unit; 
-            break;
         
         case GET_SAMPLE_RATE: 
             pai->val = vdp->mp->sample_config.timebase_configs.sample_rate; 
@@ -419,23 +334,6 @@ read_ai (struct aiRecord *pai){
         
         case GET_ACQUISITION_STATUS:
             pai->val = (float)dataAcquisitionFlag;
-            break;
-
-            
-        case GET_TRIGGER_CHANNEL:
-            if (vdp->mp->trigger_config.channel == TRIGGER_AUX){
-                pai->val = 4;
-            }
-            else if (vdp->mp->trigger_config.channel == NO_CHANNEL){
-                pai->val = 5;
-            }
-            else {
-                pai->val = vdp->mp->trigger_config.channel;
-            }
-            break;
-
-        case GET_TRIGGER_MODE:
-            pai->val = vdp->mp->trigger_config.thresholdMode;
             break;
 
         case GET_TRIGGER_UPPER:
@@ -512,10 +410,6 @@ struct aoRecord* pAnalogOffestRecords[CHANNEL_NUM];
 static long
 init_record_ao (struct aoRecord *pao)
 {    
-    uint32_t result;
-    
-    char* record_name; 
-    int channel_index; 
 
     struct instio  *pinst;
     struct PicoscopeData *vdp;
@@ -561,22 +455,21 @@ init_record_ao (struct aoRecord *pao)
             device_serial_number = (int8_t*)pao->name;
             break; 
 
-        case SET_RESOLUTION: 
-            resolution = (int)pao->val; 
-            break;
-
         case SET_NUM_SAMPLES: 
             vdp->mp->sample_config.num_samples = (int)pao->val; 
             break; 
+
+        case SET_ANALOG_OFFSET: 
+            char* record_name = pao->name;
+            int channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
+            
+            pAnalogOffestRecords[channel_index] = pao; 
+            break;
 
         case SET_DOWN_SAMPLE_RATIO: 
             vdp->mp->sample_config.down_sample_ratio = (int)pao->val; 
             break; 
         
-        case SET_DOWN_SAMPLE_RATIO_MODE: 
-            vdp->mp->sample_config.down_sample_ratio_mode = (int)pao->val; 
-            break; 
-
         case SET_TRIGGER_POSITION_RATIO:
             vdp->mp->sample_config.trigger_position_ratio = (int)pao->val;
             break;
@@ -588,75 +481,6 @@ init_record_ao (struct aoRecord *pao)
             vdp->mp->sample_config.timebase_configs.timebase = 0; 
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = 0; 
             vdp->mp->sample_config.timebase_configs.sample_rate = 0; 
-            break; 
-
-        case SET_TIME_PER_DIVISION_UNIT: 
-            vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pao->val; 
-            break;
-
-        case SET_TIME_PER_DIVISION: 
-            vdp->mp->sample_config.timebase_configs.time_per_division = (int) pao->val; 
-            break; 
-
-        case OPEN_PICOSCOPE: 
-            // On initialization open picoscope with default resolution. 
-            result = open_picoscope(resolution, device_serial_number);
-            if (result != 0) {
-                printf("Error opening picoscope with serial number %s\n", device_serial_number);
-                pao->val = 0; // Cannot connect to picoscope, set PV to OFF. 
-            }
-            break;
-        
-        // Following cases are specific to a channel
-        case SET_COUPLING:    
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
-
-            vdp->mp->channel_configs[channel_index].coupling = (int)pao->val;
-            break;
-
-        case SET_RANGE: 
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
-            
-            vdp->mp->channel_configs[channel_index].range = (int)pao->val;
-            break;
-
-        case SET_ANALOG_OFFSET: 
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
-            
-            pAnalogOffestRecords[channel_index] = pao; 
-
-            double max_analog_offset = 0; 
-            double min_analog_offset = 0; 
-            result = get_analog_offset_limits(vdp->mp->channel_configs[channel_index].range, vdp->mp->channel_configs[channel_index].coupling, &max_analog_offset, &min_analog_offset);
-            
-            pao->drvh = max_analog_offset; 
-            pao->drvl = min_analog_offset;
-            break;
-
-        case SET_BANDWIDTH: 
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
-
-            vdp->mp->channel_configs[channel_index].bandwidth = (int)pao->val;
-            break;
-
-        case SET_CHANNEL_ON:    
-
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
-
-            // On initalization, set all channels off. 
-            result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel);
-            if (result != 0) {
-                printf("Error setting channel %s off.\n", record_name);
-            }
-            break;
-
-        case SET_TRIGGER_CHANNEL:
-            vdp->mp->trigger_config.channel = (enum Channel) pao->val;
             break;
 
         case SET_TRIGGER_UPPER:
@@ -697,60 +521,7 @@ write_ao (struct aoRecord *pao)
 
     switch (vdp->ioType)
     {        
-        case SET_RESOLUTION: 
-            resolution = (int)pao->val; 
-            result = set_device_resolution(resolution); 
-            if (result !=0) {
-                log_message(pao->name, "Error setting device resolution.", result);
-            }
-            break;
         
-        case SET_TIME_PER_DIVISION_UNIT: 
-            int16_t previous_time_per_division_unit = vdp->mp->sample_config.timebase_configs.time_per_division_unit;
-            vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pao->val; 
-
-            result = get_valid_timebase_configs(
-                vdp->mp->sample_config.timebase_configs, 
-                vdp->mp->sample_config.num_samples,
-                &sample_interval, 
-                &timebase, 
-                &sample_rate
-            ); 
-
-            if (result != 0) {
-                log_message(pao->name, "Error setting time per division unit.", result);
-                vdp->mp->sample_config.timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
-                break; 
-            }
-            
-            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
-            vdp->mp->sample_config.timebase_configs.timebase = timebase;
-            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
-            break; 
-
-        case SET_TIME_PER_DIVISION: 
-            double previous_time_per_division = vdp->mp->sample_config.timebase_configs.time_per_division; 
-            vdp->mp->sample_config.timebase_configs.time_per_division = (int) pao->val; 
-
-            result = get_valid_timebase_configs(
-                vdp->mp->sample_config.timebase_configs, 
-                vdp->mp->sample_config.num_samples,
-                &sample_interval, 
-                &timebase, 
-                &sample_rate
-            ); 
-            
-            if (result != 0) {
-                log_message(pao->name, "Error setting time per division.", result);
-                vdp->mp->sample_config.timebase_configs.time_per_division = previous_time_per_division; 
-                break; 
-            }
-
-            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
-            vdp->mp->sample_config.timebase_configs.timebase = timebase;
-            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
-            break; 
-
         case SET_NUM_DIVISIONS: 
             int16_t previous_num_divisions = vdp->mp->sample_config.timebase_configs.num_divisions; 
             vdp->mp->sample_config.timebase_configs.num_divisions = (int) pao->val; 
@@ -802,77 +573,10 @@ write_ao (struct aoRecord *pao)
             vdp->mp->sample_config.down_sample_ratio = (int)pao->val; 
             break; 
         
-        case SET_DOWN_SAMPLE_RATIO_MODE: 
-            vdp->mp->sample_config.down_sample_ratio_mode = (int)pao->val;
-            break; 
-
         case SET_TRIGGER_POSITION_RATIO:
             vdp->mp->sample_config.trigger_position_ratio = (float)pao->val;
             break;  
-            
-        case OPEN_PICOSCOPE: 
-            int pv_value = (int)pao->val; 
-            char message[100]; 
-            
-            if (pv_value == 1){
-                result = open_picoscope(resolution, device_serial_number);
-                if (result != 0) {
-                    sprintf(message, "Error opening picoscope with serial number %s.", device_serial_number);
-                    log_message(pao->name, message, result);
-
-                }
-            } else {
-                result = close_picoscope(); 
-                if (result != 0) {
-                    sprintf(message, "Error closing picoscope with serial number %s.", device_serial_number);
-                    log_message(pao->name, message, result);
-                }
-            }
-            break;
-
-           // Following cases are specific to a channel
-        case SET_COUPLING:    
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
-
-            dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
-    
-            int16_t previous_coupling = vdp->mp->channel_configs[channel_index].coupling; 
-            vdp->mp->channel_configs[channel_index].coupling = (int)pao->val;
-
-            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
-            if (channel_status == 1) {
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
-                // If channel is not succesfully set on, return to previous value 
-                if (result != 0) {
-                    log_message(pao->name, "Error setting coupling.", result);
-                    vdp->mp->channel_configs[channel_index].coupling = previous_coupling;
-                }
-            }
-            break;
-
-        case SET_RANGE:
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
-            
-
-            int16_t previous_range = vdp->mp->channel_configs[channel_index].range; 
-
-            vdp->mp->channel_configs[channel_index].range = (int)pao->val;
-
-            dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
-
-            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
-            if (channel_status == 1){
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
-                // If channel is not succesfully set on, return to previous value 
-                if (result != 0) {
-                    log_message(pao->name, "Error setting voltage range.", result);
-                    vdp->mp->channel_configs[channel_index].range = previous_range;
-                }
-            }
-            break;
-
+        
         case SET_ANALOG_OFFSET: 
             record_name = pao->name;
             channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
@@ -899,102 +603,6 @@ write_ao (struct aoRecord *pao)
                     log_message(pao->name, "Error setting analog offset.", result);
                     vdp->mp->channel_configs[channel_index].analog_offset = previous_analog_offset;
                 }
-            }
-            break;
-
-        case SET_BANDWIDTH: 
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
-            
-            int16_t previous_bandwidth = vdp->mp->channel_configs[channel_index].bandwidth;
-
-            vdp->mp->channel_configs[channel_index].bandwidth = (int)pao->val;
-
-            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
-            if (channel_status == 1) {
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
-                // If channel is not succesfully set on, return to previous value 
-                if (result != 0) {
-                    log_message(pao->name, "Error setting bandwidth.", result);
-                    vdp->mp->channel_configs[channel_index].bandwidth = previous_bandwidth;
-                }
-            }
-            break;
-
-        case SET_CHANNEL_ON:    
-            record_name = pao->name;
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
-
-            pv_value = pao->val;
-
-            // If PV value is 1 (ON) set channel on 
-            if (pv_value == 1) { 
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
-                if (result != 0) {
-                    log_message(pao->name, "Error setting channel on.", result);
-                    pao->val = 0; 
-                }
-            } 
-            else {
-                result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel);
-                if (result != 0) {
-                    log_message(pao->name, "Error setting channel off.", result);
-                    pao->val = 0; 
-                }
-            }    
-
-            // Update timebase configs that are affected by the number of channels on. 
-            result = get_valid_timebase_configs(
-                vdp->mp->sample_config.timebase_configs, 
-                vdp->mp->sample_config.num_samples,
-                &sample_interval, 
-                &timebase, 
-                &sample_rate
-            );                     
-            
-            if (result != 0){
-                log_message(pao->name, "Error setting timebase configurations.", result);
-            }
-
-            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
-            vdp->mp->sample_config.timebase_configs.timebase = timebase;
-            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
-            break;
-
-        case SET_TRIGGER_CHANNEL:
-            vdp->mp->trigger_config.channel = (enum Channel) pao->val;
-            if (vdp->mp->trigger_config.channel == TRIGGER_AUX)
-            {    
-                vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
-                vdp->mp->trigger_config.thresholdMode = LEVEL; 
-                vdp->mp->trigger_config.thresholdLower = 0; 
-                vdp->mp->trigger_config.thresholdUpper = 0; 
-                vdp->mp->trigger_config.thresholdDirection = NONE; 
-                
-                dbProcess((struct dbCommon *)pTriggerType); 
-                dbProcess((struct dbCommon *)pTriggerDirectionFbk);
-                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
-                {
-                    dbProcess((struct dbCommon *)pTriggerFbk[i]);
-                }
-            }
-            else if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
-                vdp->mp->trigger_config.triggerType = NO_TRIGGER;
-                vdp->mp->trigger_config.thresholdMode = LEVEL; 
-                vdp->mp->trigger_config.thresholdLower = 0; 
-                vdp->mp->trigger_config.thresholdUpper = 0; 
-                vdp->mp->trigger_config.thresholdDirection = NONE; 
-
-                dbProcess((struct dbCommon *)pTriggerType); 
-                dbProcess((struct dbCommon *)pTriggerDirectionFbk);
-                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
-                {
-                    dbProcess((struct dbCommon *)pTriggerFbk[i]);
-                }
-            }
-            else { 
-                vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
-                dbProcess((struct dbCommon *)pTriggerType); 
             }
             break;
 
@@ -1071,11 +679,442 @@ inline int find_channel_index_from_record(const char* record_name, struct Channe
     return -1;  // Channel not found
 }
 
+ //-------------------------------- BI/BO INITIALIZATION --------------------------------//
+#include <biRecord.h>
+#include <boRecord.h>
+
+
+struct bioType 
+{
+    char *label; 
+    enum ioFlag flag; 
+    enum ioType ioType; 
+    int onCmd; 
+    int offCmd;
+} BioType [] =
+{
+
+    {"open_picoscope",     isOutput,   OPEN_PICOSCOPE,      1,    0 },
+    {"get_device_status",  isInput,    GET_DEVICE_STATUS,   1,    0 },
+    {"set_channel_on",     isOutput,   SET_CHANNEL_ON,      1,    0 },
+    {"get_channel_status", isInput,    GET_CHANNEL_STATUS,  1,    0 },
+
+};
+
+#define BIO_TYPE_SIZE    (sizeof (BioType) / sizeof (struct bioType))
+
+static enum ioType findBioType(enum ioFlag ioFlag, char *param, int *onCmd, int *offCmd);
+
+struct PicoscopeBioData
+    {   
+        int16_t handle; // Device ID assigned by Picoscope API
+        enum ioType ioType;
+        char *cmdPrefix;
+        char paramLabel[32];
+        int paramValid;
+        int onCmd;
+	    int offCmd;
+        struct PS6000AModule* mp;
+    };
+
+static enum ioType
+findBioType(enum ioFlag ioFlag, char *param,  int *onCmd, int *offCmd)
+{
+	unsigned int i;
+
+	for (i = 0; i < BIO_TYPE_SIZE; i ++){
+		if (strncmp(param, BioType[i].label, strlen(BioType[i].label)) == 0  &&
+		    BioType[i].flag == ioFlag)
+		    	{
+			*onCmd  = BioType[i].onCmd;
+			*offCmd = BioType[i].offCmd;
+			return BioType[i].ioType;
+			}
+	}
+	printf("%s UNKNOWN_IOTYPE\n", param);
+	return UNKNOWN_IOTYPE;
+}
+
+/****************************************************************************************
+ * Binary Output Records - bo
+ ****************************************************************************************/
+
+typedef long (*DEVSUPFUN_BO)(struct boRecord *);
+
+static long init_record_bo(struct boRecord *pbo);
+static long write_bo(struct boRecord *pbo);
+
+struct
+	{
+	long         number;
+	DEVSUPFUN_BO report;
+	DEVSUPFUN_BO init;
+	DEVSUPFUN_BO init_record;
+	DEVSUPFUN_BO get_ioint_info;
+	DEVSUPFUN_BO write_bo;
+	} devPicoscopeBo =
+	{
+		5,
+		NULL,
+		NULL,
+		init_record_bo,
+		NULL,
+		write_bo,
+	};
+
+epicsExportAddress(dset, devPicoscopeBo);
+
+static long
+init_record_bo (struct boRecord *pbo)
+{
+    char *record_name;
+    int channel_index;
+
+    struct instio  *pinst;
+	struct PicoscopeBioData *vdp;
+
+    if (pbo->out.type != INST_IO){
+            printf("%s: INP field type should be INST_IO\n", pbo->name);
+            return(S_db_badField);
+    }
+    pbo->dpvt = calloc(sizeof(struct PicoscopeBioData), 1);
+    if (pbo->dpvt == NULL){
+            printf("%s: Failed to allocated memory\n", pbo->name);
+            return -1;
+    }
+
+    pinst = &(pbo->out.value.instio);
+    vdp = (struct PicoscopeBioData *)pbo->dpvt;
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+        {
+            printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+        }
+
+
+	vdp->ioType = findBioType(isOutput, vdp->paramLabel, &vdp->onCmd, &vdp->offCmd);
+    
+    vdp->mp = PS6000AGetModule("OSC1022-11");
+
+    switch (vdp->ioType) {
+
+        case OPEN_PICOSCOPE: 
+            // On initialization open picoscope with default resolution. 
+            result = open_picoscope(resolution, device_serial_number);
+            if (result != 0) {
+                printf("Error opening picoscope with serial number %s\n", device_serial_number);
+                pbo->val = 0; // Cannot connect to picoscope, set PV to OFF. 
+            }
+            break;
+
+        case SET_CHANNEL_ON:    
+            record_name = pbo->name;
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
+
+            // On initalization, set all channels off. 
+            result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel);
+            if (result != 0) {
+                printf("Error setting channel %s off.\n", record_name);
+            }
+            break;
+
+        default:
+            return -1; 
+    }
+	
+    return 0; 
+}
+
+static long
+write_bo (struct boRecord *pbo)
+{
+	int pv_value;
+    char *record_name;
+    int channel_index;
+    uint32_t timebase = 0; 
+    double sample_interval, sample_rate = 0;    
+	
+    struct PicoscopeBioData *vdp = (struct PicoscopeBioData *)pbo->dpvt;
+    int returnStatus = -1; 
+    int rbv = 1; 
+
+	switch (vdp->ioType){
+        
+        case OPEN_PICOSCOPE: 
+            pv_value = (int)pbo->val; 
+            char message[100]; 
+            
+            if (pv_value == 1){
+                result = open_picoscope(resolution, device_serial_number);
+                if (result != 0) {
+                    sprintf(message, "Error opening picoscope with serial number %s.", device_serial_number);
+                    log_message(pbo->name, message, result);
+                    rbv = 0; 
+                }
+            } else {
+                result = close_picoscope(); 
+                if (result != 0) {
+                    sprintf(message, "Error closing picoscope with serial number %s.", device_serial_number);
+                    log_message(pbo->name, message, result);
+                }
+            }
+            break;
+
+        case SET_CHANNEL_ON:    
+            record_name = pbo->name;
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
+
+            pv_value = pbo->val;
+
+            // If PV value is 1 (ON) set channel on 
+            if (pv_value == 1) { 
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
+                if (result != 0) {
+                    log_message(pbo->name, "Error setting channel on.", result);
+                    pbo->val = 0; 
+                    rbv = 0; 
+                }
+            } 
+            else {
+                result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel);
+                if (result != 0) {
+                    log_message(pbo->name, "Error setting channel off.", result);
+                    pbo->val = 0; 
+                }
+            }    
+            // Update timebase configs that are affected by the number of channels on. 
+            result = get_valid_timebase_configs(
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
+                &sample_interval, 
+                &timebase, 
+                &sample_rate
+            );                     
+            
+            if (result != 0){
+                log_message(pbo->name, "Error setting timebase configurations.", result);
+            }
+
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
+
+            break;
+
+		
+        default:
+			returnStatus = -1;
+			break;
+	}
+
+	if (returnStatus <= 0 ){
+		if (recGblSetSevr(pbo, WRITE_ALARM, INVALID_ALARM)  &&  errVerbose
+				&& (pbo->stat != WRITE_ALARM  ||  pbo->sevr != INVALID_ALARM))
+			printf("%s: Write error (bo)\n\n", pbo->name);
+		return 2;
+	}
+    
+    pbo->rbv = rbv;
+
+	return 0;
+}
+
+
+/****************************************************************************************
+ * Binary Input Records - bi
+ ****************************************************************************************/
+typedef long (*DEVSUPFUN_BI)(struct biRecord *);
+
+static long init_bi(int pass);
+static long init_record_bi(struct biRecord *pbi);
+static long read_bi(struct biRecord *pbi);
+    
+struct 
+{
+    long         number;                          
+    DEVSUPFUN_BI report;
+    long (*init)(int pass);
+    DEVSUPFUN_BI init_record;
+    DEVSUPFUN_BI get_ioint_info;
+    DEVSUPFUN_BI read;
+} devPicoscopeBi =
+	{
+		5,
+		NULL,
+		init_bi,
+		init_record_bi,
+		NULL,
+		read_bi
+	};
+
+epicsExportAddress(dset, devPicoscopeBi);
+
+static long
+init_bi(int pass)
+{
+	if (pass >= 1)
+		return 0;
+	return 0;
+}
+
+static long
+init_record_bi(struct biRecord *pbi)
+{
+    struct instio  *pinst;
+	struct PicoscopeBioData *vdp;
+
+    if (pbi->inp.type != INST_IO){
+            printf("%s: INP field type should be INST_IO\n", pbi->name);
+            return(S_db_badField);
+    }
+    pbi->dpvt = calloc(sizeof(struct PicoscopeBioData), 1);
+    if (pbi->dpvt == (void *)0){
+            printf("%s: Failed to allocated memory\n", pbi->name);
+            return -1;
+    }
+ 
+    pinst = &(pbi->inp.value.instio);
+    vdp = (struct PicoscopeBioData *)pbi->dpvt;
+    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+        {
+            printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+        }
+
+	vdp->ioType = findBioType(isInput, vdp->paramLabel, &vdp->onCmd, &vdp->offCmd);
+    
+    vdp->mp = PS6000AGetModule("OSC1022-11");
+
+	return 0;
+}
+
+static long
+read_bi (struct biRecord *pbi)
+{
+    char *record_name;
+    int channel_index;
+
+	struct PicoscopeBioData *vdp;
+	vdp = (struct PicoscopeBioData *)pbi->dpvt;
+
+    int returnStatus = -1; 
+
+	switch (vdp->ioType)
+		{
+        case GET_DEVICE_STATUS:
+            result = ping_picoscope(); 
+            if ( result != 0 ) {
+                log_message(pbi->name, "Cannot ping device.", result);
+                pbi->val = 0;
+                break;
+            }
+            pbi->val = 1; 
+            pbi->rval = 1; 
+
+            break;
+
+        case GET_CHANNEL_STATUS: 
+            record_name = pbi->name; 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
+
+            int16_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
+            if (channel_status == -1) {
+                log_message(pbi->name, "Cannot get channel status.", channel_status);
+            }
+            pbi->val = channel_status;
+            pbi->rval = channel_status;
+            
+            break; 
+
+		default:
+            returnStatus = -1; 
+		}
+
+	if (returnStatus <= 0){
+		if (recGblSetSevr(pbi, READ_ALARM, INVALID_ALARM)  &&  errVerbose
+		    &&  (pbi->stat != READ_ALARM  ||  pbi->sevr != INVALID_ALARM))
+			printf("%s: Read Error\n", pbi->name);
+		return 2;
+	}
+
+	return 0;
+}
+
+
+
+ //------------------------------------- END BI/BO --------------------------------------//
+
+
+
+ //------------------------------ MBBI/MBBO INITIALIZATION ------------------------------//
+
+struct mbbioType
+{
+	char *label;
+	enum ioFlag flag;
+	enum ioType ioType;
+    char *cmdp;
+} MbbioType[] =
+{
+		/* string			              in/out		 function		              command */
+        {"set_resolution",                isOutput,     SET_RESOLUTION,                 ""},
+        {"get_resolution",                isInput,      GET_RESOLUTION,                 ""},
+        {"set_down_sampling_ratio_mode",  isOutput,     SET_DOWN_SAMPLE_RATIO_MODE,     ""},
+        {"get_down_sampling_ratio_mode",  isInput,      GET_DOWN_SAMPLE_RATIO_MODE,     ""},
+        {"set_trigger_type",              isOutput,     SET_TRIGGER_TYPE,               ""},
+        {"get_trigger_type",              isInput,      GET_TRIGGER_TYPE,               ""},
+        {"set_trigger_direction",         isOutput,     SET_TRIGGER_DIRECTION,          ""},
+        {"get_trigger_direction",         isInput,      GET_TRIGGER_DIRECTION,          ""}, 
+        {"set_time_per_division_unit",    isOutput,     SET_TIME_PER_DIVISION_UNIT,     ""},
+        {"get_time_per_division_unit",    isInput,      GET_TIME_PER_DIVISION_UNIT,     ""},
+        {"set_time_per_division",         isOutput,     SET_TIME_PER_DIVISION,          ""},
+        {"get_time_per_division",         isInput,      GET_TIME_PER_DIVISION,          ""},
+        {"set_trigger_channel",           isOutput,     SET_TRIGGER_CHANNEL,            ""},       
+        {"get_trigger_channel",           isInput,      GET_TRIGGER_CHANNEL,            ""},       
+        {"get_trigger_mode",              isInput,      GET_TRIGGER_MODE,               ""},
+        {"set_coupling",                  isOutput,     SET_COUPLING,                   ""},
+        {"get_coupling",                  isInput,      GET_COUPLING,                   ""},
+        {"set_range",                     isOutput,     SET_RANGE,                      ""}, 
+        {"get_range",                     isInput,      GET_RANGE,                      ""},
+        {"set_bandwidth",                 isOutput,     SET_BANDWIDTH,                  ""}, 
+        {"get_bandwidth",                 isInput,      GET_BANDWIDTH,                  ""}, 
+
+};
+
+
+#define MBBIO_TYPE_SIZE    (sizeof (MbbioType) / sizeof (struct mbbioType))
+
+struct PicoscopeMbbioData
+    {   
+        int16_t handle; // Device ID assigned by Picoscope API
+        enum ioType ioType;
+        char *cmdPrefix;
+        char paramLabel[32];
+        int paramValid;
+        struct PS6000AModule* mp;
+    };
+
+static enum ioType
+findMbbioType(enum ioFlag ioFlag, char *param, char **cmdString)
+{
+	unsigned int i;
+
+	for (i = 0; i < MBBIO_TYPE_SIZE; i ++){
+		if (strncmp(param, MbbioType[i].label,strlen(MbbioType[i].label)) == 0  &&
+				MbbioType[i].flag == ioFlag)
+		{
+			*cmdString = MbbioType[i].cmdp;
+			return MbbioType[i].ioType;
+		}
+	}
+
+	return UNKNOWN_IOTYPE;
+}
+
 
 /****************************************************************************************
  * Multi-Bit Binary Output Records - mbbo
  ****************************************************************************************/
-
 
 typedef long (*DEVSUPFUN_MBBO)(struct mbboRecord*);
 
@@ -1106,16 +1145,19 @@ epicsExportAddress(dset, devPicoscopeMbbo);
 
 static long
 init_record_mbbo (struct mbboRecord *pmbbo)
-{    
+{ 
+    char* record_name; 
+    int channel_index; 
+
     struct instio  *pinst;
-    struct PicoscopeData *vdp;
+    struct PicoscopeMbbioData *vdp;
 
     if (pmbbo->out.type != INST_IO)
     {
         errlogPrintf("%s: INP field type should be INST_IO\n", pmbbo->name);
         return(S_db_badField);
     }
-    pmbbo->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+    pmbbo->dpvt = calloc(sizeof(struct PicoscopeMbbioData), 1);
     if (pmbbo->dpvt == (void *)0)
     {
         errlogPrintf("%s: Failed to allocated memory\n", pmbbo->name);
@@ -1123,7 +1165,7 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     }
   
     pinst = &(pmbbo->out.value.instio);
-    vdp = (struct PicoscopeData *)pmbbo->dpvt;
+    vdp = (struct PicoscopeMbbioData *)pmbbo->dpvt;
 
     if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
         {
@@ -1131,7 +1173,7 @@ init_record_mbbo (struct mbboRecord *pmbbo)
             return -1;
         }
 
-    vdp->ioType = findAioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
+    vdp->ioType = findMbbioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
 
     if (vdp->ioType == UNKNOWN_IOTYPE)
     {
@@ -1143,17 +1185,53 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     pmbbo->udf = FALSE;
 
     switch (vdp->ioType)
-    {        
+    {      
+        case SET_COUPLING:    
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
+            
+            vdp->mp->channel_configs[channel_index].coupling = (int)pmbbo->rval;
+            break;
+
+        case SET_RANGE: 
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
+            
+            vdp->mp->channel_configs[channel_index].range = (int)pmbbo->rval;
+            break;
+        
+        case SET_BANDWIDTH: 
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
+
+            vdp->mp->channel_configs[channel_index].bandwidth = (int)pmbbo->rval;
+            break;
+
+        case SET_TIME_PER_DIVISION: 
+            vdp->mp->sample_config.timebase_configs.time_per_division = (int) pmbbo->rval; 
+            break; 
+
+        case SET_TIME_PER_DIVISION_UNIT: 
+            vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pmbbo->val; 
+            break;
+
+        case SET_DOWN_SAMPLE_RATIO_MODE: 
+            vdp->mp->sample_config.down_sample_ratio_mode = (int)pmbbo->rval;
+            break; 
+
+        case SET_TRIGGER_CHANNEL:
+           vdp->mp->trigger_config.channel  = (enum Channel) pmbbo->val;
+           break;
 
         case SET_TRIGGER_TYPE: 
             vdp->mp->trigger_config.triggerType = (int) pmbbo->rval; 
-            printf("Trigger type init %d\n", vdp->mp->trigger_config.triggerType);
             break; 
         
         case SET_TRIGGER_DIRECTION:
             vdp->mp->trigger_config.thresholdDirection = (enum ThresholdDirection) pmbbo->val;
             pTriggerDirection = pmbbo;
             break;
+
 
         default:
             return 0;
@@ -1165,14 +1243,181 @@ init_record_mbbo (struct mbboRecord *pmbbo)
 
 static long
 write_mbbo (struct mbboRecord *pmbbo)
-{
-    struct PicoscopeData *vdp = (struct PicoscopeData *)pmbbo->dpvt;
+{   
+    char* record_name; 
+    int channel_index; 
+    uint32_t timebase = 0; 
+    double sample_interval, sample_rate = 0; 
+
+    struct PicoscopeMbbioData *vdp = (struct PicoscopeMbbioData *)pmbbo->dpvt;
     int returnState = 0; 
 
     switch (vdp->ioType)
     {        
+
+        case SET_RESOLUTION: 
+            int16_t resolution = (int)pmbbo->rval; 
+            result = set_device_resolution(resolution); 
+            if (result !=0) {
+                log_message(pmbbo->name, "Error setting device resolution.", result);
+            }
+            break;  
+
+        case SET_COUPLING:    
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
+
+            dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
+    
+            int16_t previous_coupling = vdp->mp->channel_configs[channel_index].coupling; 
+            vdp->mp->channel_configs[channel_index].coupling = (int)pmbbo->rval;
+
+            uint32_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
+            if (channel_status == 1) {
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
+                // If channel is not succesfully set on, return to previous value 
+                if (result != 0) {
+                    log_message(pmbbo->name, "Error setting coupling.", result);
+                    vdp->mp->channel_configs[channel_index].coupling = previous_coupling;
+                }
+            }
+            break;
+
+        case SET_RANGE:
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
+
+            int16_t previous_range = vdp->mp->channel_configs[channel_index].range; 
+
+            vdp->mp->channel_configs[channel_index].range = (int)pmbbo->rval;
+
+            dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
+
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
+            if (channel_status == 1){
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
+                // If channel is not succesfully set on, return to previous value 
+                if (result != 0) {
+                    log_message(pmbbo->name, "Error setting voltage range.", result);
+                    vdp->mp->channel_configs[channel_index].range = previous_range;
+                }
+            }
+            break;
+
+        
+        case SET_BANDWIDTH: 
+            record_name = pmbbo->name;
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
+            
+            int16_t previous_bandwidth = vdp->mp->channel_configs[channel_index].bandwidth;
+
+            vdp->mp->channel_configs[channel_index].bandwidth = (int)pmbbo->rval;
+
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
+            if (channel_status == 1) {
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
+                // If channel is not succesfully set on, return to previous value 
+                if (result != 0) {
+                    log_message(pmbbo->name, "Error setting bandwidth.", result);
+                    vdp->mp->channel_configs[channel_index].bandwidth = previous_bandwidth;
+                }
+            }
+            break;
+
+        case SET_TIME_PER_DIVISION: 
+            double previous_time_per_division = vdp->mp->sample_config.timebase_configs.time_per_division; 
+            vdp->mp->sample_config.timebase_configs.time_per_division = (int) pmbbo->rval; 
+
+            result = get_valid_timebase_configs(
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
+                &sample_interval, 
+                &timebase, 
+                &sample_rate
+            ); 
+            
+            if (result != 0) {
+                log_message(pmbbo->name, "Error setting time per division.", result);
+                vdp->mp->sample_config.timebase_configs.time_per_division = previous_time_per_division; 
+                break; 
+            }
+
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
+            break; 
+
+        case SET_TIME_PER_DIVISION_UNIT: 
+            int16_t previous_time_per_division_unit = vdp->mp->sample_config.timebase_configs.time_per_division_unit;
+            vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pmbbo->val; 
+
+            result = get_valid_timebase_configs(
+                vdp->mp->sample_config.timebase_configs, 
+                vdp->mp->sample_config.num_samples,
+                &sample_interval, 
+                &timebase, 
+                &sample_rate
+            ); 
+
+            if (result != 0) {
+                log_message(pmbbo->name, "Error setting time per division unit.", result);
+                vdp->mp->sample_config.timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
+                break; 
+            }
+
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
+            break; 
+
+
+        case SET_DOWN_SAMPLE_RATIO_MODE: 
+            vdp->mp->sample_config.down_sample_ratio_mode = (int)pmbbo->rval;
+            break;
+        
+        case SET_TRIGGER_CHANNEL:
+            vdp->mp->trigger_config.channel = (enum Channel) pmbbo->rval;
+            if (vdp->mp->trigger_config.channel == TRIGGER_AUX)
+            {    
+                vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
+                vdp->mp->trigger_config.thresholdMode = LEVEL; 
+                vdp->mp->trigger_config.thresholdLower = 0; 
+                vdp->mp->trigger_config.thresholdUpper = 0; 
+                vdp->mp->trigger_config.thresholdDirection = NONE; 
+                
+                dbProcess((struct dbCommon *)pTriggerType); 
+                dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+                dbProcess((struct dbCommon *)pTriggerModeFbk);
+
+                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+                {
+                    dbProcess((struct dbCommon *)pTriggerFbk[i]);
+                }
+            }
+            else if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
+                vdp->mp->trigger_config.triggerType = NO_TRIGGER;
+                vdp->mp->trigger_config.thresholdMode = LEVEL; 
+                vdp->mp->trigger_config.thresholdLower = 0; 
+                vdp->mp->trigger_config.thresholdUpper = 0; 
+                vdp->mp->trigger_config.thresholdDirection = NONE; 
+
+                dbProcess((struct dbCommon *)pTriggerType); 
+                dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+                dbProcess((struct dbCommon *)pTriggerModeFbk);
+
+                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+                {
+                    dbProcess((struct dbCommon *)pTriggerFbk[i]);
+                }
+            }
+            else { 
+                vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
+                dbProcess((struct dbCommon *)pTriggerType); 
+            }
+
+            break;
+
         case SET_TRIGGER_TYPE: 
-            printf("set trigger type %d\n", (int)pmbbo->val); 
             vdp->mp->trigger_config.triggerType = (int)pmbbo->val; 
             
             if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
@@ -1182,8 +1427,11 @@ write_mbbo (struct mbboRecord *pmbbo)
                 vdp->mp->trigger_config.thresholdMode = LEVEL;             
                 vdp->mp->trigger_config.thresholdLower = 0; 
                 vdp->mp->trigger_config.thresholdUpper = 0; 
-    
+                
+                dbProcess((struct dbCommon *)pTriggerChannelFbk);
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+                dbProcess((struct dbCommon *)pTriggerModeFbk);
+
                 for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
                     {
                         dbProcess((struct dbCommon *)pTriggerFbk[i]);
@@ -1195,8 +1443,12 @@ write_mbbo (struct mbboRecord *pmbbo)
                     vdp->mp->trigger_config.channel = TRIGGER_AUX;
                 } 
                 vdp->mp->trigger_config.thresholdMode = LEVEL;         
-                vdp->mp->trigger_config.thresholdLower = 0;     
+                vdp->mp->trigger_config.thresholdLower = 0;    
+
+                dbProcess((struct dbCommon *)pTriggerChannelFbk);
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
+                dbProcess((struct dbCommon *)pTriggerModeFbk);
+
                 for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
                     {
                         dbProcess((struct dbCommon *)pTriggerFbk[i]);
@@ -1282,7 +1534,7 @@ static long
 init_record_mbbi(struct mbbiRecord * pmbbi)
 {
     struct instio  *pinst;
-    struct PicoscopeData *vdp;
+    struct PicoscopeMbbioData *vdp;
 
     if (pmbbi->inp.type != INST_IO)
     {
@@ -1290,7 +1542,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
         return(S_db_badField);
     }
     
-    pmbbi->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+    pmbbi->dpvt = calloc(sizeof(struct PicoscopeMbbioData), 1);
     
     if (pmbbi->dpvt == (void *)0)
     {
@@ -1299,7 +1551,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
     }
     
     pinst = &(pmbbi->inp.value.instio);
-    vdp = (struct PicoscopeData *)pmbbi->dpvt;
+    vdp = (struct PicoscopeMbbioData *)pmbbi->dpvt;
 
     if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
         {
@@ -1307,7 +1559,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
             return -1;
         }
 
-    vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
+    vdp->ioType = findMbbioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
     if (vdp->ioType == UNKNOWN_IOTYPE){
         printf("%s: Invalid type: \"@%s\"\n", pmbbi->name, vdp->paramLabel);
         return(S_db_badField);
@@ -1318,6 +1570,20 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
 
     switch (vdp->ioType) {
 
+        case GET_RESOLUTION:
+            int16_t resolution; 
+            get_resolution(&resolution);
+            pmbbi->val = resolution;  
+            break; 
+
+        case GET_TRIGGER_CHANNEL:
+            pTriggerChannelFbk = pmbbi;
+            break;
+
+        case GET_TRIGGER_MODE:
+            pTriggerModeFbk = pmbbi;
+            break;
+
         case GET_TRIGGER_TYPE: 
             pTriggerType = pmbbi;
             break;  
@@ -1325,7 +1591,6 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
         case GET_TRIGGER_DIRECTION:
             pTriggerDirectionFbk = pmbbi; 
             break;  
-
         default: 
             return 0; 
     } 
@@ -1335,11 +1600,65 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
 
 static long
 read_mbbi(struct mbbiRecord *pmbbi){
-
-    struct PicoscopeData *vdp = (struct PicoscopeData *)pmbbi->dpvt;
+    
+    char* record_name; 
+    int channel_index; 
+    
+    struct PicoscopeMbbioData *vdp = (struct PicoscopeMbbioData *)pmbbi->dpvt;
 
     switch (vdp->ioType)
     {
+        case GET_RESOLUTION: 
+            int16_t resolution;
+            uint32_t result = get_resolution(&resolution);
+            if (result != 0) {
+                log_message(pmbbi->name, "Error getting device resolution.", result); 
+                break; 
+            }
+            pmbbi->rval = resolution;  
+            break; 
+        
+        case GET_COUPLING: 
+            record_name = pmbbi->name; 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
+
+            pmbbi->rval = vdp->mp->channel_configs[channel_index].coupling;
+            break; 
+
+        case GET_RANGE: 
+            record_name = pmbbi->name; 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
+
+            pmbbi->rval = vdp->mp->channel_configs[channel_index].range; 
+            break; 
+
+        case GET_BANDWIDTH: 
+            record_name = pmbbi->name; 
+            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
+
+            pmbbi->rval = vdp->mp->channel_configs[channel_index].bandwidth; 
+            break; 
+
+        case GET_TRIGGER_MODE:
+            pmbbi->val = vdp->mp->trigger_config.thresholdMode;
+            break;
+
+        case GET_TRIGGER_CHANNEL:
+            pmbbi->rval = vdp->mp->trigger_config.channel;
+            break;
+
+        case GET_TIME_PER_DIVISION: 
+            pmbbi->rval = vdp->mp->sample_config.timebase_configs.time_per_division; 
+            break; 
+
+        case GET_TIME_PER_DIVISION_UNIT: 
+            pmbbi->rval = vdp->mp->sample_config.timebase_configs.time_per_division_unit; 
+            break;
+
+        case GET_DOWN_SAMPLE_RATIO_MODE: 
+            pmbbi->rval = vdp->mp->sample_config.down_sample_ratio_mode; 
+            break;
+        
         case GET_TRIGGER_DIRECTION:
             if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
                 pmbbi->rval = -1; // no trigger direction
@@ -1356,8 +1675,11 @@ read_mbbi(struct mbbiRecord *pmbbi){
         default:
             return 0;
     }
+
     return 0; 
-}    
+}   
+
+ //------------------------------ END MBBI/MBBO  ------------------------------//
 
 
 /****************************************************************************************
