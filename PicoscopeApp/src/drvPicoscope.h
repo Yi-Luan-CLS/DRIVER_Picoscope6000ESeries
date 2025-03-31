@@ -2,9 +2,13 @@
 #include <epicsEvent.h>
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
+#include <aiRecord.h>
 
-typedef struct PS6000AModule {
+typedef struct PS6000AModule 
+{
     char* serial_num;
+    int16_t handle;
+
 	epicsEventId triggerReadyEvent;
     int16_t* waveform[CHANNEL_NUM];
 
@@ -12,45 +16,51 @@ typedef struct PS6000AModule {
     struct ChannelConfigs channel_configs[CHANNEL_NUM];
     struct TriggerConfigs trigger_config;
 
+    // Stored PVs for processing at specific time 
+    struct aiRecord* pTriggerFbk[2];
+    
     uint64_t sample_collected;
-}PS6000AModule;
+
+} PS6000AModule;
 
 PS6000AModule* PS6000ACreateModule(char* serial_num);
 
 PS6000AModule* PS6000AGetModule(char* serial_num);
 
-uint32_t get_device_info(int8_t** device_info);
+uint32_t get_device_info(int8_t** device_info, int16_t handle);
 
-uint32_t open_picoscope(int16_t resolution, int8_t* serial_num); 
+uint32_t open_picoscope(int16_t resolution, char* serial_num, int16_t* handle); 
 
-uint32_t ping_picoscope();
+uint32_t ping_picoscope(int16_t handle);
 
-uint32_t set_device_resolution(int16_t resolution);
+uint32_t set_device_resolution(int16_t resolution, int16_t handle);
 
-uint32_t get_resolution(int16_t* resolution);
+uint32_t get_resolution(int16_t* resolution, int16_t handle);
 
-uint32_t close_picoscope();
+uint32_t close_picoscope(int16_t handle);
 
-uint32_t set_channel_on(struct ChannelConfigs* channel);
+uint32_t set_channel_on(struct ChannelConfigs* channel, int16_t handle);
 
-uint32_t set_channel_off(int channel);
+uint32_t set_channel_off(int channel, int16_t handle);
 
 uint32_t get_channel_status(int16_t channel);
 
 
 uint32_t get_valid_timebase_configs(
     struct TimebaseConfigs timebase_configs, 
-    uint64_t num_samples,   
+    uint64_t num_samples,  
+    int16_t handle,  
     double* sample_interval,
     uint32_t* timebase, 
     double* sample_rate
     );  
 
 uint32_t get_analog_offset_limits(
-    int16_t range, 
-    int16_t coupling, 
+    struct ChannelConfigs channel, 
+    int16_t handle,
     double* max_analog_offset,
-    double* min_analog_offset);
+    double* min_analog_offset
+);
 
 uint32_t is_Channel_On(enum Channel channel);
 
@@ -75,11 +85,12 @@ uint32_t get_analogue_offset_limits(
 
 uint32_t validate_sample_interval(
     double requested_time_interval, 
+    int16_t handle, 
     uint32_t* timebase, 
     double* available_time_interval
     );
 
-uint32_t stop_capturing();
+uint32_t stop_capturing(int16_t handle);
 
 
 #endif

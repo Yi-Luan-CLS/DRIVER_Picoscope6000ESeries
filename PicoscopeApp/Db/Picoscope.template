@@ -8,7 +8,7 @@ record(bo, "$(OSC):CH$(channel):ON") {
     field(ZNAM, "OFF")        
     field(ONAM, "ON") 
 
-    field(OUT, "@L:set_channel_on")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_channel_on")
     field(FLNK,  "$(OSC):CH$(channel):fanout")
 }
 
@@ -28,7 +28,7 @@ record(bi, "$(OSC):CH$(channel):ON:fbk") {
     field(ZNAM, "OFF")        
     field(ONAM, "ON") 
 
-    field(INP, "@L:get_channel_status")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_channel_status")
 }
 
 record(mbbo, "$(OSC):CH$(channel):coupling") {
@@ -40,7 +40,7 @@ record(mbbo, "$(OSC):CH$(channel):coupling") {
     field(TWST, "DC_50_OHM")     field(TWVL, "50")
     
     field(RVAL, "1")   
-    field(OUT, "@L:set_coupling")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_coupling")
     field(FLNK, "$(OSC):CH$(channel):coupling:fbk")
 }
 
@@ -53,7 +53,7 @@ record(mbbi, "$(OSC):CH$(channel):coupling:fbk") {
     field(TWST, "DC_50_OHM")     field(TWVL, "50")
 
     field(VAL, "1")
-    field(INP, "@L:get_coupling")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_coupling")
 }
 
 record(mbbo, "$(OSC):CH$(channel):range") {
@@ -73,7 +73,7 @@ record(mbbo, "$(OSC):CH$(channel):range") {
     field(TEST, "20V")   field(TEVL, "10")
 
     field(VAL, "0")
-    field(OUT, "@L:set_range")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_range")
     field(FLNK, "$(OSC):CH$(channel):range:fbk" )   
 }
 
@@ -93,7 +93,7 @@ record(mbbi, "$(OSC):CH$(channel):range:fbk") {
     field(NIST, "10V")   field(NIVL, "9")
     field(TEST, "20V")   field(TEVL, "10")
 
-    field(INP, "@L:get_range")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_range")
 }
 
 record(mbbo, "$(OSC):CH$(channel):bandwidth") {
@@ -103,7 +103,7 @@ record(mbbo, "$(OSC):CH$(channel):bandwidth") {
     field(ZRST, "BW_FULL")        field(ZRVL, "0")
     field(ONST, "BW_20MHZ")       field(ONVL, "20000000")
     
-    field(OUT, "@L:set_bandwidth")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_bandwidth")
     field(FLNK, "$(OSC):CH$(channel):bandwidth:fbk")
 }
 
@@ -114,7 +114,7 @@ record(mbbi, "$(OSC):CH$(channel):bandwidth:fbk") {
     field(ZRST, "BW_FULL")        field(ZRVL, "0")
     field(ONST, "BW_20MHZ")       field(ONVL, "20000000")
     
-    field(INP, "@L:get_bandwidth")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_bandwidth")
 }
 
 record(ao, "$(OSC):CH$(channel):analog_offset") {
@@ -122,7 +122,7 @@ record(ao, "$(OSC):CH$(channel):analog_offset") {
     field(DESC, "Voltage added to input channel.")
     field(EGU, "Volts")
     field(VAL, "0.0")
-    field(OUT, "@L:set_analog_offset")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_analog_offset")
     field(FLNK,"$(OSC):CH$(channel):analog_offset:fbk")
 }
 
@@ -130,7 +130,7 @@ record(ai, "$(OSC):CH$(channel):analog_offset:fbk") {
     field(DTYP, "Picoscope")
     field(DESC, "Actual voltage added to input channel.")
     field(EGU, "Volts")
-    field(INP, "@L:get_analog_offset")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_analog_offset")
 }
 
 record(waveform, "$(OSC):CH$(channel):waveform"){
@@ -140,5 +140,5 @@ record(waveform, "$(OSC):CH$(channel):waveform"){
 #    field(NELM, "1073741696")
     field(NELM, "1000000")
     field(FTVL, "SHORT")
-    field(INP, "@L:update_waveform")
+    field(INP, "@S:$(SERIAL_NUM) @L:update_waveform")
 }

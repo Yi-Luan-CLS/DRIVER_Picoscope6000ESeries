@@ -144,6 +144,7 @@ static struct aioType
 
 struct PicoscopeData
     {
+        char serial_num[10]; 
         enum ioType ioType;
         char *cmdPrefix;
         char paramLabel[32];
@@ -170,10 +171,10 @@ struct waveformRecord* pWaveformStart;
 struct waveformRecord* pWaveformStop;
 
 int
-format_device_support_function(char *string, char *paramName)
-{
-        if (sscanf(string, "L:%s",paramName) != 1)
-                return -1;
+format_device_support_function(char *string, char *paramName, char *serialNum)
+{       
+        if (sscanf(string, "S:%s @L:%s", serialNum, paramName) != 2)
+            return -1;
         return 0;
 }
 
@@ -196,7 +197,6 @@ mbbiRecord* pTriggerType;
 mbbiRecord* pTriggerChannelFbk;
 mbbiRecord* pTriggerModeFbk;
 
-aiRecord* pTriggerFbk[2];
 
 typedef long (*DEVSUPFUN_AI)(struct aiRecord *);
 
@@ -250,29 +250,28 @@ init_record_ai (struct aiRecord *pai)
     pinst = &(pai->inp.value.instio);
     vdp = (struct PicoscopeData *)pai->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0){
+    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0){
         printf("Error when getting function name: %s\n",vdp->paramLabel);
         return -1;
     }
+    vdp->mp = PS6000AGetModule(vdp->serial_num);
 
     vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
-
     if (vdp->ioType == UNKNOWN_IOTYPE){
         // errlogPrintf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
         printf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
         return(S_db_badField);
     }
-    vdp->mp = PS6000AGetModule("OSC1022-11");
 
     switch(vdp->ioType)
     {
 
         case GET_TRIGGER_UPPER:
-            pTriggerFbk[0] = pai;
+            vdp->mp->pTriggerFbk[0] = pai;
             break;
 
         case GET_TRIGGER_LOWER:
-            pTriggerFbk[1] = pai;
+            vdp->mp->pTriggerFbk[1] = pai;
             break;
 
         default:
@@ -291,7 +290,6 @@ read_ai (struct aiRecord *pai){
     int channel_index; 
 
     struct PicoscopeData *vdp = (struct PicoscopeData *)pai->dpvt;
-    // vdp->mp = PS6000AGetModule("OSC1022-11");
 
     switch (vdp->ioType)
     {
@@ -404,7 +402,6 @@ struct
 
 epicsExportAddress(dset, devPicoscopeAo);
 
-int8_t* device_serial_number; 
 struct aoRecord* pAnalogOffestRecords[CHANNEL_NUM];
 
 static long
@@ -429,11 +426,12 @@ init_record_ao (struct aoRecord *pao)
     pinst = &(pao->out.value.instio);
     vdp = (struct PicoscopeData *)pao->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
         }
+    vdp->mp = PS6000AGetModule(vdp->serial_num);
 
     vdp->ioType = findAioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
 
@@ -442,7 +440,6 @@ init_record_ao (struct aoRecord *pao)
         errlogPrintf("%s: Invalid type: \"%s\"\n", pao->name, vdp->paramLabel);
         return(S_db_badField);
     }
-    vdp->mp = PS6000AGetModule("OSC1022-11");
     pao->udf = FALSE;
     vdp->mp->channel_configs[0].channel = CHANNEL_A;
     vdp->mp->channel_configs[1].channel = CHANNEL_B;
@@ -451,10 +448,6 @@ init_record_ao (struct aoRecord *pao)
 
     switch (vdp->ioType)    
     {    
-        case DEVICE_TO_OPEN: 
-            device_serial_number = (int8_t*)pao->name;
-            break; 
-
         case SET_NUM_SAMPLES: 
             vdp->mp->sample_config.num_samples = (int)pao->val; 
             break; 
@@ -529,6 +522,7 @@ write_ao (struct aoRecord *pao)
             result = get_valid_timebase_configs(
                 vdp->mp->sample_config.timebase_configs, 
                 vdp->mp->sample_config.num_samples,
+                vdp->mp->handle,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -553,6 +547,7 @@ write_ao (struct aoRecord *pao)
              result = get_valid_timebase_configs(
                 vdp->mp->sample_config.timebase_configs, 
                 vdp->mp->sample_config.num_samples,
+                vdp->mp->handle,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -585,7 +580,12 @@ write_ao (struct aoRecord *pao)
 
             double max_analog_offset = 0; 
             double min_analog_offset = 0; 
-            result = get_analog_offset_limits(vdp->mp->channel_configs[channel_index].range, vdp->mp->channel_configs[channel_index].coupling, &max_analog_offset, &min_analog_offset);
+            result = get_analog_offset_limits(
+                vdp->mp->channel_configs[channel_index], 
+                vdp->mp->handle,
+                &max_analog_offset, 
+                &min_analog_offset
+            );
             if (result != 0) {
                 log_message(pao->name, "Error getting analog offset limits.", result);
             }
@@ -597,7 +597,7 @@ write_ao (struct aoRecord *pao)
             
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index], vdp->mp->handle);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pao->name, "Error setting analog offset.", result);
@@ -707,7 +707,9 @@ static enum ioType findBioType(enum ioFlag ioFlag, char *param, int *onCmd, int 
 
 struct PicoscopeBioData
     {   
-        int16_t handle; // Device ID assigned by Picoscope API
+        char serial_num[10];
+        int16_t handle; 
+
         enum ioType ioType;
         char *cmdPrefix;
         char paramLabel[32];
@@ -785,26 +787,32 @@ init_record_bo (struct boRecord *pbo)
 
     pinst = &(pbo->out.value.instio);
     vdp = (struct PicoscopeBioData *)pbo->dpvt;
-    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+   
+
+    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
         }
-
+    vdp->mp = PS6000AGetModule(vdp->serial_num);
 
 	vdp->ioType = findBioType(isOutput, vdp->paramLabel, &vdp->onCmd, &vdp->offCmd);
     
-    vdp->mp = PS6000AGetModule("OSC1022-11");
 
     switch (vdp->ioType) {
 
         case OPEN_PICOSCOPE: 
             // On initialization open picoscope with default resolution. 
-            result = open_picoscope(resolution, device_serial_number);
+            int16_t handle = 0; 
+            result = open_picoscope(resolution, vdp->serial_num, &handle);
             if (result != 0) {
-                printf("Error opening picoscope with serial number %s\n", device_serial_number);
+                printf("Error opening picoscope with serial number %s\n", vdp->serial_num);
                 pbo->val = 0; // Cannot connect to picoscope, set PV to OFF. 
             }
+
+            vdp->mp->handle = handle; 
+            printf("Handle: %d\n", vdp->mp->handle);
+
             break;
 
         case SET_CHANNEL_ON:    
@@ -812,7 +820,7 @@ init_record_bo (struct boRecord *pbo)
             channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
             // On initalization, set all channels off. 
-            result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel);
+            result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel, vdp->mp->handle);
             if (result != 0) {
                 printf("Error setting channel %s off.\n", record_name);
             }
@@ -845,18 +853,25 @@ write_bo (struct boRecord *pbo)
             char message[100]; 
             
             if (pv_value == 1){
-                result = open_picoscope(resolution, device_serial_number);
+                int16_t handle; 
+                result = open_picoscope(resolution, vdp->serial_num, &handle);
                 if (result != 0) {
-                    sprintf(message, "Error opening picoscope with serial number %s.", device_serial_number);
+                    sprintf(message, "Error opening picoscope with serial number %s.", vdp->serial_num);
                     log_message(pbo->name, message, result);
                     rbv = 0; 
-                }
+                }  
+                vdp->mp->handle = handle; // Update
+                printf("Handle: %d\n", vdp->mp->handle);
+
             } else {
-                result = close_picoscope(); 
+                printf("Before close Handle: %d\n", vdp->mp->handle);
+
+                result = close_picoscope(vdp->mp->handle); 
                 if (result != 0) {
-                    sprintf(message, "Error closing picoscope with serial number %s.", device_serial_number);
+                    sprintf(message, "Error closing picoscope with serial number %s.", vdp->serial_num);
                     log_message(pbo->name, message, result);
-                }
+                }   
+                printf("After close Handle: %d\n", vdp->mp->handle);
             }
             break;
 
@@ -868,7 +883,7 @@ write_bo (struct boRecord *pbo)
 
             // If PV value is 1 (ON) set channel on 
             if (pv_value == 1) { 
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index], vdp->mp->handle);
                 if (result != 0) {
                     log_message(pbo->name, "Error setting channel on.", result);
                     pbo->val = 0; 
@@ -876,7 +891,7 @@ write_bo (struct boRecord *pbo)
                 }
             } 
             else {
-                result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel);
+                result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel, vdp->mp->handle);
                 if (result != 0) {
                     log_message(pbo->name, "Error setting channel off.", result);
                     pbo->val = 0; 
@@ -886,6 +901,7 @@ write_bo (struct boRecord *pbo)
             result = get_valid_timebase_configs(
                 vdp->mp->sample_config.timebase_configs, 
                 vdp->mp->sample_config.num_samples,
+                vdp->mp->handle,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -975,15 +991,16 @@ init_record_bi(struct biRecord *pbi)
  
     pinst = &(pbi->inp.value.instio);
     vdp = (struct PicoscopeBioData *)pbi->dpvt;
-    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+
+    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
         }
+    vdp->mp = PS6000AGetModule(vdp->serial_num);
 
 	vdp->ioType = findBioType(isInput, vdp->paramLabel, &vdp->onCmd, &vdp->offCmd);
     
-    vdp->mp = PS6000AGetModule("OSC1022-11");
 
 	return 0;
 }
@@ -1002,7 +1019,7 @@ read_bi (struct biRecord *pbi)
 	switch (vdp->ioType)
 		{
         case GET_DEVICE_STATUS:
-            result = ping_picoscope(); 
+            result = ping_picoscope(vdp->mp->handle); 
             if ( result != 0 ) {
                 log_message(pbi->name, "Cannot ping device.", result);
                 pbi->val = 0;
@@ -1086,7 +1103,7 @@ struct mbbioType
 
 struct PicoscopeMbbioData
     {   
-        int16_t handle; // Device ID assigned by Picoscope API
+        char serial_num[10];
         enum ioType ioType;
         char *cmdPrefix;
         char paramLabel[32];
@@ -1167,11 +1184,12 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     pinst = &(pmbbo->out.value.instio);
     vdp = (struct PicoscopeMbbioData *)pmbbo->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
         }
+    vdp->mp = PS6000AGetModule(vdp->serial_num);
 
     vdp->ioType = findMbbioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
 
@@ -1180,7 +1198,6 @@ init_record_mbbo (struct mbboRecord *pmbbo)
         errlogPrintf("%s: Invalid type: \"%s\"\n", pmbbo->name, vdp->paramLabel);
         return(S_db_badField);
     }
-    vdp->mp = PS6000AGetModule("OSC1022-11");
 
     pmbbo->udf = FALSE;
 
@@ -1257,7 +1274,7 @@ write_mbbo (struct mbboRecord *pmbbo)
 
         case SET_RESOLUTION: 
             int16_t resolution = (int)pmbbo->rval; 
-            result = set_device_resolution(resolution); 
+            result = set_device_resolution(resolution, vdp->mp->handle); 
             if (result !=0) {
                 log_message(pmbbo->name, "Error setting device resolution.", result);
             }
@@ -1274,7 +1291,7 @@ write_mbbo (struct mbboRecord *pmbbo)
 
             uint32_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index], vdp->mp->handle);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting coupling.", result);
@@ -1295,7 +1312,7 @@ write_mbbo (struct mbboRecord *pmbbo)
 
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1){
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index], vdp->mp->handle);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting voltage range.", result);
@@ -1315,7 +1332,7 @@ write_mbbo (struct mbboRecord *pmbbo)
 
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index]);
+                result = set_channel_on(&vdp->mp->channel_configs[channel_index], vdp->mp->handle);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting bandwidth.", result);
@@ -1331,6 +1348,7 @@ write_mbbo (struct mbboRecord *pmbbo)
             result = get_valid_timebase_configs(
                 vdp->mp->sample_config.timebase_configs, 
                 vdp->mp->sample_config.num_samples,
+                vdp->mp->handle,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -1353,7 +1371,8 @@ write_mbbo (struct mbboRecord *pmbbo)
 
             result = get_valid_timebase_configs(
                 vdp->mp->sample_config.timebase_configs, 
-                vdp->mp->sample_config.num_samples,
+                vdp->mp->sample_config.num_samples,                
+                vdp->mp->handle,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -1389,9 +1408,9 @@ write_mbbo (struct mbboRecord *pmbbo)
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
                 dbProcess((struct dbCommon *)pTriggerModeFbk);
 
-                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+                for (size_t i = 0; i < sizeof(vdp->mp->pTriggerFbk)/sizeof(vdp->mp->pTriggerFbk[0]); i++)
                 {
-                    dbProcess((struct dbCommon *)pTriggerFbk[i]);
+                    dbProcess((struct dbCommon *)vdp->mp->pTriggerFbk[i]);
                 }
             }
             else if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
@@ -1405,9 +1424,9 @@ write_mbbo (struct mbboRecord *pmbbo)
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
                 dbProcess((struct dbCommon *)pTriggerModeFbk);
 
-                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+                for (size_t i = 0; i < sizeof(vdp->mp->pTriggerFbk)/sizeof(vdp->mp->pTriggerFbk[0]); i++)
                 {
-                    dbProcess((struct dbCommon *)pTriggerFbk[i]);
+                    dbProcess((struct dbCommon *)vdp->mp->pTriggerFbk[i]);
                 }
             }
             else { 
@@ -1432,9 +1451,9 @@ write_mbbo (struct mbboRecord *pmbbo)
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
                 dbProcess((struct dbCommon *)pTriggerModeFbk);
 
-                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+                for (size_t i = 0; i < sizeof(vdp->mp->pTriggerFbk)/sizeof(vdp->mp->pTriggerFbk[0]); i++)
                     {
-                        dbProcess((struct dbCommon *)pTriggerFbk[i]);
+                        dbProcess((struct dbCommon *)vdp->mp->pTriggerFbk[i]);
                     }
 
             }        
@@ -1449,9 +1468,9 @@ write_mbbo (struct mbboRecord *pmbbo)
                 dbProcess((struct dbCommon *)pTriggerDirectionFbk);
                 dbProcess((struct dbCommon *)pTriggerModeFbk);
 
-                for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+                for (size_t i = 0; i < sizeof(vdp->mp->pTriggerFbk)/sizeof(vdp->mp->pTriggerFbk[0]); i++)
                     {
-                        dbProcess((struct dbCommon *)pTriggerFbk[i]);
+                        dbProcess((struct dbCommon *)vdp->mp->pTriggerFbk[i]);
                     }
 
             }
@@ -1460,9 +1479,9 @@ write_mbbo (struct mbboRecord *pmbbo)
             //    vdp->mp->trigger_config.thresholdMode = WINDOW;             
               //
             //    dbProcess((struct dbCommon *)pTriggerDirectionFbk);
-            //    for (size_t i = 0; i < sizeof(pTriggerFbk)/sizeof(pTriggerFbk[0]); i++)
+            //    for (size_t i = 0; i < sizeof(vdp->mp->pTriggerFbk)/sizeof(vdp->mp->pTriggerFbk[0]); i++)
             //        {
-            //            dbProcess((struct dbCommon *)pTriggerFbk[i]);
+            //            dbProcess((struct dbCommon *)vdp->mp->pTriggerFbk[i]);
             //        }
             //}
 
@@ -1553,18 +1572,18 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
     pinst = &(pmbbi->inp.value.instio);
     vdp = (struct PicoscopeMbbioData *)pmbbi->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
         }
+    vdp->mp = PS6000AGetModule(vdp->serial_num);
 
     vdp->ioType = findMbbioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
     if (vdp->ioType == UNKNOWN_IOTYPE){
         printf("%s: Invalid type: \"@%s\"\n", pmbbi->name, vdp->paramLabel);
         return(S_db_badField);
     }
-    vdp->mp = PS6000AGetModule("OSC1022-11");
     
     pmbbi->udf = FALSE;
 
@@ -1572,7 +1591,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
 
         case GET_RESOLUTION:
             int16_t resolution; 
-            get_resolution(&resolution);
+            get_resolution(&resolution, vdp->mp->handle);
             pmbbi->val = resolution;  
             break; 
 
@@ -1610,7 +1629,7 @@ read_mbbi(struct mbbiRecord *pmbbi){
     {
         case GET_RESOLUTION: 
             int16_t resolution;
-            uint32_t result = get_resolution(&resolution);
+            uint32_t result = get_resolution(&resolution, vdp->mp->handle);
             if (result != 0) {
                 log_message(pmbbi->name, "Error getting device resolution.", result); 
                 break; 
@@ -1735,18 +1754,19 @@ init_record_stringin(struct stringinRecord * pstringin)
     pinst = &(pstringin->inp.value.instio);
     vdp = (struct PicoscopeData *)pstringin->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
+    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
         }
+    vdp->mp = PS6000AGetModule(vdp->serial_num);
+
     vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
     if (vdp->ioType == UNKNOWN_IOTYPE){
         // errlogPrintf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
         printf("%s: Invalid type: \"@%s\"\n", pstringin->name, vdp->paramLabel);
         return(S_db_badField);
     }
-    vdp->mp = PS6000AGetModule("OSC1022-11");
     
     pstringin->udf = FALSE;
 
@@ -1754,7 +1774,7 @@ init_record_stringin(struct stringinRecord * pstringin)
     {
         case GET_DEVICE_INFO:
             int8_t* device_info = (int8_t*)"No device detected";
-            uint32_t result = get_device_info(&device_info);
+            uint32_t result = get_device_info(&device_info, vdp->mp->handle);
             
             memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
             
@@ -1782,7 +1802,7 @@ read_stringin (struct stringinRecord *pstringin){
     {
         case GET_DEVICE_INFO:
             int8_t* device_info = (int8_t*)"No device detected";
-            uint32_t result = get_device_info(&device_info);
+            uint32_t result = get_device_info(&device_info, vdp->mp->handle);
             
             memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
             
@@ -1860,19 +1880,20 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
     pinst = &(pwaveform->inp.value.instio);
     vdp = (struct PicoscopeData *)pwaveform->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel) != 0)
-    {
-        errlogPrintf("%s: Invalid format: \"@%s\"\n", pwaveform->name, pinst->string);
-        return(S_db_badField);
-    }
-    vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
+   
+    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+        {
+            printf("Error when getting function name: %s\n",vdp->paramLabel);
+            return -1;
+        }
+    vdp->mp = PS6000AGetModule(vdp->serial_num);
 
+    vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
     if (vdp->ioType == UNKNOWN_IOTYPE)
     {
         errlogPrintf("%s: Invalid type: \"@%s\"\n", pwaveform->name, vdp->paramLabel);
         return(S_db_badField);
     }
-    vdp->mp = PS6000AGetModule("OSC1022-11");
 
     pwaveform->udf = FALSE;
 
@@ -1951,7 +1972,7 @@ captureThreadFunc(void *arg) {
         }
     }
 
-    stop_capturing();
+    stop_capturing(mp->handle);
     printf("Cleanup ID is %ld\n", id->tid);
     epicsMutexLock(epics_acquisition_flag_mutex);
     dataAcquisitionFlag = 0;
