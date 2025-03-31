@@ -265,16 +265,16 @@ EnabledChannelFlags channel_status = {0};
  * Enables a specified channel on the connected Picocope with the given configurations. 
  * Setting the channels coupling, range, analog offset, and bandwidth. 
  * 
- * @param channel A pointer to a `ChannelConfigs` structure that contains the configuration 
- *                to be activated. The structure holds the coupling type, voltage range, analog
- *                offset, and bandwidth to configure the channel. 
+ * @param channel `ChannelConfigs` structure that contains the configuration to be activated. 
+ *                The structure holds the coupling type, voltage range, analog offset, and 
+ *                bandwidth to configure the channel. 
  * 
  * @return 0 if the channel is succesfully set on, otherwise a non-zero error code. 
 */
-uint32_t set_channel_on(struct ChannelConfigs* channel, int16_t handle) {
+uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle) {
 
     pthread_mutex_lock(&ps6000a_call_mutex);
-    uint32_t status = ps6000aSetChannelOn(handle, channel->channel, channel->coupling, channel->range, channel->analog_offset, channel->bandwidth);
+    uint32_t status = ps6000aSetChannelOn(handle, channel.channel, channel.coupling, channel.range, channel.analog_offset, channel.bandwidth);
     pthread_mutex_unlock(&ps6000a_call_mutex);
     if (status != PICO_OK) 
     {
@@ -282,20 +282,20 @@ uint32_t set_channel_on(struct ChannelConfigs* channel, int16_t handle) {
         return status;
     }
 
-    if (channel->channel == CHANNEL_A) {
+    if (channel.channel == CHANNEL_A) {
         channel_status.channel_a = 1;
     }
-    if (channel->channel == CHANNEL_B) {
+    if (channel.channel == CHANNEL_B) {
         channel_status.channel_b = 1;
     }    
-    if (channel->channel == CHANNEL_C) {
+    if (channel.channel == CHANNEL_C) {
         channel_status.channel_c = 1;
     }    
-    if (channel->channel == CHANNEL_D) {
+    if (channel.channel == CHANNEL_D) {
         channel_status.channel_d = 1;
     }
 
-    printf("Setting channel %d on.\n", channel->channel);
+    printf("Setting channel %d on.\n", channel.channel);
   
     return 0;
 

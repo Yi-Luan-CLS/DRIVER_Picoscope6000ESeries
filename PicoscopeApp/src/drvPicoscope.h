@@ -39,7 +39,7 @@ uint32_t get_resolution(int16_t* resolution, int16_t handle);
 
 uint32_t close_picoscope(int16_t handle);
 
-uint32_t set_channel_on(struct ChannelConfigs* channel, int16_t handle);
+uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle);
 
 uint32_t set_channel_off(int channel, int16_t handle);
 

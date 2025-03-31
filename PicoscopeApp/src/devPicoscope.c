@@ -597,7 +597,7 @@ write_ao (struct aoRecord *pao)
             
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index], vdp->mp->handle);
+                result = set_channel_on(vdp->mp->channel_configs[channel_index], vdp->mp->handle);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pao->name, "Error setting analog offset.", result);
@@ -883,7 +883,7 @@ write_bo (struct boRecord *pbo)
 
             // If PV value is 1 (ON) set channel on 
             if (pv_value == 1) { 
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index], vdp->mp->handle);
+                result = set_channel_on(vdp->mp->channel_configs[channel_index], vdp->mp->handle);
                 if (result != 0) {
                     log_message(pbo->name, "Error setting channel on.", result);
                     pbo->val = 0; 
@@ -1291,7 +1291,7 @@ write_mbbo (struct mbboRecord *pmbbo)
 
             uint32_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index], vdp->mp->handle);
+                result = set_channel_on(vdp->mp->channel_configs[channel_index], vdp->mp->handle);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting coupling.", result);
@@ -1312,7 +1312,7 @@ write_mbbo (struct mbboRecord *pmbbo)
 
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1){
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index], vdp->mp->handle);
+                result = set_channel_on(vdp->mp->channel_configs[channel_index], vdp->mp->handle);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting voltage range.", result);
@@ -1332,7 +1332,7 @@ write_mbbo (struct mbboRecord *pmbbo)
 
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
             if (channel_status == 1) {
-                result = set_channel_on(&vdp->mp->channel_configs[channel_index], vdp->mp->handle);
+                result = set_channel_on(vdp->mp->channel_configs[channel_index], vdp->mp->handle);
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting bandwidth.", result);
