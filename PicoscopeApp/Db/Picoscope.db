@@ -1,9 +1,3 @@
-# PV to identify the picoscope to connect to via the serial number 
-record(ao, "$(SERIAL_NUM)"){ 
-    field(DTYP, "Picoscope")
-    field(DESC, "Serial number of the device to open.")
-    field(OUT, "@L:device_to_open")
-}
 
 record(waveform, "$(OSC):log"){ 
     field(DTYP, "Picoscope")
@@ -11,7 +5,7 @@ record(waveform, "$(OSC):log"){
     field(MPST, "1")
     field(NELM, "500")
     field(FTVL, "CHAR")
-    field(INP, "@L:get_log")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_log")
 }
 
 ################################################################
@@ -26,7 +20,7 @@ record(mbbo, "$(OSC):resolution"){
     field(ONST, "10BIT")       field(ONVL, "10")
     field(TWST, "12BIT")       field(TWVL, "1")
 
-    field(OUT, "@L:set_resolution")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_resolution")
     field(FLNK, "$(OSC):resolution:fbk")
 }
 
@@ -37,7 +31,7 @@ record(mbbi, "$(OSC):resolution:fbk") {
     field(ONST, "10BIT")       field(ONVL, "10")
     field(TWST, "12BIT")       field(TWVL, "1")
 
-    field(INP, "@L:get_resolution")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_resolution")
 }
 
 record(bo, "$(OSC):ON") {
@@ -47,7 +41,7 @@ record(bo, "$(OSC):ON") {
     field(ONAM, "ON") 
 
     field(RVAL,  "1")
-    field(OUT, "@L:open_picoscope")
+    field(OUT, "@S:$(SERIAL_NUM) @L:open_picoscope")
     field(FLNK,  "$(OSC):ON:fanout")
 }
 
@@ -64,13 +58,13 @@ record(bi, "$(OSC):ON:fbk") {
     field(ONAM, "ON")
     
     field(SCAN, "10 second")
-    field(INP, "@L:get_device_status")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_device_status")
 }
 
 record(stringin, "$(OSC):device_info") {
     field(DTYP, "Picoscope")
     field(DESC, "Model and serial number of device.")
-    field(INP, "@L:get_device_info")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_device_info")
     field(SCAN, "Passive")
 }
 
@@ -83,7 +77,7 @@ record(ao, "$(OSC):num_samples"){
     field(VAL, "10000")
     field(DRVH, "1000000")
     field(DRVL, "1") 
-    field(OUT, "@L:set_num_samples")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_num_samples")
     
     field(FLNK, "$(OSC):timebase:fbk:fanout")
 }
@@ -91,20 +85,20 @@ record(ao, "$(OSC):num_samples"){
 record(ai, "$(OSC):num_samples:fbk") {
     field(DESC, "Number of samples returned.")
     field(DTYP, "Picoscope")
-    field(INP, "@L:get_num_samples")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_num_samples")
 }
 
 record(ao, "$(OSC):down_sample_ratio"){
     field(DESC, "Down sampling factor to apply to data.")
     field(DTYP, "Picoscope")
     field(VAL, "0")
-    field(OUT, "@L:set_down_sampling_ratio")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_down_sampling_ratio")
 }
 
 record(ai, "$(OSC):down_sample_ratio:fbk"){
     field(DESC, "Actual down sampling factor applied.")
     field(DTYP, "Picoscope")
-    field(INP, "@L:get_down_sampling_ratio")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_down_sampling_ratio")
 }
 
 record(mbbo, "$(OSC):down_sample_ratio_mode") {
@@ -119,7 +113,7 @@ record(mbbo, "$(OSC):down_sample_ratio_mode") {
     field(FVST, "RAW")                      field(FVVL, "0x80000000")
 
     field(RVAL, "0x80000000")
-    field(OUT, "@L:set_down_sampling_ratio_mode")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_down_sampling_ratio_mode")
     field(FLNK, "$(OSC):down_sample_ratio_mode:fbk")
 }
 
@@ -135,7 +129,7 @@ record(mbbi, "$(OSC):down_sample_ratio_mode:fbk") {
     field(FVST, "RAW")                      field(FVVL, "0x80000000")
     
     field(VAL, "5")
-    field(INP, "@L:get_down_sampling_ratio_mode")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_down_sampling_ratio_mode")
 }
 
 record(ao, "$(OSC):trigger_position_ratio") {
@@ -145,14 +139,14 @@ record(ao, "$(OSC):trigger_position_ratio") {
     field(DRVH, "100")
     field(DRVL, "0")
     field(EGU, "%")
-    field(OUT, "@L:set_trigger_position_ratio")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_position_ratio")
 }
 
 record(ai, "$(OSC):trigger_position_ratio:fbk"){ 
     field(DESC, "Actual position of the trigger point.")
     field(DTYP, "Picoscope")
     field(EGU, "%")
-    field(INP, "@L:get_trigger_position_ratio")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_position_ratio")
 }
 
 ################################################################
@@ -167,7 +161,7 @@ record(mbbo, "$(OSC):time_per_division:unit") {
     field(THST, "s/div")         field(THVL, "3")
     
     field(RVAL, "1")
-    field(OUT, "@L:set_time_per_division_unit")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_time_per_division_unit")
     field(FLNK, "$(OSC):timebase:fbk:fanout")
 }
 
@@ -180,7 +174,7 @@ record(mbbi, "$(OSC):time_per_division:unit:fbk") {
     field(THST, "s/div")         field(THVL, "3")
     
     field(VAL, "1")
-    field(INP, "@L:get_time_per_division_unit")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_time_per_division_unit")
 } 
 
 record(mbbo, "$(OSC):time_per_division") {
@@ -201,7 +195,7 @@ record(mbbo, "$(OSC):time_per_division") {
     field(ELST, "5000")     field(ELVL, "5000")
 
     field(RVAL, "1")
-    field(OUT, "@L:set_time_per_division")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_time_per_division")
     field(FLNK, "$(OSC):timebase:fbk:fanout")
 }
 
@@ -223,14 +217,14 @@ record(mbbi, "$(OSC):time_per_division:fbk") {
     field(ELST, "5000")     field(ELVL, "5000")
 
     field(VAL, "1")
-    field(INP, "@L:get_time_per_division")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_time_per_division")
 } 
 
 record(ao, "$(OSC):num_divisions"){ 
     field(DTYP, "Picoscope")
     field(DESC, "Number of divisions.")
     field(VAL, "10")
-    field(OUT, "@L:set_num_divisions")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_num_divisions")
     
     field(FLNK, "$(OSC):timebase:fbk:fanout")
 }
@@ -238,27 +232,27 @@ record(ao, "$(OSC):num_divisions"){
 record(ai, "$(OSC):num_divisions:fbk"){
     field(DTYP, "Picoscope")
     field(DESC, "Number of divisions.")
-    field(INP, "@L:get_num_divisions")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_num_divisions")
 }
 
 record(ai, "$(OSC):sample_interval:fbk"){ 
     field(DTYP, "Picoscope")
     field(DESC, "Actual sample interval in seconds.")
     field(EGU, "seconds")
-    field(INP, "@L:get_sample_interval")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_sample_interval")
 }
 
 record(ai, "$(OSC):timebase:fbk"){
     field(DESC, "Actual timebase")
     field(DTYP, "Picoscope")
-    field(INP, "@L:get_timebase")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_timebase")
 }
 
 record(ai, "$(OSC):sample_rate:fbk") {
     field(DESC, "Samples per second.")
     field(DTYP, "Picoscope")
     field(EGU, "S/s")
-    field(INP, "@L:get_sample_rate")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_sample_rate")
 }
 
 record(fanout, "$(OSC):timebase:fbk:fanout"){ 
@@ -306,13 +300,13 @@ record(waveform, "$(OSC):waveform:start:call"){
     field(DTYP, "Picoscope")
     field(SCAN, "Passive")
     field(FTVL, "SHORT")
-    field(INP, "@L:start_retrieve_waveform")
+    field(INP, "@S:$(SERIAL_NUM) @L:start_retrieve_waveform")
 }
 
 record(ai, "$(OSC):waveform:start:fbk:get") {
     field(DTYP, "Picoscope")
     field(SCAN, "5 second")
-    field(INP, "@L:get_acquisition_status")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_acquisition_status")
     field(FLNK, "$(OSC):waveform:start:fbk.PROC")
 }
 
@@ -345,7 +339,7 @@ record(waveform, "$(OSC):waveform:stop:call"){
     field(DTYP, "Picoscope")
     field(SCAN, "Passive")
     field(FTVL, "SHORT")
-    field(INP, "@L:stop_retrieve_waveform")
+    field(INP, "@S:$(SERIAL_NUM) @L:stop_retrieve_waveform")
 }
 
 record(ao, "$(OSC):auto_trigger_us"){ 
@@ -353,7 +347,7 @@ record(ao, "$(OSC):auto_trigger_us"){
     field(DESC, "us to wait for trigger before collecting")
     field(EGU, "us")
     field(VAL, "0")
-    field(OUT, "@L:set_auto_trigger_us")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_auto_trigger_us")
     field(FLNK, "$(OSC):auto_trigger_us:fbk")
 }
 
@@ -362,7 +356,7 @@ record(ai, "$(OSC):auto_trigger_us:fbk"){
     field(DESC, "us to wait for trigger before collecting")
     field(EGU, "us")
     field(VAL, "0")
-    field(INP, "@L:get_auto_trigger_us")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_auto_trigger_us")
 }
 
 record(mbbo, "$(OSC):trigger:type") {
@@ -373,7 +367,7 @@ record(mbbo, "$(OSC):trigger:type") {
     field(ONST, "SIMPLE EDGE")    field(ONVL, "1")
     # field(TWST, "WINDOW")       field(TWVL, "2")    
 
-    field(OUT, "@L:set_trigger_type")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_type")
     field(FLNK, "$(OSC):trigger:type:fbk")
 }
 
@@ -385,7 +379,7 @@ record(mbbi, "$(OSC):trigger:type:fbk"){
     field(ONST, "SIMPLE EDGE")    field(ONVL, "1")
     # field(TWST, "WINDOW")       field(TWVL, "2")    
 
-    field(INP, "@L:get_trigger_type")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_type")
 }
 
 record(mbbo, "$(OSC):trigger:channel") {
@@ -400,7 +394,7 @@ record(mbbo, "$(OSC):trigger:channel") {
     field(FVST, "NONE")                  field(FVVL, "10")
     
     field(RVAL, "1001")
-    field(OUT, "@L:set_trigger_channel")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_channel")
     field(FLNK, "$(OSC):trigger:channel:fbk")
 }
 
@@ -416,7 +410,7 @@ record(mbbi, "$(OSC):trigger:channel:fbk") {
     field(FVST, "NONE")                  field(FVVL, "10")
     
     field(VAL, "4")
-    field(INP, "@L:get_trigger_channel")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_channel")
 }
 
 record(mbbo, "$(OSC):trigger:direction") {
@@ -442,7 +436,7 @@ record(mbbo, "$(OSC):trigger:direction") {
     # field(FFST, "WINDOW_ENTER_EXIT") field(FFVL, "4")
     field(RVAL, "2")
     field(FLNK, "$(OSC):trigger:direction:fbk")        
-    field(OUT, "@L:set_trigger_direction")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_direction")
 }
 
 record(mbbi, "$(OSC):trigger:direction:fbk") {
@@ -470,7 +464,7 @@ record(mbbi, "$(OSC):trigger:direction:fbk") {
     # field(TTST, "WINDOW_ENTER")          field(TTVL, "2")
     # field(FTST, "WINDOW_EXIT")          field(FTVL, "3")
     # field(FFST, "WINDOW_ENTER_EXIT") field(FFVL, "4")
-    field(INP, "@L:get_trigger_direction")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_direction")
 }
 
 record(mbbi, "$(OSC):trigger:mode:fbk") {
@@ -481,29 +475,29 @@ record(mbbi, "$(OSC):trigger:mode:fbk") {
     field(ONST, "WINDOW")        field(ONVL, "1")
 
     field(VAL, "0")
-    field(INP, "@L:get_trigger_mode")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_mode")
 }
 
 record(ao, "$(OSC):trigger:upper:threshold") {
     field(DTYP, "Picoscope")
     field(VAL, "0")
-    field(OUT, "@L:set_trigger_upper")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_upper")
     field(FLNK, "$(OSC):trigger:upper:threshold:fbk")
 }
 
 record(ai, "$(OSC):trigger:upper:threshold:fbk") {
     field(DTYP, "Picoscope")
-    field(INP, "@L:get_trigger_upper")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_upper")
 }
 
 record(ao, "$(OSC):trigger:lower:threshold") {
     field(DTYP, "Picoscope")
     field(VAL, "0")
-    field(OUT, "@L:set_trigger_lower")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_lower")
     field(FLNK, "$(OSC):trigger:lower:threshold:fbk")
 }
 
 record(ai, "$(OSC):trigger:lower:threshold:fbk") {
     field(DTYP, "Picoscope")
-    field(INP, "@L:get_trigger_lower")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_lower")
 }
