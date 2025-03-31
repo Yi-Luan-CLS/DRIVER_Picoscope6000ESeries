@@ -1,6 +1,5 @@
 #include <unistd.h>
 #include <stdint.h>
-#include <epicsEvent.h>
 
 #ifndef PICOSCOPE_CONFIG
 #define PICOSCOPE_CONFIG

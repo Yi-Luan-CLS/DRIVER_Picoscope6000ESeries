@@ -525,13 +525,12 @@ typedef struct {
     PICO_STATUS callbackStatus; // Status from the callback
     int dataReady;
     struct PS6000AModule* mp;
-
 } BlockReadyCallbackParams;
-PICO_STATUS setup_picoscope(struct PS6000AModule* mp, int16_t* waveform_buffer[CHANNEL_NUM]);
+PICO_STATUS setup_picoscope(struct PS6000AModule* mp);
 PICO_STATUS init_block_ready_callback_params(struct PS6000AModule* mp);
 PICO_STATUS run_block_capture(struct PS6000AModule* mp, double* time_indisposed_ms);
-PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs channel_config[CHANNEL_NUM], struct SampleConfigs sample_config);
-PICO_STATUS set_trigger_configurations(struct TriggerConfigs trigger_config);
+PICO_STATUS set_data_buffer(struct PS6000AModule* mp);
+PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp);
 PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_indisposed_ms);
 PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp);
 PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp);
@@ -545,7 +544,7 @@ BlockReadyCallbackParams* blockReadyCallbackParams;
  * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
  * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS setup_picoscope(struct PS6000AModule* mp, int16_t* waveform_buffer[CHANNEL_NUM]) {
+PICO_STATUS setup_picoscope(struct PS6000AModule* mp) {
 
     PICO_STATUS status = 0;
     init_block_ready_callback_params(mp);
@@ -562,14 +561,14 @@ PICO_STATUS setup_picoscope(struct PS6000AModule* mp, int16_t* waveform_buffer[C
         printf("No trigger set.\n");
     } 
     else { 
-        status = set_trigger_configurations(mp->trigger_config);
+        status = apply_trigger_configurations(mp);
         if (status != PICO_OK) {
             return status;
         }
         printf("Trigger set.\n");
     }
 
-    status = set_data_buffer(waveform_buffer, mp->channel_configs, mp->sample_config);
+    status = set_data_buffer(mp);
     if (status != PICO_OK) {
         return status;
     }
@@ -618,7 +617,6 @@ PICO_STATUS set_trigger_directions(struct TriggerConfigs trigger_config) {
         log_error("ps6000aSetTriggerChannelDirections", status, __FILE__, __LINE__);
         return status;
     }
-
     return status;
 }
 
@@ -634,13 +632,28 @@ PICO_STATUS set_trigger_properties(struct TriggerConfigs trigger_config) {
         .thresholdLowerHysteresis = hysteresis
     };
     pthread_mutex_lock(&ps6000a_call_mutex);
-    PICO_STATUS status = ps6000aSetTriggerChannelProperties(handle, &channelProperty, nChannelProperties, 0, trigger_config.autoTriggerMicroSeconds);
+    PICO_STATUS status = ps6000aSetTriggerChannelProperties(handle, &channelProperty, nChannelProperties, 0, 0);
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aSetTriggerChannelProperties", status, __FILE__, __LINE__);
         return status;
     }
+
+    return status;
+}
+
+PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp) {
+    PICO_STATUS status;
+    
+    status = set_trigger_conditions(mp->trigger_config);
+    if (status != PICO_OK) return status;
+
+    status = set_trigger_directions(mp->trigger_config);
+    if (status != PICO_OK) return status;
+
+    status = set_trigger_properties(mp->trigger_config);
+    if (status != PICO_OK) return status;
 
     return status;
 }
@@ -674,7 +687,7 @@ inline uint32_t is_Channel_On(enum Channel channel){
  * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct ChannelConfigs channel_config[CHANNEL_NUM], struct SampleConfigs sample_config) {
+PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
     pthread_mutex_lock(&ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetDataBuffer(
         handle, (PICO_CHANNEL)NULL, NULL, 0, PICO_INT16_T, 0, 0, 
@@ -687,17 +700,17 @@ PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct Channe
         if (status != PICO_OK) {
             log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
         }
-        if (is_Channel_On(channel_config[i].channel))
+        if (is_Channel_On(mp->channel_configs[i].channel))
         {
             pthread_mutex_lock(&ps6000a_call_mutex);
             status = ps6000aSetDataBuffer(
                 handle, 
-                channel_config[i].channel, 
-                waveform_buffer[i], 
-                sample_config.num_samples, 
+                mp->channel_configs[i].channel, 
+                mp->waveform[i],
+                mp->sample_config.num_samples, 
                 PICO_INT16_T, 
                 0, 
-                sample_config.down_sample_ratio_mode, 
+                mp->sample_config.down_sample_ratio_mode, 
                 PICO_ADD
             );
             pthread_mutex_unlock(&ps6000a_call_mutex);
@@ -707,20 +720,6 @@ PICO_STATUS set_data_buffer(int16_t* waveform_buffer[CHANNEL_NUM], struct Channe
         }
     }
     
-
-    return status;
-}
-
-PICO_STATUS set_trigger_configurations(struct TriggerConfigs trigger_config) {
-    
-    PICO_STATUS status = set_trigger_conditions(trigger_config);
-    if (status != PICO_OK) return status;
-
-    status = set_trigger_directions(trigger_config);
-    if (status != PICO_OK) return status;
-
-    status = set_trigger_properties(trigger_config);
-    if (status != PICO_OK) return status;
 
     return status;
 }
@@ -779,6 +778,7 @@ void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, void *pParame
          tm_info1->tm_min,        
          tm_info1->tm_sec,        
          tv1.tv_usec); 
+    printf("-------------------\n");
     if (status == PICO_CANCELLED)
     {
         state->dataReady = 0;
@@ -972,7 +972,16 @@ PS6000ACreateModule(char* serial_num){
         return NULL;
     }
     mp->triggerReadyEvent = epicsEventCreate(0);
-
+    mp->epics_acquisition_restart_mutex = epicsMutexCreate();
+    mp->epics_acquisition_flag_mutex = epicsMutexCreate();
+    mp->epics_acquisition_thread_mutex = epicsMutexCreate();
+    if (!(mp->epics_acquisition_flag_mutex = epicsMutexCreate()) ||
+        !(mp->epics_acquisition_thread_mutex = epicsMutexCreate()) ||
+        !(mp->epics_acquisition_restart_mutex = epicsMutexCreate())) {
+        free(mp);
+        log_error("%s: Mutex creation failed\n", PICO_MEMORY_FAIL, __FILE__, __LINE__);
+        return NULL;
+    }
     for (size_t i = 0; i < MAX_PICO; i++) {
         if (PS6000AModuleList[i] == NULL) {
             PS6000AModuleList[i] = mp;
@@ -1006,11 +1015,6 @@ PS6000ASetupCB( const iocshArgBuf *arglist)
 
 
 static iocshArg setPS6000AArg0 = { "Serial Number", iocshArgString };
-// static iocshArg setPS6000AArg1 = { "module", iocshArgInt };
-// static iocshArg setPS6000AArg2 = { "level", iocshArgInt };
-// static iocshArg setPS6000AArg3 = { "vector", iocshArgInt };
-// static iocshArg setPS6000AArg4 = { "waveformLength", iocshArgInt };
-// static iocshArg * setPS6000AArgs[5] = { &setPS6000AArg0, &setPS6000AArg1, &setPS6000AArg2, &setPS6000AArg3, &setPS6000AArg4 };
 static const iocshArg * setPS6000AArgs[1] = {&setPS6000AArg0};
 static iocshFuncDef PS6000ASetupDef = {"PS6000ASetup", 1, &setPS6000AArgs[0]};
 
