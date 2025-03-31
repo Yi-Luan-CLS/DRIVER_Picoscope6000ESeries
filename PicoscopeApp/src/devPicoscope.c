@@ -823,8 +823,6 @@ init_record_bo (struct boRecord *pbo)
             }
 
             vdp->mp->handle = handle; 
-            printf("Handle: %d\n", vdp->mp->handle);
-
             break;
 
         case SET_CHANNEL_ON:    
@@ -877,17 +875,12 @@ write_bo (struct boRecord *pbo)
                     rbv = 0; 
                 }  
                 vdp->mp->handle = handle; // Update
-                printf("Handle: %d\n", vdp->mp->handle);
-
             } else {
-                printf("Before close Handle: %d\n", vdp->mp->handle);
-
                 result = close_picoscope(vdp->mp->handle); 
                 if (result != 0) {
                     sprintf(message, "Error closing picoscope with serial number %s.", vdp->serial_num);
                     log_message(pbo->name, message, result);
                 }   
-                printf("After close Handle: %d\n", vdp->mp->handle);
             }
             break;
 
