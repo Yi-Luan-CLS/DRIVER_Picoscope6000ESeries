@@ -16,6 +16,9 @@ typedef struct PS6000AModule
     struct ChannelConfigs channel_configs[CHANNEL_NUM];
     struct TriggerConfigs trigger_config;
 
+
+    EnabledChannelFlags channel_status; 
+
     // Stored PVs for processing at specific time 
     struct aiRecord* pTriggerFbk[2];
     
@@ -39,17 +42,15 @@ uint32_t get_resolution(int16_t* resolution, int16_t handle);
 
 uint32_t close_picoscope(int16_t handle);
 
-uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle);
+uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledChannelFlags* channel_status);
 
-uint32_t set_channel_off(int channel, int16_t handle);
+uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* channel_status);
 
-uint32_t get_channel_status(int16_t channel);
+uint32_t get_channel_status(int16_t channel, EnabledChannelFlags channel_status);
 
 
 uint32_t get_valid_timebase_configs(
-    struct TimebaseConfigs timebase_configs, 
-    uint64_t num_samples,  
-    int16_t handle,  
+    struct PS6000AModule* mp,
     double* sample_interval,
     uint32_t* timebase, 
     double* sample_rate
@@ -61,8 +62,6 @@ uint32_t get_analog_offset_limits(
     double* max_analog_offset,
     double* min_analog_offset
 );
-
-uint32_t is_Channel_On(enum Channel channel);
 
 uint32_t setup_picoscope(
     struct PS6000AModule* mp,
@@ -86,6 +85,7 @@ uint32_t get_analogue_offset_limits(
 uint32_t validate_sample_interval(
     double requested_time_interval, 
     int16_t handle, 
+    EnabledChannelFlags channel_status,
     uint32_t* timebase, 
     double* available_time_interval
     );

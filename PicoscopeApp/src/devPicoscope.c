@@ -520,13 +520,11 @@ write_ao (struct aoRecord *pao)
             vdp->mp->sample_config.timebase_configs.num_divisions = (int) pao->val; 
 
             result = get_valid_timebase_configs(
-                vdp->mp->sample_config.timebase_configs, 
-                vdp->mp->sample_config.num_samples,
-                vdp->mp->handle,
+                vdp->mp,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
-            ); 
+            );  
 
             if (result != 0) {
                 log_message(pao->name, "Error setting the number of divisions.", result);
@@ -544,10 +542,8 @@ write_ao (struct aoRecord *pao)
             uint64_t previous_num_samples = vdp->mp->sample_config.num_samples; 
             vdp->mp->sample_config.num_samples = (int) pao->val; 
  
-             result = get_valid_timebase_configs(
-                vdp->mp->sample_config.timebase_configs, 
-                vdp->mp->sample_config.num_samples,
-                vdp->mp->handle,
+            result = get_valid_timebase_configs(
+                vdp->mp,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -593,11 +589,23 @@ write_ao (struct aoRecord *pao)
             pao->drvh = max_analog_offset; 
             pao->drvl = min_analog_offset;
 
-            vdp->mp->channel_configs[channel_index].analog_offset = pao->val; 
-            
-            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
+            if (pao->val > max_analog_offset) {
+                vdp->mp->channel_configs[channel_index].analog_offset = max_analog_offset;
+            }
+            else if (pao->val < min_analog_offset) { 
+                vdp->mp->channel_configs[channel_index].analog_offset = min_analog_offset;
+            }
+            else {
+                vdp->mp->channel_configs[channel_index].analog_offset = pao->val; 
+            }  
+
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == 1) {
-                result = set_channel_on(vdp->mp->channel_configs[channel_index], vdp->mp->handle);
+                result = set_channel_on(
+                    vdp->mp->channel_configs[channel_index], 
+                    vdp->mp->handle, 
+                    &vdp->mp->channel_status
+                );               
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pao->name, "Error setting analog offset.", result);
@@ -797,7 +805,11 @@ init_record_bo (struct boRecord *pbo)
     vdp->mp = PS6000AGetModule(vdp->serial_num);
 
 	vdp->ioType = findBioType(isOutput, vdp->paramLabel, &vdp->onCmd, &vdp->offCmd);
-    
+    if (vdp->ioType == UNKNOWN_IOTYPE)
+    {
+        errlogPrintf("%s: Invalid type: \"%s\"\n", pbo->name, vdp->paramLabel);
+        return(S_db_badField);
+    }
 
     switch (vdp->ioType) {
 
@@ -818,9 +830,13 @@ init_record_bo (struct boRecord *pbo)
         case SET_CHANNEL_ON:    
             record_name = pbo->name;
             channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
-
+            
             // On initalization, set all channels off. 
-            result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel, vdp->mp->handle);
+            result = set_channel_off(
+                vdp->mp->channel_configs[channel_index].channel, 
+                vdp->mp->handle, 
+                &vdp->mp->channel_status
+            );
             if (result != 0) {
                 printf("Error setting channel %s off.\n", record_name);
             }
@@ -878,30 +894,36 @@ write_bo (struct boRecord *pbo)
         case SET_CHANNEL_ON:    
             record_name = pbo->name;
             channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
-
             pv_value = pbo->val;
 
             // If PV value is 1 (ON) set channel on 
             if (pv_value == 1) { 
-                result = set_channel_on(vdp->mp->channel_configs[channel_index], vdp->mp->handle);
+                result = set_channel_on(
+                    vdp->mp->channel_configs[channel_index], 
+                    vdp->mp->handle, 
+                    &vdp->mp->channel_status
+                );
                 if (result != 0) {
                     log_message(pbo->name, "Error setting channel on.", result);
                     pbo->val = 0; 
                     rbv = 0; 
                 }
             } 
-            else {
-                result = set_channel_off((int)vdp->mp->channel_configs[channel_index].channel, vdp->mp->handle);
+            else if (pv_value == 0) {
+                result = set_channel_off(
+                    vdp->mp->channel_configs[channel_index].channel, 
+                    vdp->mp->handle,
+                    &vdp->mp->channel_status
+                );
                 if (result != 0) {
                     log_message(pbo->name, "Error setting channel off.", result);
                     pbo->val = 0; 
                 }
             }    
+
             // Update timebase configs that are affected by the number of channels on. 
             result = get_valid_timebase_configs(
-                vdp->mp->sample_config.timebase_configs, 
-                vdp->mp->sample_config.num_samples,
-                vdp->mp->handle,
+                vdp->mp,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -1000,7 +1022,11 @@ init_record_bi(struct biRecord *pbi)
     vdp->mp = PS6000AGetModule(vdp->serial_num);
 
 	vdp->ioType = findBioType(isInput, vdp->paramLabel, &vdp->onCmd, &vdp->offCmd);
-    
+    if (vdp->ioType == UNKNOWN_IOTYPE)
+    {
+        errlogPrintf("%s: Invalid type: \"%s\"\n", pbi->name, vdp->paramLabel);
+        return(S_db_badField);
+    }
 
 	return 0;
 }
@@ -1034,7 +1060,7 @@ read_bi (struct biRecord *pbi)
             record_name = pbi->name; 
             channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
-            int16_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
+            int16_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == -1) {
                 log_message(pbi->name, "Cannot get channel status.", channel_status);
             }
@@ -1289,9 +1315,13 @@ write_mbbo (struct mbboRecord *pmbbo)
             int16_t previous_coupling = vdp->mp->channel_configs[channel_index].coupling; 
             vdp->mp->channel_configs[channel_index].coupling = (int)pmbbo->rval;
 
-            uint32_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
+            uint32_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == 1) {
-                result = set_channel_on(vdp->mp->channel_configs[channel_index], vdp->mp->handle);
+                result = set_channel_on(
+                    vdp->mp->channel_configs[channel_index], 
+                    vdp->mp->handle, 
+                    &vdp->mp->channel_status
+                );                
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting coupling.", result);
@@ -1310,9 +1340,13 @@ write_mbbo (struct mbboRecord *pmbbo)
 
             dbProcess((struct dbCommon *)pAnalogOffestRecords[channel_index]);     
 
-            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == 1){
-                result = set_channel_on(vdp->mp->channel_configs[channel_index], vdp->mp->handle);
+                result = set_channel_on(
+                    vdp->mp->channel_configs[channel_index], 
+                    vdp->mp->handle, 
+                    &vdp->mp->channel_status
+                );     
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting voltage range.", result);
@@ -1330,9 +1364,13 @@ write_mbbo (struct mbboRecord *pmbbo)
 
             vdp->mp->channel_configs[channel_index].bandwidth = (int)pmbbo->rval;
 
-            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel); 
+            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == 1) {
-                result = set_channel_on(vdp->mp->channel_configs[channel_index], vdp->mp->handle);
+                result = set_channel_on(
+                    vdp->mp->channel_configs[channel_index], 
+                    vdp->mp->handle, 
+                    &vdp->mp->channel_status
+                );                
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
                     log_message(pmbbo->name, "Error setting bandwidth.", result);
@@ -1346,9 +1384,7 @@ write_mbbo (struct mbboRecord *pmbbo)
             vdp->mp->sample_config.timebase_configs.time_per_division = (int) pmbbo->rval; 
 
             result = get_valid_timebase_configs(
-                vdp->mp->sample_config.timebase_configs, 
-                vdp->mp->sample_config.num_samples,
-                vdp->mp->handle,
+                vdp->mp,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -1370,9 +1406,7 @@ write_mbbo (struct mbboRecord *pmbbo)
             vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pmbbo->val; 
 
             result = get_valid_timebase_configs(
-                vdp->mp->sample_config.timebase_configs, 
-                vdp->mp->sample_config.num_samples,                
-                vdp->mp->handle,
+                vdp->mp,
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
@@ -1966,7 +2000,7 @@ captureThreadFunc(void *arg) {
 
         // Process the UPDATE_WAVEFORM subroutine to update waveform
         for (size_t i = 0; i < CHANNEL_NUM; i++) {
-            if (is_Channel_On(mp->channel_configs[i].channel)) {
+            if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status)) {
                 dbProcess((struct dbCommon *)pRecordUpdateWaveform[i]);
             }
         }
