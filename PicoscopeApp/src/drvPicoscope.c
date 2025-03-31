@@ -29,6 +29,8 @@ void log_error(char* function_name, uint32_t status, const char* FILE, int LINE)
  *                      - 0: 8-bit resolution
  *                      - 10: 10-bit resolution
  *                      - 1: 12-bit resolution
+ *        serial_num The serial number of the device to be opened. 
+ *        handle On exit, the device identifier for future communication. 
  * 
  * @return 0 if the device is successfully opened, or a non-zero error code.  
 */
@@ -50,6 +52,8 @@ uint32_t open_picoscope(int16_t resolution, char* serial_num, int16_t* handle){
 
 /**
  * Close an open PicoScope device.
+ *
+ * @param handle The device identifier returned by open_picoscope(). 
  * 
  * @return 0 if the device is successfully closed, or a non-zero error code. 
 */
@@ -70,6 +74,8 @@ uint32_t close_picoscope(int16_t handle){
 
 /**
  * Check that open device is still connected. 
+ * 
+ * @param handle The device identifier returned by open_picoscope(). 
  * 
  * @return 0 if device is connect, otherwise a non-zero error code.
 */
@@ -97,6 +103,7 @@ uint32_t ping_picoscope(int16_t handle){
  *                      - 0: 8-bit resolution
  *                      - 10: 10-bit resolution
  *                      - 1: 12-bit resolution
+ *        handle The device identifier returned by open_picoscope(). 
  * 
  * @return 0 if resolution successfully set, otherwise a non-zero error code.
 */
@@ -118,6 +125,7 @@ uint32_t set_device_resolution(int16_t resolution, int16_t handle){
  * Get  the sample resolution of the currently connected PicoScope. 
  * 
  * @param on exit, the resolution of the device
+ *        handle The device identifier returned by open_picoscope(). 
  * 
  * @return 0 if resolution returned, otherwise a non-zero error code.
 */
@@ -143,6 +151,7 @@ uint32_t get_resolution(int16_t* resolution, int16_t handle) {
  * 
  * @param serial_num A pointer to a pointer that will hold the dynamically allocated address of
  *                  the memory buffer containing the serial number. 
+ *        handle The device identifier returned by open_picoscope(). 
  * 
  * @return 0 if the serial number is successfully retrieved, otherwise a non-zero error code.
 */
@@ -182,6 +191,7 @@ uint32_t get_serial_num(int8_t** serial_num, int16_t handle) {
  * 
  * @param model_num A pointer to a pointer that will hold the dynamically allocated address of
  *                  the memory buffer containing the model number. 
+ *        handle The device identifier returned by open_picoscope(). 
  * 
  * @return 0 if the model number is successfully retrieved, otherwise a non-zero error code.
 */
@@ -221,6 +231,7 @@ uint32_t get_model_num(int8_t** model_num, int16_t handle) {
  * 
  * @param device_info A pointer to a pointer that will hold the dynamically allocated address of
  *                    the memory buffer containing the device information. 
+ *        handle The device identifier returned by open_picoscope(). 
  * 
  * @return 0 if the device information is successfully retrieved, otherwise a non-zero error code.
 */
@@ -268,6 +279,7 @@ EnabledChannelFlags channel_status = {0};
  * @param channel `ChannelConfigs` structure that contains the configuration to be activated. 
  *                The structure holds the coupling type, voltage range, analog offset, and 
  *                bandwidth to configure the channel. 
+ *        handle The device identifier returned by open_picoscope(). 
  * 
  * @return 0 if the channel is succesfully set on, otherwise a non-zero error code. 
 */
@@ -310,6 +322,7 @@ uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle) {
  *                  - 1: Channel B 
  *                  - 2: Channel C
  *                  - 3: Channel D
+ *        handle The device identifier returned by open_picoscope(). 
  *  
  * @return 0 if the channel is successfully turned off, otherwise a non-zero error code.
 */
@@ -374,8 +387,8 @@ uint32_t get_channel_status(int16_t channel){
 /**
  * Uses the range and coupling of a specific channel to retrieve the maximum and minimum analog offset voltages possible. 
  * 
- * @param range The voltage range set to a channel. See PICO_CONNECT_PROBE_RANGE in PicoConnectProbes.h. 
- *        coupling The coupling set to a channel. See PICO_COUPLING in PicoDeviceEnums.h.
+ * @param `ChannelConfigs` structure that contains the configurations of the channel in question. 
+ *        handle The device identifier returned by open_picoscope(). 
  *        max_analog_offset On exit, the max analog offset voltage allowed for the range. 
  *        min_analog_offset On exit, the min analog offset voltage allowed for the range. 
  * 
@@ -406,6 +419,7 @@ uint32_t get_analog_offset_limits(struct ChannelConfigs channel, int16_t handle,
  * be applied to the connected Picoscope given the resolution and number of channels enabled. 
  * 
  * @param requested_time_interval The requested sample interval in seconds. 
+ *        handle The device identifier returned by open_picoscope(). 
  *        timebase On exit, the value of the closest timebase for the requested interval. 
  *        available_time_interval On exit, the closests sample interval available, given the device configurations, 
  *                                to the request interval. 
@@ -492,7 +506,8 @@ double calculate_sample_rate(double secs_per_div, double samples_per_div) {
  *  Gets the valid timebase configs given the requested time per division, number of divisions, and number of samples. 
  * 
  * @param timebase_configs TimebaseConfigs structure containing timebase settings. 
- *        num_samples The number of requested samples.  
+ *        num_samples The number of requested samples.
+ *        handle The device identifier returned by open_picoscope().   
  *        sample_interval On exit, the interval at which samples will be taken in seconds. 
  *        timebase On exit, the timebase for the requested time per division. 
  *        sample_rate On exit, the sample rate for the request time per division. 
