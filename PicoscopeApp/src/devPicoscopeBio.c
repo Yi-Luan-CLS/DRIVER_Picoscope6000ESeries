@@ -21,7 +21,7 @@
 #include <biRecord.h>
 #include <boRecord.h>
 
-#include "devPicoscope.h"
+#include "devPicoscopeCommon.h"
 
 
 enum ioType
@@ -145,7 +145,7 @@ init_record_bo (struct boRecord *pbo)
     vdp = (struct PicoscopeBioData *)pbo->dpvt;
    
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
@@ -356,7 +356,7 @@ init_record_bi(struct biRecord *pbi)
     pinst = &(pbi->inp.value.instio);
     vdp = (struct PicoscopeBioData *)pbi->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;

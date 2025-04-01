@@ -25,7 +25,7 @@ Picoscope_DBD += Picoscope_support.dbd
 
 # Picoscope_registerRecordDeviceDriver.cpp derives from Picoscope.dbd
 Picoscope_SRCS += Picoscope_registerRecordDeviceDriver.cpp
-Picoscope_SRCS += devPicoscope.c
+Picoscope_SRCS += devPicoscopeCommon.c
 Picoscope_SRCS += devPicoscopeAio.c
 Picoscope_SRCS += devPicoscopeMbbio.c
 Picoscope_SRCS += devPicoscopeBio.c

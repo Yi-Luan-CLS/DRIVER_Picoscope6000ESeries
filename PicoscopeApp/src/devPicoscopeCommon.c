@@ -5,16 +5,25 @@
 #include <dbAccess.h>
 
 #include "picoscopeConfig.h"
-#include "devPicoscope.h"
+#include "devPicoscopeCommon.h"
 
-int format_device_support_function(char *string, char *paramName, char *serialNum)
+
+/**
+ * Converts parameters specified in a records INP/OUT field with the
+ * format "@S:$(SERIAL_NUM) @L:${PARAM_NAME}". 
+ * 
+ * @param string The string in the above format. 
+ *        paramName On exit, the parameter name associated with the PV. 
+ *        serialNum On exit, the serial number of the device associated 
+ *                  with the PV. 
+ */ 
+int convertPicoscopeParams(char *string, char *paramName, char *serialNum)
 {       
     if (sscanf(string, "S:%s @L:%s", serialNum, paramName) != 2) {
         return -1;
     }
     return 0;
 }
-
 
 void re_acquire_waveform(struct PS6000AModule *mp){
     if (mp->dataAcquisitionFlag!=1) {

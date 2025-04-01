@@ -16,7 +16,7 @@
 #include <epicsExport.h>
 #include <errlog.h>
 #include <waveformRecord.h>
-#include "devPicoscope.h"
+#include "devPicoscopeCommon.h"
 
 enum ioType
     {
@@ -124,7 +124,7 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
     vdp = (struct PicoscopeData *)pwaveform->dpvt;
 
    
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;

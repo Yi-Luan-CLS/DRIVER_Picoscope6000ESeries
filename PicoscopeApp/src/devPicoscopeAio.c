@@ -17,7 +17,7 @@
 #include <epicsExport.h>
 #include <errlog.h>
 #include "picoscopeConfig.h"
-#include "devPicoscope.h"
+#include "devPicoscopeCommon.h"
 #include <sys/time.h>
 
 
@@ -185,7 +185,7 @@ init_record_ai (struct aiRecord *pai)
     pinst = &(pai->inp.value.instio);
     vdp = (struct PicoscopeData *)pai->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0){
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0){
         printf("Error when getting function name: %s\n",vdp->paramLabel);
         return -1;
     }
@@ -342,7 +342,7 @@ init_record_ao (struct aoRecord *pao)
     pinst = &(pao->out.value.instio);
     vdp = (struct PicoscopeData *)pao->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;

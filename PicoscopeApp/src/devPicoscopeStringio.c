@@ -8,7 +8,7 @@
 
 #include <stringinRecord.h>
 
-#include "devPicoscope.h"
+#include "devPicoscopeCommon.h"
 
 enum ioType
     {
@@ -118,7 +118,7 @@ init_record_stringin(struct stringinRecord * pstringin)
     pinst = &(pstringin->inp.value.instio);
     vdp = (struct PicoscopeStringioData *)pstringin->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;

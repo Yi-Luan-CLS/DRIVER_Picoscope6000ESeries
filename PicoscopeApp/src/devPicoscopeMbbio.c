@@ -21,7 +21,7 @@
 #include <mbbiRecord.h>
 #include <mbboRecord.h>
 
-#include "devPicoscope.h"
+#include "devPicoscopeCommon.h"
 
 enum ioType 
 {
@@ -175,7 +175,7 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     pinst = &(pmbbo->out.value.instio);
     vdp = (struct PicoscopeMbbioData *)pmbbo->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
@@ -573,7 +573,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
     pinst = &(pmbbi->inp.value.instio);
     vdp = (struct PicoscopeMbbioData *)pmbbi->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
