@@ -1,27 +1,16 @@
-#include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <time.h>
-#include <cantProceed.h>
-#include <dbDefs.h>
 #include <dbAccess.h>
-#include <recSup.h>
 #include <recGbl.h>
-#include <devSup.h>
-#include <link.h>
-#include <epicsTypes.h>
 #include <alarm.h>
-#include <aiRecord.h>
-#include <stringinRecord.h>
-#include <menuConvert.h>
 #include <epicsExport.h>
 #include <errlog.h>
 
 #include <mbbiRecord.h>
 #include <mbboRecord.h>
 
-#include "devPicoscope.h"
+#include "devPicoscopeCommon.h"
 
 enum ioType 
 {
@@ -102,8 +91,7 @@ struct PicoscopeMbbioData
         struct PS6000AModule* mp;
     };
 
-static enum ioType
-findMbbioType(enum ioFlag ioFlag, char *param, char **cmdString)
+static enum ioType findMbbioType(enum ioFlag ioFlag, char *param, char **cmdString)
 {
 	unsigned int i;
 
@@ -130,29 +118,27 @@ static long init_record_mbbo(struct mbboRecord *pmbbo);
 static long write_mbbo (struct mbboRecord *pmbbo);
 
 struct
-    {
+{
     long         number;
     DEVSUPFUN_MBBO report;
     DEVSUPFUN_MBBO init;
     DEVSUPFUN_MBBO init_record;
     DEVSUPFUN_MBBO get_ioint_info;
     DEVSUPFUN_MBBO write_lout;
-    // DEVSUPFUN   special_linconv;
-    } devPicoscopeMbbo =
-        {
+} devPicoscopeMbbo =
+    {
         6,
         NULL,
         NULL,
         init_record_mbbo,
         NULL,
         write_mbbo, 
-        };
+    };
 
 epicsExportAddress(dset, devPicoscopeMbbo);
 
 
-static long
-init_record_mbbo (struct mbboRecord *pmbbo)
+static long init_record_mbbo (struct mbboRecord *pmbbo)
 { 
     char* record_name; 
     int channel_index; 
@@ -175,7 +161,7 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     pinst = &(pmbbo->out.value.instio);
     vdp = (struct PicoscopeMbbioData *)pmbbo->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
@@ -183,7 +169,6 @@ init_record_mbbo (struct mbboRecord *pmbbo)
     vdp->mp = PS6000AGetModule(vdp->serial_num);
 
     vdp->ioType = findMbbioType(isOutput, vdp->paramLabel, &(vdp->cmdPrefix));
-
     if (vdp->ioType == UNKNOWN_IOTYPE)
     {
         errlogPrintf("%s: Invalid type: \"%s\"\n", pmbbo->name, vdp->paramLabel);
@@ -528,30 +513,28 @@ static long init_record_mbbi(struct mbbiRecord *);
 static long read_mbbi(struct mbbiRecord *);
 
 struct
-        {
-            long         number;
-            DEVSUPFUN_MBBI report;
-            DEVSUPFUN_MBBI init;
-            DEVSUPFUN_MBBI init_record;
-            DEVSUPFUN_MBBI get_ioint_info;
-            DEVSUPFUN_MBBI read;
-            // long (*special_linconv)(struct mbbiRecord *, int);
-        } devPicoscopeMbbi =
-                {
-                6,
-                NULL,
-                NULL,
-                init_record_mbbi,
-                NULL,
-                read_mbbi,
-                };
+{
+    long         number;
+    DEVSUPFUN_MBBI report;
+    DEVSUPFUN_MBBI init;
+    DEVSUPFUN_MBBI init_record;
+    DEVSUPFUN_MBBI get_ioint_info;
+    DEVSUPFUN_MBBI read;
+} devPicoscopeMbbi =
+    {
+        6,
+        NULL,
+        NULL,
+        init_record_mbbi,
+        NULL,
+        read_mbbi,
+    };
 
 epicsExportAddress(dset, devPicoscopeMbbi);
 
 
 
-static long
-init_record_mbbi(struct mbbiRecord * pmbbi)
+static long init_record_mbbi(struct mbbiRecord * pmbbi)
 {
     struct instio  *pinst;
     struct PicoscopeMbbioData *vdp;
@@ -573,7 +556,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
     pinst = &(pmbbi->inp.value.instio);
     vdp = (struct PicoscopeMbbioData *)pmbbi->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
@@ -618,8 +601,7 @@ init_record_mbbi(struct mbbiRecord * pmbbi)
     return 0;
 }
 
-static long
-read_mbbi(struct mbbiRecord *pmbbi){
+static long read_mbbi(struct mbbiRecord *pmbbi){
     
     char* record_name; 
     int channel_index; 

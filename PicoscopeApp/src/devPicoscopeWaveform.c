@@ -1,52 +1,48 @@
-#include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <time.h>
-#include <cantProceed.h>
-#include <dbDefs.h>
 #include <dbAccess.h>
-#include <recSup.h>
 #include <recGbl.h>
-#include <devSup.h>
-#include <link.h>
-#include <epicsTypes.h>
 #include <alarm.h>
-#include <menuConvert.h>
 #include <epicsExport.h>
 #include <errlog.h>
+
 #include <waveformRecord.h>
-#include "devPicoscope.h"
+
+#include "devPicoscopeCommon.h"
 
 enum ioType
-    {
+{
     UNKNOWN_IOTYPE, // default case, must be 0 
     START_RETRIEVE_WAVEFORM,
     STOP_RETRIEVE_WAVEFORM,
     UPDATE_WAVEFORM,
     GET_LOG, 
-    };
+};
+
 enum ioFlag
-    {
+{
     isOutput = 0,
     isInput = 1
-    };
-static struct aioType
-    {
-        char *label;
-        enum ioFlag flag;
-        enum ioType ioType;
-        char *cmdp;
-    } AioType[] =
-    {
-        {"start_retrieve_waveform", isInput, START_RETRIEVE_WAVEFORM, "" },
-        {"stop_retrieve_waveform", isInput, STOP_RETRIEVE_WAVEFORM, "" },
-        {"get_log", isInput, GET_LOG, ""}, 
-        {"update_waveform", isInput, UPDATE_WAVEFORM, "" },
-    };
+};
 
-#define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
-struct PicoscopeData
+static struct waveformType
+{
+    char *label;
+    enum ioFlag flag;
+    enum ioType ioType;
+    char *cmdp;
+} WaveformType[] =
+{
+    {"start_retrieve_waveform", isInput, START_RETRIEVE_WAVEFORM, "" },
+    {"stop_retrieve_waveform", isInput, STOP_RETRIEVE_WAVEFORM, "" },
+    {"get_log", isInput, GET_LOG, ""}, 
+    {"update_waveform", isInput, UPDATE_WAVEFORM, "" },
+};
+
+#define WAVEFORM_TYPE_SIZE    (sizeof (WaveformType) / sizeof (struct waveformType))
+
+struct PicoscopeWaveformData
     {
         char serial_num[10]; 
         enum ioType ioType;
@@ -55,17 +51,16 @@ struct PicoscopeData
         int paramValid;
         struct PS6000AModule* mp;
     };
-static enum ioType findAioType(enum ioFlag ioFlag, char *param, char **cmdString);
-static enum ioType
-findAioType(enum ioFlag ioFlag, char *param, char **cmdString)
+
+static enum ioType findWaveformType(enum ioFlag ioFlag, char *param, char **cmdString)
 {
     unsigned int i;
 
-    for (i = 0; i < AIO_TYPE_SIZE; i ++)
-        if (strcmp(param, AioType[i].label) == 0  &&  AioType[i].flag == ioFlag)
+    for (i = 0; i < WAVEFORM_TYPE_SIZE; i ++)
+        if (strcmp(param, WaveformType[i].label) == 0  &&  WaveformType[i].flag == ioFlag)
             {
-            *cmdString = AioType[i].cmdp;
-            return AioType[i].ioType;
+            *cmdString = WaveformType[i].cmdp;
+            return WaveformType[i].ioType;
             }
 
     return UNKNOWN_IOTYPE;
@@ -83,37 +78,38 @@ typedef long (*DEVSUPFUN_WAVEFORM)(struct waveformRecord *);
 static long init_record_waveform(struct waveformRecord *);
 static long read_waveform(struct waveformRecord *);
 
-struct{
+struct
+{
     long         number;
     DEVSUPFUN_WAVEFORM report;
     DEVSUPFUN_WAVEFORM init;
     DEVSUPFUN_WAVEFORM init_record;
     DEVSUPFUN_WAVEFORM get_ioint_info;
-    // DEVSUPFUN_WAVEFORM write_lout;
     DEVSUPFUN_WAVEFORM read;
     
-} devPicoscopeWaveform = {
-    6,
-    NULL,
-    NULL,
-    init_record_waveform,
-    NULL,
-    read_waveform,
-};
+} devPicoscopeWaveform = 
+    {
+        6,
+        NULL,
+        NULL,
+        init_record_waveform,
+        NULL,
+        read_waveform,
+    };
 
 epicsExportAddress(dset, devPicoscopeWaveform);
 
 static long init_record_waveform(struct waveformRecord * pwaveform)
 {
     struct instio  *pinst;
-    struct PicoscopeData *vdp;
+    struct PicoscopeWaveformData *vdp;
 
     if (pwaveform->inp.type != INST_IO)
     {
         errlogPrintf("%s: INP field type should be INST_IO\n", pwaveform->name);
         return(S_db_badField);
     }
-    pwaveform->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+    pwaveform->dpvt = calloc(sizeof(struct PicoscopeWaveformData), 1);
     if (pwaveform->dpvt == (void *)0)
     {
         errlogPrintf("%s: Failed to allocated memory\n", pwaveform->name);
@@ -121,17 +117,17 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
     }
 
     pinst = &(pwaveform->inp.value.instio);
-    vdp = (struct PicoscopeData *)pwaveform->dpvt;
+    vdp = (struct PicoscopeWaveformData *)pwaveform->dpvt;
 
    
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
         }
     vdp->mp = PS6000AGetModule(vdp->serial_num);
 
-    vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
+    vdp->ioType = findWaveformType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
     if (vdp->ioType == UNKNOWN_IOTYPE)
     {
         errlogPrintf("%s: Invalid type: \"@%s\"\n", pwaveform->name, vdp->paramLabel);
@@ -218,9 +214,8 @@ captureThreadFunc(void *arg) {
     epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
 }
 
-static long
-read_waveform(struct waveformRecord *pwaveform) {
-    struct PicoscopeData *vdp = (struct PicoscopeData *)pwaveform->dpvt;
+static long read_waveform(struct waveformRecord *pwaveform) {
+    struct PicoscopeWaveformData *vdp = (struct PicoscopeWaveformData *)pwaveform->dpvt;
 
     switch (vdp->ioType) {
         case START_RETRIEVE_WAVEFORM:

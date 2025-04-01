@@ -1,31 +1,19 @@
-#include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <time.h>
-#include <cantProceed.h>
-#include <dbDefs.h>
 #include <dbAccess.h>
-#include <recSup.h>
 #include <recGbl.h>
-#include <devSup.h>
-#include <link.h>
-#include <epicsTypes.h>
 #include <alarm.h>
-#include <aiRecord.h>
-#include <menuConvert.h>
 #include <epicsExport.h>
 #include <errlog.h>
-#include "picoscopeConfig.h"
-#include "devPicoscope.h"
 #include <sys/time.h>
 
+#include <aiRecord.h>
+#include <aoRecord.h>
+
+#include "devPicoscopeCommon.h"
 
 #define MAX_SAMPLE_SIZE 1000000
-
-
-int16_t result; 
-
 
 enum ioType
     {
@@ -36,15 +24,9 @@ enum ioType
     GET_DOWN_SAMPLE_RATIO,
     SET_TRIGGER_POSITION_RATIO,
     GET_TRIGGER_POSITION_RATIO,
-    GET_DEVICE_INFO,
-
     SET_ANALOG_OFFSET,
     GET_ANALOG_OFFSET,
-    START_RETRIEVE_WAVEFORM,
     GET_ACQUISITION_STATUS,
-    STOP_RETRIEVE_WAVEFORM,
-    UPDATE_WAVEFORM,
-    DEVICE_TO_OPEN,
     SET_TRIGGER_UPPER,
     GET_TRIGGER_UPPER,
     SET_TRIGGER_LOWER,
@@ -54,7 +36,6 @@ enum ioType
     GET_NUM_DIVISIONS, 
     GET_SAMPLE_RATE, 
     GET_TIMEBASE,
-    GET_LOG, 
     SET_AUTO_TRIGGER_US, 
     GET_AUTO_TRIGGER_US,
 };
@@ -80,14 +61,9 @@ static struct aioType
         {"get_down_sampling_ratio", isInput, GET_DOWN_SAMPLE_RATIO, ""},
         {"set_trigger_position_ratio", isOutput, SET_TRIGGER_POSITION_RATIO, "" },
         {"get_trigger_position_ratio", isInput, GET_TRIGGER_POSITION_RATIO, "" },
-        {"get_device_info", isInput, GET_DEVICE_INFO, "" },
         {"set_analog_offset", isOutput, SET_ANALOG_OFFSET, ""},
         {"get_analog_offset", isInput, GET_ANALOG_OFFSET, ""},
-        {"start_retrieve_waveform", isInput, START_RETRIEVE_WAVEFORM, "" },
         {"get_acquisition_status", isInput, GET_ACQUISITION_STATUS, "" },
-        {"stop_retrieve_waveform", isInput, STOP_RETRIEVE_WAVEFORM, "" },
-        {"update_waveform", isInput, UPDATE_WAVEFORM, "" },
-        {"device_to_open", isOutput, DEVICE_TO_OPEN, ""},
         {"set_trigger_upper", isOutput, SET_TRIGGER_UPPER, ""},
         {"get_trigger_upper", isInput, GET_TRIGGER_UPPER, ""},
         {"set_trigger_lower", isOutput, SET_TRIGGER_LOWER, ""},
@@ -96,14 +72,13 @@ static struct aioType
         {"get_sample_rate", isInput, GET_SAMPLE_RATE, ""},
         {"set_num_divisions", isOutput, SET_NUM_DIVISIONS, ""},
         {"get_num_divisions", isInput, GET_NUM_DIVISIONS, ""},
-        {"get_log", isInput, GET_LOG, ""}, 
         {"set_auto_trigger_us", isOutput, SET_AUTO_TRIGGER_US, ""},
         {"get_auto_trigger_us", isInput, GET_AUTO_TRIGGER_US, ""},
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
 
-struct PicoscopeData
+struct PicoscopeAioData
     {
         char serial_num[10]; 
         enum ioType ioType;
@@ -113,9 +88,7 @@ struct PicoscopeData
         struct PS6000AModule* mp;
     };
 
-static enum ioType findAioType(enum ioFlag ioFlag, char *param, char **cmdString);
-static enum ioType
-findAioType(enum ioFlag ioFlag, char *param, char **cmdString)
+static enum ioType findAioType(enum ioFlag ioFlag, char *param, char **cmdString)
 {
     unsigned int i;
 
@@ -129,66 +102,56 @@ findAioType(enum ioFlag ioFlag, char *param, char **cmdString)
     return UNKNOWN_IOTYPE;
 }
 
-struct ChannelConfigs* channels[4] = {NULL}; // List of Picoscope channels and their configurations
-struct TriggerConfigs* trigger_config = {NULL};
-// struct SampleConfigs* sample_config = NULL; // Configurations for data capture
-
 /****************************************************************************************
  * AI Record
  ****************************************************************************************/
-
 
 typedef long (*DEVSUPFUN_AI)(struct aiRecord *);
 
 static long init_record_ai (struct aiRecord *pai);
 static long read_ai (struct aiRecord *pai);
-// static long special_linconv_ai(struct aiRecord *pai, int after);
 
 struct
-    {
+{
     long         number;
     DEVSUPFUN_AI report;
     DEVSUPFUN_AI init;
     DEVSUPFUN_AI init_record;
     DEVSUPFUN_AI get_ioint_info;
     DEVSUPFUN_AI read;
-    long (*special_linconv)(struct aiRecord *, int);
-    } devPicoscopeAi =
-        {
+} devPicoscopeAi =
+    {
         6,
         NULL,
         NULL,
         init_record_ai,
         NULL,
         read_ai,
-        NULL
-        };
+    };
 
 epicsExportAddress(dset, devPicoscopeAi);
 
-int isInitialised = 0;
 
-static long
-init_record_ai (struct aiRecord *pai)
+static long init_record_ai (struct aiRecord *pai)
 {    
     struct instio  *pinst;
-    struct PicoscopeData *vdp;
+    struct PicoscopeAioData *vdp;
 
     if (pai->inp.type != INST_IO)
     {
-        // errlogPrintf("%s: INP field type should be INST_IO\n", pai->name);
+        errlogPrintf("%s: INP field type should be INST_IO\n", pai->name);
         return(S_db_badField);
     }
-    pai->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+    pai->dpvt = calloc(sizeof(struct PicoscopeAioData), 1);
     if (pai->dpvt == (void *)0){
-        // errlogPrintf("%s: Failed to allocated memory\n", pai->name);
+        errlogPrintf("%s: Failed to allocated memory\n", pai->name);
        return -1;
     }
 
     pinst = &(pai->inp.value.instio);
-    vdp = (struct PicoscopeData *)pai->dpvt;
+    vdp = (struct PicoscopeAioData *)pai->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0){
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0){
         printf("Error when getting function name: %s\n",vdp->paramLabel);
         return -1;
     }
@@ -196,14 +159,12 @@ init_record_ai (struct aiRecord *pai)
 
     vdp->ioType = findAioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
     if (vdp->ioType == UNKNOWN_IOTYPE){
-        // errlogPrintf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
-        printf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
+        errlogPrintf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
         return(S_db_badField);
     }
 
     switch(vdp->ioType)
     {
-
         case GET_TRIGGER_UPPER:
             vdp->mp->pTriggerFbk[0] = pai;
             break;
@@ -211,23 +172,20 @@ init_record_ai (struct aiRecord *pai)
         case GET_TRIGGER_LOWER:
             vdp->mp->pTriggerFbk[1] = pai;
             break;
-
         default:
             return 2;
     } 
     
     return 0;
-
 }
 
 
-static long
-read_ai (struct aiRecord *pai){
+static long read_ai (struct aiRecord *pai){
         
     char* record_name; 
     int channel_index; 
 
-    struct PicoscopeData *vdp = (struct PicoscopeData *)pai->dpvt;
+    struct PicoscopeAioData *vdp = (struct PicoscopeAioData *)pai->dpvt;
 
     switch (vdp->ioType)
     {
@@ -238,7 +196,6 @@ read_ai (struct aiRecord *pai){
             pai->val = vdp->mp->channel_configs[channel_index].analog_offset; 
             break; 
 
-        // Data configuration fbk 
         case GET_NUM_SAMPLES: 
             pai->val = vdp->mp->sample_config.num_samples; 
             break; 
@@ -288,70 +245,47 @@ read_ai (struct aiRecord *pai){
 
     }
     return 2;
-
 }    
 
 /****************************************************************************************
  * AO Record
  ****************************************************************************************/
-
-#include <aoRecord.h>
-
 typedef long (*DEVSUPFUN_AO)(struct aoRecord *);
 
 static long init_record_ao(struct aoRecord *pao);
 static long write_ao (struct aoRecord *pao);
-void re_acquire_waveform(struct PS6000AModule *mp){
-    if (mp->dataAcquisitionFlag!=1) {
-        return;
-    }
-    epicsMutexLock(mp->epics_acquisition_restart_mutex);    // this is to make sure Stop and Start PV invoked in sequence.
-    
-    dbProcess((struct dbCommon *)mp->pWaveformStopPtr);
-
-    // this is to make sure the capureting thread is actually stopped
-    epicsMutexLock(mp->epics_acquisition_thread_mutex);
-    epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
-    
-    dbProcess((struct dbCommon *)mp->pWaveformStartPtr);
-    
-    epicsMutexUnlock(mp->epics_acquisition_restart_mutex);
-}
 
 struct
-    {
+{
     long         number;
     DEVSUPFUN_AO report;
     DEVSUPFUN_AO init;
     DEVSUPFUN_AO init_record;
     DEVSUPFUN_AO get_ioint_info;
     DEVSUPFUN_AO write_lout;
-    // DEVSUPFUN   special_linconv;
-    } devPicoscopeAo =
-        {
+} devPicoscopeAo =
+    {
         6,
         NULL,
         NULL,
         init_record_ao,
         NULL,
         write_ao, 
-        };
+    };
 
 epicsExportAddress(dset, devPicoscopeAo);
 
-static long
-init_record_ao (struct aoRecord *pao)
+static long init_record_ao (struct aoRecord *pao)
 {    
-
     struct instio  *pinst;
-    struct PicoscopeData *vdp;
+    struct PicoscopeAioData *vdp;
 
     if (pao->out.type != INST_IO)
     {
         errlogPrintf("%s: INP field type should be INST_IO\n", pao->name);
         return(S_db_badField);
     }
-    pao->dpvt = calloc(sizeof(struct PicoscopeData), 1);
+    pao->dpvt = calloc(sizeof(struct PicoscopeAioData), 1);
     if (pao->dpvt == (void *)0)
     {
         errlogPrintf("%s: Failed to allocated memory\n", pao->name);
@@ -359,9 +293,9 @@ init_record_ao (struct aoRecord *pao)
     }
   
     pinst = &(pao->out.value.instio);
-    vdp = (struct PicoscopeData *)pao->dpvt;
+    vdp = (struct PicoscopeAioData *)pao->dpvt;
 
-    if (format_device_support_function(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
+    if (convertPicoscopeParams(pinst->string, vdp->paramLabel, vdp->serial_num) != 0)
         {
             printf("Error when getting function name: %s\n",vdp->paramLabel);
             return -1;
@@ -405,7 +339,7 @@ init_record_ao (struct aoRecord *pao)
         case SET_NUM_DIVISIONS: 
             vdp->mp->sample_config.timebase_configs.num_divisions = (int) pao->val; 
 
-            // Initialize timebase feedback only information to 0. 
+            // Initialize timebase feedback information to 0. 
             vdp->mp->sample_config.timebase_configs.timebase = 0; 
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = 0; 
             vdp->mp->sample_config.timebase_configs.sample_rate = 0; 
@@ -431,8 +365,7 @@ init_record_ao (struct aoRecord *pao)
 }
 
 
-static long
-write_ao (struct aoRecord *pao)
+static long write_ao (struct aoRecord *pao)
 {    
     uint32_t timebase = 0; 
     double sample_interval, sample_rate = 0; 
@@ -441,11 +374,10 @@ write_ao (struct aoRecord *pao)
     
     char* record_name; 
     int channel_index; 
-
     uint32_t result;
 
-    struct PicoscopeData *vdp;
-    vdp = (struct PicoscopeData *)pao->dpvt;
+    struct PicoscopeAioData *vdp;
+    vdp = (struct PicoscopeAioData *)pao->dpvt;
 
     switch (vdp->ioType)
     {
@@ -582,63 +514,4 @@ write_ao (struct aoRecord *pao)
         re_acquire_waveform(vdp->mp);
     }
     return 0;
-}
-
-/** 
- * Gets the channel from the record name formatted "OSCXXXX-XX:CH[A-B]:" and returns index of that channel 
- * from an array of ChannelConfigs. 
- * 
- * @param record_name PV name formated "OSCXXXX-XX:CH[A-B]:"
- *           channels Array of ChannelConfigs 
- * 
- * @returns Index of channel in the channels array if successful, otherwise returns -1 
- * */
-inline int find_channel_index_from_record(const char* record_name, struct ChannelConfigs channel_configs[CHANNEL_NUM]) {
-    char channel_str[4];
-    sscanf(record_name, "%*[^:]:%4[^:]", channel_str);  // Extract the channel part, e.g., "CHA", "CHB", etc.
-
-    enum Channel channel;
-    if (strcmp(channel_str, "CHA") == 0) {
-        channel = CHANNEL_A;
-    } else if (strcmp(channel_str, "CHB") == 0) {
-        channel = CHANNEL_B;
-    } else if (strcmp(channel_str, "CHC") == 0) {
-        channel = CHANNEL_C;
-    } else if (strcmp(channel_str, "CHD") == 0) {
-        channel = CHANNEL_D;
-    } else {
-        printf("Channel not found from record name: %s.\n", record_name); 
-        return -1;  // Invalid channel
-    }
-
-    // Find the index of the channel in the list
-    for (int i = 0; i < 4; i++) {
-        if (channel_configs[i].channel == channel) {
-            return i;  // Return index if channel matches
-        }
-    }
-
-    return -1;  // Channel not found
-}
-
-
-/**
- * A function to update the log PV with the latest error message. Causes the 
- * waveform PV pLog to process. 
- * 
- * @param pv_name The name of the PV processing when error occured. 
- *           error_message Message to go with error. 
- *           status_code The status code from Picoscope API. 
- */
-void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[], uint32_t status_code){
-    
-    int16_t size = snprintf(NULL, 0, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
-
-    char log[size+1]; 
-    sprintf(log, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
-    memcpy(mp->pLog->bptr, log, strlen(log)+1);
-    mp->pLog->nord = strlen(log)+1;
-
-    dbProcess((struct dbCommon *)mp->pLog);     
-    usleep(100); // wait for log PV to process
 }

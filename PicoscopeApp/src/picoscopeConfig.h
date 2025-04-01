@@ -113,6 +113,4 @@ struct TriggerConfigs{
     uint32_t autoTriggerMicroSeconds;
 };
 
-int find_channel_index_from_record(const char* record_name, struct ChannelConfigs channel_configs[CHANNEL_NUM]);
-
 #endif
