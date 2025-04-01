@@ -13,7 +13,6 @@
 #include <epicsTypes.h>
 #include <alarm.h>
 #include <aiRecord.h>
-#include <stringinRecord.h>
 #include <menuConvert.h>
 #include <epicsExport.h>
 #include <errlog.h>
@@ -59,15 +58,6 @@ enum ioType
     GET_LOG, 
     SET_AUTO_TRIGGER_US, 
     GET_AUTO_TRIGGER_US,
-
-
-    // bio 
-    OPEN_PICOSCOPE,
-    GET_DEVICE_STATUS,
-    SET_CHANNEL_ON,
-    GET_CHANNEL_STATUS,
-
-
 };
 
 enum ioFlag
@@ -110,8 +100,6 @@ static struct aioType
         {"get_log", isInput, GET_LOG, ""}, 
         {"set_auto_trigger_us", isOutput, SET_AUTO_TRIGGER_US, ""},
         {"get_auto_trigger_us", isInput, GET_AUTO_TRIGGER_US, ""},
-
-
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
