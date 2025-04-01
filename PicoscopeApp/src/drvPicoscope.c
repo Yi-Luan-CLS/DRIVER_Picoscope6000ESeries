@@ -141,7 +141,6 @@ uint32_t get_resolution(int16_t* resolution, int16_t handle) {
         log_error("ps6000aGetDeviceResolution", status, __FILE__, __LINE__);
         return status;
     }
-
     *resolution = (int16_t)device_resolution; 
     return 0; 
 }

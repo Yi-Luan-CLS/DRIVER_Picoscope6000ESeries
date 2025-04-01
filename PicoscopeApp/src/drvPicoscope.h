@@ -9,6 +9,9 @@
 typedef struct PS6000AModule 
 {
     char* serial_num;
+    int16_t handle;
+    int16_t device_resolution; 
+
 
     int8_t dataAcquisitionFlag;
     struct waveformRecord* pWaveformStartPtr;
@@ -16,7 +19,6 @@ typedef struct PS6000AModule
     struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
     struct waveformRecord* pLog;
 
-    int16_t handle;
 
 
 	epicsEventId triggerReadyEvent;
@@ -29,7 +31,6 @@ typedef struct PS6000AModule
     struct SampleConfigs sample_config;
     struct ChannelConfigs channel_configs[CHANNEL_NUM];
     struct TriggerConfigs trigger_config;
-
 
     EnabledChannelFlags channel_status; 
 
