@@ -27,6 +27,7 @@ Picoscope_DBD += Picoscope_support.dbd
 Picoscope_SRCS += Picoscope_registerRecordDeviceDriver.cpp
 Picoscope_SRCS += devPicoscope.c
 Picoscope_SRCS += drvPicoscope.c
+Picoscope_SRCS += devPicoscopeWaveform.c
 
 # Build the main IOC entry point on workstation OSs.
 Picoscope_SRCS_DEFAULT += PicoscopeMain.cpp
