@@ -4,7 +4,6 @@
 
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
-#include <aiRecord.h>
 
 typedef struct PS6000AModule 
 {

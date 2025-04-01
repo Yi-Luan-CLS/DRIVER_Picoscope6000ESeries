@@ -31,6 +31,7 @@ Picoscope_SRCS += devPicoscopeBio.c
 Picoscope_SRCS += devPicoscopeStringio.c
 
 Picoscope_SRCS += drvPicoscope.c
+Picoscope_SRCS += devPicoscopeWaveform.c
 
 # Build the main IOC entry point on workstation OSs.
 Picoscope_SRCS_DEFAULT += PicoscopeMain.cpp
