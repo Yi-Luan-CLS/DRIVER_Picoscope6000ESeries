@@ -542,8 +542,8 @@ typedef struct {
 PICO_STATUS setup_picoscope(struct PS6000AModule* mp);
 PICO_STATUS init_block_ready_callback_params(struct PS6000AModule* mp);
 PICO_STATUS run_block_capture(struct PS6000AModule* mp, double* time_indisposed_ms);
-PICO_STATUS set_data_buffer(struct PS6000AModule* mp, EnabledChannelFlags channel_status, int16_t handle);
-PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp, int16_t handle);
+PICO_STATUS set_data_buffer(struct PS6000AModule* mp);
+PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp);
 PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_indisposed_ms);
 PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp);
 PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp);
@@ -574,14 +574,14 @@ PICO_STATUS setup_picoscope(struct PS6000AModule* mp) {
         printf("No trigger set.\n");
     } 
     else { 
-        status = apply_trigger_configurations(mp, mp->handle);
+        status = apply_trigger_configurations(mp);
         if (status != PICO_OK) {
             return status;
         }
         printf("Trigger set.\n");
     }
 
-    status = set_data_buffer(mp, mp->channel_status, mp->handle);
+    status = set_data_buffer(mp);
 
     if (status != PICO_OK) {
         return status;
@@ -591,17 +591,17 @@ PICO_STATUS setup_picoscope(struct PS6000AModule* mp) {
 
 
 
-PICO_STATUS set_trigger_conditions(struct TriggerConfigs trigger_config, int16_t handle) {
+PICO_STATUS set_trigger_conditions(struct PS6000AModule* mp) {
     int16_t nConditions = 1;
     PICO_STATUS status = 0;
 
     PICO_CONDITION condition = {
-        .source = trigger_config.channel,
+        .source = mp->trigger_config.channel,
         .condition = PICO_CONDITION_TRUE
     };
     pthread_mutex_lock(&ps6000a_call_mutex);
-    ps6000aSetTriggerChannelConditions(handle, &condition, nConditions, PICO_CLEAR_ALL);
-    ps6000aSetTriggerChannelConditions(handle, &condition, nConditions, PICO_ADD);
+    ps6000aSetTriggerChannelConditions(mp->handle, &condition, nConditions, PICO_CLEAR_ALL);
+    ps6000aSetTriggerChannelConditions(mp->handle, &condition, nConditions, PICO_ADD);
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
@@ -612,19 +612,19 @@ PICO_STATUS set_trigger_conditions(struct TriggerConfigs trigger_config, int16_t
     return status;
 }
 
-PICO_STATUS set_trigger_directions(struct TriggerConfigs trigger_config, int16_t handle) {
+PICO_STATUS set_trigger_directions(struct PS6000AModule* mp) {
     int16_t nDirections = 1;    // Only support one now 
     PICO_STATUS status = 0;
-    if(trigger_config.thresholdDirection == 10){
-        trigger_config.thresholdDirection = PICO_NEGATIVE_RUNT;
+    if(mp->trigger_config.thresholdDirection == 10){
+        mp->trigger_config.thresholdDirection = PICO_NEGATIVE_RUNT;
     }
     PICO_DIRECTION direction = {
-        .channel = trigger_config.channel,
-        .direction = trigger_config.thresholdDirection,
-        .thresholdMode = trigger_config.thresholdMode
+        .channel = mp->trigger_config.channel,
+        .direction = mp->trigger_config.thresholdDirection,
+        .thresholdMode = mp->trigger_config.thresholdMode
     };
     pthread_mutex_lock(&ps6000a_call_mutex);
-    ps6000aSetTriggerChannelDirections(handle, &direction, nDirections);
+    ps6000aSetTriggerChannelDirections(mp->handle, &direction, nDirections);
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
@@ -634,19 +634,19 @@ PICO_STATUS set_trigger_directions(struct TriggerConfigs trigger_config, int16_t
     return status;
 }
 
-PICO_STATUS set_trigger_properties(struct TriggerConfigs trigger_config, int16_t handle) {
+PICO_STATUS set_trigger_properties(struct PS6000AModule* mp) {
     int16_t nChannelProperties = 1; // Only support one now 
     unsigned short hysteresis = (unsigned short)((UINT16_MAX / 100.0) * 5.0);   // 5% of the full range
 
     PICO_TRIGGER_CHANNEL_PROPERTIES channelProperty = { 
-        .channel = trigger_config.channel,
-        .thresholdUpper = trigger_config.thresholdUpper,
+        .channel = mp->trigger_config.channel,
+        .thresholdUpper = mp->trigger_config.thresholdUpper,
         .thresholdUpperHysteresis = hysteresis,
-        .thresholdLower = trigger_config.thresholdLower,
+        .thresholdLower = mp->trigger_config.thresholdLower,
         .thresholdLowerHysteresis = hysteresis
     };
     pthread_mutex_lock(&ps6000a_call_mutex);
-    PICO_STATUS status = ps6000aSetTriggerChannelProperties(handle, &channelProperty, nChannelProperties, 0, 0);
+    PICO_STATUS status = ps6000aSetTriggerChannelProperties(mp->handle, &channelProperty, nChannelProperties, 0, 0);
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
@@ -658,16 +658,16 @@ PICO_STATUS set_trigger_properties(struct TriggerConfigs trigger_config, int16_t
 }
 
 
-PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp, int16_t handle) {
+PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp) {
     PICO_STATUS status;
     
-    status = set_trigger_conditions(mp->trigger_config, handle);
+    status = set_trigger_conditions(mp);
     if (status != PICO_OK) return status;
 
-    status = set_trigger_directions(mp->trigger_config, handle);
+    status = set_trigger_directions(mp);
     if (status != PICO_OK) return status;
 
-    status = set_trigger_properties(mp->trigger_config, handle);
+    status = set_trigger_properties(mp);
     if (status != PICO_OK) return status;
 
     return status;
@@ -682,11 +682,11 @@ PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp, int16_t handl
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
 
-PICO_STATUS set_data_buffer(struct PS6000AModule* mp, EnabledChannelFlags channel_status, int16_t handle) {
+PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
 
     pthread_mutex_lock(&ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetDataBuffer(
-        handle, (PICO_CHANNEL)NULL, NULL, 0, PICO_INT16_T, 0, 0, 
+        mp->handle, (PICO_CHANNEL)NULL, NULL, 0, PICO_INT16_T, 0, 0, 
         PICO_CLEAR_ALL      // Clear buffer in Picoscope buffer list
     );
     pthread_mutex_unlock(&ps6000a_call_mutex);
@@ -696,12 +696,12 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp, EnabledChannelFlags channe
         if (status != PICO_OK) {
             log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
         }
-        if (get_channel_status(mp->channel_configs[i].channel, channel_status))
+        if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status))
 
         {
             pthread_mutex_lock(&ps6000a_call_mutex);
             status = ps6000aSetDataBuffer(
-                handle, 
+                mp->handle, 
                 mp->channel_configs[i].channel, 
                 mp->waveform[i],
                 mp->sample_config.num_samples, 
