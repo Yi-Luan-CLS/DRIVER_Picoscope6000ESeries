@@ -21,8 +21,7 @@
 #include <biRecord.h>
 #include <boRecord.h>
 
-#include "picoscopeConfig.h"
-#include "drvPicoscope.h"
+#include "devPicoscope.h"
 
 
 enum ioType
