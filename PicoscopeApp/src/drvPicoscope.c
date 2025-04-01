@@ -260,18 +260,6 @@ uint32_t get_device_info(int8_t** device_info, int16_t handle) {
 }
 
 
-// The following struct is intended to track which channels 
-// are enabled (1) or disabled (0) using individual bits. 
-// This is needed for some function calls to the picoscope API. 
-typedef struct {
-    uint32_t channel_a : 1;
-    uint32_t channel_b : 1;
-    uint32_t channel_c : 1;
-    uint32_t channel_d : 1;
-} EnabledChannelFlags; 
-
-EnabledChannelFlags channel_status = {0}; 
-
 /**
  * Enables a specified channel on the connected Picocope with the given configurations. 
  * Setting the channels coupling, range, analog offset, and bandwidth. 
@@ -280,10 +268,11 @@ EnabledChannelFlags channel_status = {0};
  *                The structure holds the coupling type, voltage range, analog offset, and 
  *                bandwidth to configure the channel. 
  *        handle The device identifier returned by open_picoscope(). 
+ *        channel_status On exit, the updated status of Picoscope channels.
  * 
  * @return 0 if the channel is succesfully set on, otherwise a non-zero error code. 
 */
-uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle) {
+uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledChannelFlags* channel_status) {
 
     pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aSetChannelOn(handle, channel.channel, channel.coupling, channel.range, channel.analog_offset, channel.bandwidth);
@@ -294,17 +283,22 @@ uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle) {
         return status;
     }
 
-    if (channel.channel == CHANNEL_A) {
-        channel_status.channel_a = 1;
-    }
-    if (channel.channel == CHANNEL_B) {
-        channel_status.channel_b = 1;
-    }    
-    if (channel.channel == CHANNEL_C) {
-        channel_status.channel_c = 1;
-    }    
-    if (channel.channel == CHANNEL_D) {
-        channel_status.channel_d = 1;
+    switch (channel.channel)
+    {
+        case CHANNEL_A:
+            channel_status->channel_a = 1;
+            break;
+        case CHANNEL_B:
+            channel_status->channel_b = 1;       
+            break;
+        case CHANNEL_C:
+            channel_status->channel_c = 1;
+            break;
+        case CHANNEL_D:
+            channel_status->channel_d = 1;
+            break;
+        default:
+            return -1;
     }
 
     printf("Setting channel %d on.\n", channel.channel);
@@ -323,10 +317,11 @@ uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle) {
  *                  - 2: Channel C
  *                  - 3: Channel D
  *        handle The device identifier returned by open_picoscope(). 
+ *        channel_status On exit, the updated status of Picoscope channels.
  *  
  * @return 0 if the channel is successfully turned off, otherwise a non-zero error code.
 */
-uint32_t set_channel_off(int channel, int16_t handle) {
+uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* channel_status) {
     pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aSetChannelOff(handle, channel);
     pthread_mutex_unlock(&ps6000a_call_mutex);
@@ -337,17 +332,22 @@ uint32_t set_channel_off(int channel, int16_t handle) {
         return status;
     }
 
-    if (channel == CHANNEL_A) {
-        channel_status.channel_a = 0;
-    }
-    if (channel == CHANNEL_B) {
-        channel_status.channel_b = 0;
-    }    
-    if (channel == CHANNEL_C) {
-        channel_status.channel_c = 0;
-    }    
-    if (channel == CHANNEL_D) {
-        channel_status.channel_d = 0;
+    switch (channel)
+    {
+        case CHANNEL_A:
+            channel_status->channel_a = 0;
+            break;
+        case CHANNEL_B:
+            channel_status->channel_b = 0;       
+            break;
+        case CHANNEL_C:
+            channel_status->channel_c = 0;
+            break;
+        case CHANNEL_D:
+            channel_status->channel_d = 0;
+            break;
+        default:
+            return -1;
     }
 
     printf("Set channel %d off.\n", channel);
@@ -366,23 +366,22 @@ uint32_t set_channel_off(int channel, int16_t handle) {
  * 
  * @return 1 if the channel is enabled, 0 if not, and -1 if channel does not exist
  */
-uint32_t get_channel_status(int16_t channel){ 
+uint32_t get_channel_status(int16_t channel, EnabledChannelFlags channel_status){ 
     
-    if (channel == CHANNEL_A) {
-        return channel_status.channel_a;
+    switch (channel)
+    {
+        case CHANNEL_A:
+            return channel_status.channel_a;
+        case CHANNEL_B:
+            return channel_status.channel_b;
+        case CHANNEL_C:
+            return channel_status.channel_c;
+        case CHANNEL_D:
+            return channel_status.channel_d;
+        default:
+            return -1;
     }
-    if (channel == CHANNEL_B) {
-        return channel_status.channel_b;
-    }    
-    if (channel == CHANNEL_C) {
-        return channel_status.channel_c;
-    }    
-    if (channel == CHANNEL_D) {
-        return channel_status.channel_d;
-    }
-    return -1; 
-
-}
+}   
 
 /**
  * Uses the range and coupling of a specific channel to retrieve the maximum and minimum analog offset voltages possible. 
@@ -420,13 +419,14 @@ uint32_t get_analog_offset_limits(struct ChannelConfigs channel, int16_t handle,
  * 
  * @param requested_time_interval The requested sample interval in seconds. 
  *        handle The device identifier returned by open_picoscope(). 
+ *        channel_status EnabledChannelFlags of channels currently enabled on the device identified by the handle. 
  *        timebase On exit, the value of the closest timebase for the requested interval. 
  *        available_time_interval On exit, the closests sample interval available, given the device configurations, 
  *                                to the request interval. 
  * 
  * @return 0 if the call is successful, otherwise a non-zero error code.
  */
-uint32_t validate_sample_interval(double requested_time_interval, int16_t handle, uint32_t* timebase, double* available_time_interval){
+uint32_t validate_sample_interval(double requested_time_interval, int16_t handle, EnabledChannelFlags channel_status, uint32_t* timebase, double* available_time_interval){
 
     uint32_t enabledChannels = *(uint32_t*)&channel_status;
 
@@ -505,19 +505,17 @@ double calculate_sample_rate(double secs_per_div, double samples_per_div) {
 /**
  *  Gets the valid timebase configs given the requested time per division, number of divisions, and number of samples. 
  * 
- * @param timebase_configs TimebaseConfigs structure containing timebase settings. 
- *        num_samples The number of requested samples.
- *        handle The device identifier returned by open_picoscope().   
+ * @param mp Pointer to the PS6000AModule structure containing Picoscope device information. 
  *        sample_interval On exit, the interval at which samples will be taken in seconds. 
  *        timebase On exit, the timebase for the requested time per division. 
  *        sample_rate On exit, the sample rate for the request time per division. 
  * 
  * @return 0 if successful, otherwise a non-zero error code.
  */
-uint32_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uint64_t num_samples, int16_t handle, double* sample_interval, uint32_t* timebase, double* sample_rate) { 
+uint32_t get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_interval, uint32_t* timebase, double* sample_rate) { 
 
-    double secs_per_div = convert_to_seconds(timebase_configs.time_per_division, timebase_configs.time_per_division_unit); 
-    double samples_per_division = calculate_samples_per_division(num_samples, timebase_configs.num_divisions);
+    double secs_per_div = convert_to_seconds(mp->sample_config.timebase_configs.time_per_division, mp->sample_config.timebase_configs.time_per_division_unit); 
+    double samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
 
     double requested_sample_interval = calculate_sample_interval(secs_per_div, samples_per_division); 
 
@@ -526,7 +524,7 @@ uint32_t get_valid_timebase_configs(struct TimebaseConfigs timebase_configs, uin
     uint32_t available_timebase; 
     double available_sample_interval; 
 
-    uint32_t status = validate_sample_interval(requested_sample_interval, handle, &available_timebase, &available_sample_interval);
+    uint32_t status = validate_sample_interval(requested_sample_interval, mp->handle, mp->channel_status, &available_timebase, &available_sample_interval);
     if (status != 0) {
         return status; 
     } 
@@ -545,7 +543,7 @@ typedef struct {
 PICO_STATUS setup_picoscope(struct PS6000AModule* mp);
 PICO_STATUS init_block_ready_callback_params(struct PS6000AModule* mp);
 PICO_STATUS run_block_capture(struct PS6000AModule* mp, double* time_indisposed_ms);
-PICO_STATUS set_data_buffer(struct PS6000AModule* mp, int16_t handle);
+PICO_STATUS set_data_buffer(struct PS6000AModule* mp, EnabledChannelFlags channel_status, int16_t handle);
 PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp, int16_t handle);
 PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_indisposed_ms);
 PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp);
@@ -584,7 +582,8 @@ PICO_STATUS setup_picoscope(struct PS6000AModule* mp) {
         printf("Trigger set.\n");
     }
 
-    status = set_data_buffer(mp, mp->handle);
+    status = set_data_buffer(mp, mp->channel_status, mp->handle);
+
     if (status != PICO_OK) {
         return status;
     }
@@ -659,6 +658,7 @@ PICO_STATUS set_trigger_properties(struct TriggerConfigs trigger_config, int16_t
     return status;
 }
 
+
 PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp, int16_t handle) {
     PICO_STATUS status;
     
@@ -674,27 +674,6 @@ PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp, int16_t handl
     return status;
 }
 
-inline uint32_t is_Channel_On(enum Channel channel){
-
-    switch (channel)
-    {
-    case CHANNEL_A:
-        return channel_status.channel_a;
-        break;
-    case CHANNEL_B:
-        return channel_status.channel_b;
-        break;
-    case CHANNEL_C:
-        return channel_status.channel_c;
-        break;
-    case CHANNEL_D:
-        return channel_status.channel_d;
-        break;
-    default:
-        return -1;
-    }
-}
-
 /**
  * Configures the data buffer for the specified channel on the Picoscope device.
  * 
@@ -703,7 +682,9 @@ inline uint32_t is_Channel_On(enum Channel channel){
  * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-PICO_STATUS set_data_buffer(struct PS6000AModule* mp, int16_t handle) {
+
+PICO_STATUS set_data_buffer(struct PS6000AModule* mp, EnabledChannelFlags channel_status, int16_t handle) {
+
     pthread_mutex_lock(&ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetDataBuffer(
         handle, (PICO_CHANNEL)NULL, NULL, 0, PICO_INT16_T, 0, 0, 
@@ -716,7 +697,8 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp, int16_t handle) {
         if (status != PICO_OK) {
             log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
         }
-        if (is_Channel_On(mp->channel_configs[i].channel))
+        if (get_channel_status(channel_config[i].channel, channel_status))
+
         {
             pthread_mutex_lock(&ps6000a_call_mutex);
             status = ps6000aSetDataBuffer(

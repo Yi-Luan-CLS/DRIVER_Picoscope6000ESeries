@@ -6,6 +6,16 @@
 
 #define CHANNEL_NUM 4
 
+// The following struct is intended to track which channels 
+// are enabled (1) or disabled (0) using individual bits. 
+// This is needed for some function calls to the picoscope API. 
+typedef struct {
+    uint32_t channel_a : 1;
+    uint32_t channel_b : 1;
+    uint32_t channel_c : 1;
+    uint32_t channel_d : 1;
+} EnabledChannelFlags; 
+
 enum Channel{
     CHANNEL_A = 0,
     CHANNEL_B = 1,
