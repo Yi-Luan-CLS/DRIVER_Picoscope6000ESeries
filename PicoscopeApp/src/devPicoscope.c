@@ -1357,7 +1357,7 @@ write_mbbo (struct mbboRecord *pmbbo)
                 );                
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
-                    log_message(pmbbo->name, "Error setting bandwidth.", result);
+                    log_message(vdp->mp, pmbbo->name, "Error setting bandwidth.", result);
                     vdp->mp->channel_configs[channel_index].bandwidth = previous_bandwidth;
                 }
             }

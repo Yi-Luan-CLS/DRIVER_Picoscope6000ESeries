@@ -697,7 +697,7 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp, EnabledChannelFlags channe
         if (status != PICO_OK) {
             log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
         }
-        if (get_channel_status(channel_config[i].channel, channel_status))
+        if (get_channel_status(mp->channel_configs[i].channel, channel_status))
 
         {
             pthread_mutex_lock(&ps6000a_call_mutex);
