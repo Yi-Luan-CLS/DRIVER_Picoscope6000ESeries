@@ -28,6 +28,8 @@ Picoscope_SRCS += Picoscope_registerRecordDeviceDriver.cpp
 Picoscope_SRCS += devPicoscope.c
 Picoscope_SRCS += devPicoscopeMbbio.c
 Picoscope_SRCS += devPicoscopeBio.c
+Picoscope_SRCS += devPicoscopeStringio.c
+
 Picoscope_SRCS += drvPicoscope.c
 
 # Build the main IOC entry point on workstation OSs.
