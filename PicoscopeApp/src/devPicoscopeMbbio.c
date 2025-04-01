@@ -21,8 +21,7 @@
 #include <mbbiRecord.h>
 #include <mbboRecord.h>
 
-#include "picoscopeConfig.h"
-#include "drvPicoscope.h"
+#include "devPicoscope.h"
 
 enum ioType 
 {

@@ -8,8 +8,7 @@
 
 #include <stringinRecord.h>
 
-#include "picoscopeConfig.h"
-#include "drvPicoscope.h"
+#include "devPicoscope.h"
 
 enum ioType
     {
