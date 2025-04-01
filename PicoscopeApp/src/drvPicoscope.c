@@ -141,7 +141,6 @@ uint32_t get_resolution(int16_t* resolution, int16_t handle) {
         log_error("ps6000aGetDeviceResolution", status, __FILE__, __LINE__);
         return status;
     }
-
     *resolution = (int16_t)device_resolution; 
     return 0; 
 }
@@ -945,6 +944,22 @@ PICO_STATUS stop_capturing(int16_t handle) {
     return status;
 }
 
+
+
+ /**********************************************
+ *  Common record functions 
+ ***********************************************/
+int format_device_support_function(char *string, char *paramName, char *serialNum)
+{       
+    if (sscanf(string, "S:%s @L:%s", serialNum, paramName) != 2) {
+        return -1;
+    }
+    return 0;
+}
+
+ /**********************************************
+ *  Module related functions 
+ ***********************************************/
 struct PS6000AModule*
 PS6000AGetModule(char* serial_num){
     for (size_t i = 0; i < MAX_PICO; i++) {
