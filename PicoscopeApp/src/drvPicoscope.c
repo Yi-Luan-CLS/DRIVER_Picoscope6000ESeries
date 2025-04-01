@@ -944,19 +944,6 @@ PICO_STATUS stop_capturing(int16_t handle) {
     return status;
 }
 
-
-
- /**********************************************
- *  Common record functions 
- ***********************************************/
-int format_device_support_function(char *string, char *paramName, char *serialNum)
-{       
-    if (sscanf(string, "S:%s @L:%s", serialNum, paramName) != 2) {
-        return -1;
-    }
-    return 0;
-}
-
  /**********************************************
  *  Module related functions 
  ***********************************************/
