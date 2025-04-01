@@ -11,24 +11,24 @@
 #include "devPicoscopeCommon.h"
 
 enum ioType
-    {
+{
     UNKNOWN_IOTYPE, // default case, must be 0 
     GET_DEVICE_INFO,
 };
 
 enum ioFlag
-    {
+{
     isOutput = 0,
     isInput = 1
-    };
+};
 
 static struct stringioType
-    {
-        char *label;
-        enum ioFlag flag;
-        enum ioType ioType;
-        char *cmdp;
-    } StringioType[] =
+{
+    char *label;
+    enum ioFlag flag;
+    enum ioType ioType;
+    char *cmdp;
+} StringioType[] =
     {
         {"get_device_info", isInput, GET_DEVICE_INFO, "" }
     };
@@ -36,20 +36,18 @@ static struct stringioType
 #define STRINGIO_TYPE_SIZE    (sizeof (StringioType) / sizeof (struct stringioType))
 
 struct PicoscopeStringioData
-    {
-        char serial_num[10];
-        int16_t handle; 
- 
-        enum ioType ioType;
-        char *cmdPrefix;
-        char paramLabel[32];
-        int paramValid;
-        struct PS6000AModule* mp;
-    };
+{
+    char serial_num[10];
+    int16_t handle; 
 
-static enum ioType findStringioType(enum ioFlag ioFlag, char *param, char **cmdString);
-static enum ioType
-findStringioType(enum ioFlag ioFlag, char *param, char **cmdString)
+    enum ioType ioType;
+    char *cmdPrefix;
+    char paramLabel[32];
+    int paramValid;
+    struct PS6000AModule* mp;
+};
+
+static enum ioType findStringioType(enum ioFlag ioFlag, char *param, char **cmdString)
 {
     unsigned int i;
 
@@ -64,42 +62,37 @@ findStringioType(enum ioFlag ioFlag, char *param, char **cmdString)
 }
 
 
-
 /****************************************************************************************
  *  Stringin - read a data array of values
  ****************************************************************************************/
 
 typedef long (*DEVSUPFUN_STRINGIN)(struct stringinRecord *);
 
-
 static long init_record_stringin(struct stringinRecord *);
 static long read_stringin(struct stringinRecord *);
 
 struct
-        {
-            long         number;
-            DEVSUPFUN_STRINGIN report;
-            DEVSUPFUN_STRINGIN init;
-            DEVSUPFUN_STRINGIN init_record;
-            DEVSUPFUN_STRINGIN get_ioint_info;
-            DEVSUPFUN_STRINGIN read;
-            // long (*special_linconv)(struct stringinRecord *, int);
-        } devPicoscopeStringin =
-                {
-                6,
-                NULL,
-                NULL,
-                init_record_stringin,
-                NULL,
-                read_stringin,
-                };
+{
+    long         number;
+    DEVSUPFUN_STRINGIN report;
+    DEVSUPFUN_STRINGIN init;
+    DEVSUPFUN_STRINGIN init_record;
+    DEVSUPFUN_STRINGIN get_ioint_info;
+    DEVSUPFUN_STRINGIN read;
+} devPicoscopeStringin =
+    {
+        6,
+        NULL,
+        NULL,
+        init_record_stringin,
+        NULL,
+        read_stringin,
+    };
 
 epicsExportAddress(dset, devPicoscopeStringin);
 
 
-
-static long
-init_record_stringin(struct stringinRecord * pstringin)
+static long init_record_stringin(struct stringinRecord * pstringin)
 {
     struct instio  *pinst;
     struct PicoscopeStringioData *vdp;
@@ -127,8 +120,7 @@ init_record_stringin(struct stringinRecord * pstringin)
 
     vdp->ioType = findStringioType(isInput, vdp->paramLabel, &(vdp->cmdPrefix));
     if (vdp->ioType == UNKNOWN_IOTYPE){
-        // errlogPrintf("%s: Invalid type: \"@%s\"\n", pai->name, vdp->paramLabel);
-        printf("%s: Invalid type: \"@%s\"\n", pstringin->name, vdp->paramLabel);
+        errlogPrintf("%s: Invalid type: \"@%s\"\n", pstringin->name, vdp->paramLabel);
         return(S_db_badField);
     }
     
@@ -157,8 +149,7 @@ init_record_stringin(struct stringinRecord * pstringin)
     return 0;
 }
 
-static long
-read_stringin (struct stringinRecord *pstringin){
+static long read_stringin (struct stringinRecord *pstringin){
 
     struct PicoscopeStringioData *vdp = (struct PicoscopeStringioData *)pstringin->dpvt;
 

@@ -1,20 +1,9 @@
-#include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <time.h>
-#include <cantProceed.h>
-#include <dbDefs.h>
 #include <dbAccess.h>
-#include <recSup.h>
 #include <recGbl.h>
-#include <devSup.h>
-#include <link.h>
-#include <epicsTypes.h>
 #include <alarm.h>
-#include <aiRecord.h>
-#include <stringinRecord.h>
-#include <menuConvert.h>
 #include <epicsExport.h>
 #include <errlog.h>
 
@@ -33,7 +22,6 @@ enum ioType
     GET_CHANNEL_STATUS,
 };
 
-
 enum ioFlag
 {
     isOutput = 0,
@@ -49,7 +37,6 @@ struct bioType
     int offCmd;
 } BioType [] =
 {
-
     {"open_picoscope",     isOutput,   OPEN_PICOSCOPE,      1,    0 },
     {"get_device_status",  isInput,    GET_DEVICE_STATUS,   1,    0 },
     {"set_channel_on",     isOutput,   SET_CHANNEL_ON,      1,    0 },
@@ -58,8 +45,6 @@ struct bioType
 };
 
 #define BIO_TYPE_SIZE    (sizeof (BioType) / sizeof (struct bioType))
-
-static enum ioType findBioType(enum ioFlag ioFlag, char *param, int *onCmd, int *offCmd);
 
 struct PicoscopeBioData
     {   
@@ -75,8 +60,7 @@ struct PicoscopeBioData
         struct PS6000AModule* mp;
     };
 
-static enum ioType
-findBioType(enum ioFlag ioFlag, char *param,  int *onCmd, int *offCmd)
+static enum ioType findBioType(enum ioFlag ioFlag, char *param,  int *onCmd, int *offCmd)
 {
 	unsigned int i;
 
@@ -103,14 +87,14 @@ static long init_record_bo(struct boRecord *pbo);
 static long write_bo(struct boRecord *pbo);
 
 struct
-	{
+{
 	long         number;
 	DEVSUPFUN_BO report;
 	DEVSUPFUN_BO init;
 	DEVSUPFUN_BO init_record;
 	DEVSUPFUN_BO get_ioint_info;
 	DEVSUPFUN_BO write_bo;
-	} devPicoscopeBo =
+} devPicoscopeBo =
 	{
 		5,
 		NULL,
@@ -198,9 +182,6 @@ init_record_bo (struct boRecord *pbo)
 static long
 write_bo (struct boRecord *pbo)
 {
-	int pv_value;
-    char *record_name;
-    int channel_index;
     uint32_t timebase = 0; 
     double sample_interval, sample_rate = 0;    
 	
@@ -212,7 +193,7 @@ write_bo (struct boRecord *pbo)
 	switch (vdp->ioType){
         
         case OPEN_PICOSCOPE: 
-            pv_value = (int)pbo->val; 
+            int pv_value = (int)pbo->val; 
             char message[100]; 
             
             if (pv_value == 1){
@@ -234,8 +215,8 @@ write_bo (struct boRecord *pbo)
             break;
 
         case SET_CHANNEL_ON:    
-            record_name = pbo->name;
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
+            char* record_name = pbo->name;
+            int channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
             pv_value = pbo->val;
 
             // If PV value is 1 (ON) set channel on 
@@ -329,16 +310,14 @@ struct
 
 epicsExportAddress(dset, devPicoscopeBi);
 
-static long
-init_bi(int pass)
+static long init_bi(int pass)
 {
 	if (pass >= 1)
 		return 0;
 	return 0;
 }
 
-static long
-init_record_bi(struct biRecord *pbi)
+static long init_record_bi(struct biRecord *pbi)
 {
     struct instio  *pinst;
 	struct PicoscopeBioData *vdp;
@@ -373,11 +352,8 @@ init_record_bi(struct biRecord *pbi)
 	return 0;
 }
 
-static long
-read_bi (struct biRecord *pbi)
+static long read_bi (struct biRecord *pbi)
 {
-    char *record_name;
-    int channel_index;
 
 	struct PicoscopeBioData *vdp;
 	vdp = (struct PicoscopeBioData *)pbi->dpvt;
@@ -399,8 +375,8 @@ read_bi (struct biRecord *pbi)
             break;
 
         case GET_CHANNEL_STATUS: 
-            record_name = pbi->name; 
-            channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
+            char* record_name = pbi->name; 
+            int channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
             int16_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == -1) {

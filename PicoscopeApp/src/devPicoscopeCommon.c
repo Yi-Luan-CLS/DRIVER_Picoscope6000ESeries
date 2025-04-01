@@ -7,7 +7,6 @@
 #include "picoscopeConfig.h"
 #include "devPicoscopeCommon.h"
 
-
 /**
  * Converts parameters specified in a records INP/OUT field with the
  * format "@S:$(SERIAL_NUM) @L:${PARAM_NAME}". 
