@@ -17,7 +17,6 @@
 #include <menuConvert.h>
 #include <epicsExport.h>
 #include <errlog.h>
-#include <epicsMutex.h>
 #include "picoscopeConfig.h"
 
 #include <sys/time.h>
@@ -28,10 +27,6 @@
 
 
 int16_t result; 
-int8_t dataAcquisitionFlag = 0;
-epicsMutexId epics_acquisition_flag_mutex;
-epicsMutexId epics_acquisition_thread_mutex;
-epicsMutexId epics_acquisition_restart_mutex;
 
 
 enum ioType
@@ -167,8 +162,6 @@ findAioType(enum ioFlag ioFlag, char *param, char **cmdString)
 
     return UNKNOWN_IOTYPE;
 }
-struct waveformRecord* pWaveformStart;
-struct waveformRecord* pWaveformStop;
 
 int
 format_device_support_function(char *string, char *paramName, char *serialNum)
@@ -178,7 +171,7 @@ format_device_support_function(char *string, char *paramName, char *serialNum)
         return 0;
 }
 
-void log_message(char pv_name[], char error_message[], uint32_t status_code);
+void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[], uint32_t status_code);
 
 struct ChannelConfigs* channels[4] = {NULL}; // List of Picoscope channels and their configurations
 struct TriggerConfigs* trigger_config = {NULL};
@@ -293,7 +286,6 @@ read_ai (struct aiRecord *pai){
 
     switch (vdp->ioType)
     {
-        // Channel configuration fbk
         case GET_ANALOG_OFFSET: 
             record_name = pai->name; 
             channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
@@ -331,7 +323,7 @@ read_ai (struct aiRecord *pai){
             break; 
         
         case GET_ACQUISITION_STATUS:
-            pai->val = (float)dataAcquisitionFlag;
+            pai->val = (float)vdp->mp->dataAcquisitionFlag;
             break;
 
         case GET_TRIGGER_UPPER:
@@ -364,21 +356,21 @@ typedef long (*DEVSUPFUN_AO)(struct aoRecord *);
 
 static long init_record_ao(struct aoRecord *pao);
 static long write_ao (struct aoRecord *pao);
-void re_acquire_waveform(){
-    if (dataAcquisitionFlag!=1) {
+void re_acquire_waveform(struct PS6000AModule *mp){
+    if (mp->dataAcquisitionFlag!=1) {
         return;
     }
-    epicsMutexLock(epics_acquisition_restart_mutex);    // this is to make sure Stop and Start PV invoked in sequence.
+    epicsMutexLock(mp->epics_acquisition_restart_mutex);    // this is to make sure Stop and Start PV invoked in sequence.
     
-    dbProcess((struct dbCommon *)pWaveformStop);
+    dbProcess((struct dbCommon *)mp->pWaveformStopPtr);
 
     // this is to make sure the capureting thread is actually stopped
-    epicsMutexLock(epics_acquisition_thread_mutex);
-    epicsMutexUnlock(epics_acquisition_thread_mutex);
+    epicsMutexLock(mp->epics_acquisition_thread_mutex);
+    epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
     
-    dbProcess((struct dbCommon *)pWaveformStart);
+    dbProcess((struct dbCommon *)mp->pWaveformStartPtr);
     
-    epicsMutexUnlock(epics_acquisition_restart_mutex);
+    epicsMutexUnlock(mp->epics_acquisition_restart_mutex);
 }
 
 struct
@@ -513,8 +505,7 @@ write_ao (struct aoRecord *pao)
     vdp = (struct PicoscopeData *)pao->dpvt;
 
     switch (vdp->ioType)
-    {        
-        
+    {
         case SET_NUM_DIVISIONS: 
             int16_t previous_num_divisions = vdp->mp->sample_config.timebase_configs.num_divisions; 
             vdp->mp->sample_config.timebase_configs.num_divisions = (int) pao->val; 
@@ -527,7 +518,7 @@ write_ao (struct aoRecord *pao)
             );  
 
             if (result != 0) {
-                log_message(pao->name, "Error setting the number of divisions.", result);
+                log_message(vdp->mp, pao->name, "Error setting the number of divisions.", result);
                 vdp->mp->sample_config.timebase_configs.num_divisions = previous_num_divisions; 
                 break; 
             }
@@ -550,7 +541,7 @@ write_ao (struct aoRecord *pao)
             ); 
 
             if (result != 0) {
-                log_message(pao->name, "Error setting the number of samples.", result);
+                log_message(vdp->mp, pao->name, "Error setting the number of samples.", result);
                 vdp->mp->sample_config.num_samples = previous_num_samples; 
                 break; 
             }
@@ -571,7 +562,7 @@ write_ao (struct aoRecord *pao)
         case SET_ANALOG_OFFSET: 
             record_name = pao->name;
             channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs);     
-            
+        
             int16_t previous_analog_offset = vdp->mp->channel_configs[channel_index].coupling;
 
             double max_analog_offset = 0; 
@@ -583,7 +574,7 @@ write_ao (struct aoRecord *pao)
                 &min_analog_offset
             );
             if (result != 0) {
-                log_message(pao->name, "Error getting analog offset limits.", result);
+                log_message(vdp->mp, pao->name, "Error getting analog offset limits.", result);
             }
 
             pao->drvh = max_analog_offset; 
@@ -608,12 +599,12 @@ write_ao (struct aoRecord *pao)
                 );               
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
-                    log_message(pao->name, "Error setting analog offset.", result);
+                    log_message(vdp->mp, pao->name, "Error setting analog offset.", result);
                     vdp->mp->channel_configs[channel_index].analog_offset = previous_analog_offset;
                 }
             }
             break;
-
+        
         case SET_TRIGGER_UPPER:
             vdp->mp->trigger_config.thresholdUpper = (int16_t) pao->val;
             break;
@@ -645,7 +636,7 @@ write_ao (struct aoRecord *pao)
             }
         return 2;
     }else{
-        re_acquire_waveform();
+        re_acquire_waveform(vdp->mp);
     }
     return 0;
 }
@@ -871,7 +862,7 @@ write_bo (struct boRecord *pbo)
                 result = open_picoscope(resolution, vdp->serial_num, &handle);
                 if (result != 0) {
                     sprintf(message, "Error opening picoscope with serial number %s.", vdp->serial_num);
-                    log_message(pbo->name, message, result);
+                    log_message(vdp->mp, pbo->name, message, result);
                     rbv = 0; 
                 }  
                 vdp->mp->handle = handle; // Update
@@ -879,7 +870,7 @@ write_bo (struct boRecord *pbo)
                 result = close_picoscope(vdp->mp->handle); 
                 if (result != 0) {
                     sprintf(message, "Error closing picoscope with serial number %s.", vdp->serial_num);
-                    log_message(pbo->name, message, result);
+                    log_message(vdp->mp, pbo->name, message, result);
                 }   
             }
             break;
@@ -897,7 +888,7 @@ write_bo (struct boRecord *pbo)
                     &vdp->mp->channel_status
                 );
                 if (result != 0) {
-                    log_message(pbo->name, "Error setting channel on.", result);
+                    log_message(vdp->mp, pbo->name, "Error setting channel on.", result);
                     pbo->val = 0; 
                     rbv = 0; 
                 }
@@ -909,7 +900,7 @@ write_bo (struct boRecord *pbo)
                     &vdp->mp->channel_status
                 );
                 if (result != 0) {
-                    log_message(pbo->name, "Error setting channel off.", result);
+                    log_message(vdp->mp, pbo->name, "Error setting channel off.", result);
                     pbo->val = 0; 
                 }
             }    
@@ -923,7 +914,7 @@ write_bo (struct boRecord *pbo)
             );                     
             
             if (result != 0){
-                log_message(pbo->name, "Error setting timebase configurations.", result);
+                log_message(vdp->mp, pbo->name, "Error setting timebase configurations.", result);
             }
 
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
@@ -1040,7 +1031,7 @@ read_bi (struct biRecord *pbi)
         case GET_DEVICE_STATUS:
             result = ping_picoscope(vdp->mp->handle); 
             if ( result != 0 ) {
-                log_message(pbi->name, "Cannot ping device.", result);
+                log_message(vdp->mp, pbi->name, "Cannot ping device.", result);
                 pbi->val = 0;
                 break;
             }
@@ -1055,7 +1046,7 @@ read_bi (struct biRecord *pbi)
 
             int16_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == -1) {
-                log_message(pbi->name, "Cannot get channel status.", channel_status);
+                log_message(vdp->mp, pbi->name, "Cannot get channel status.", channel_status);
             }
             pbi->val = channel_status;
             pbi->rval = channel_status;
@@ -1295,7 +1286,7 @@ write_mbbo (struct mbboRecord *pmbbo)
             int16_t resolution = (int)pmbbo->rval; 
             result = set_device_resolution(resolution, vdp->mp->handle); 
             if (result !=0) {
-                log_message(pmbbo->name, "Error setting device resolution.", result);
+                log_message(vdp->mp, pmbbo->name, "Error setting device resolution.", result);
             }
             break;  
 
@@ -1317,7 +1308,7 @@ write_mbbo (struct mbboRecord *pmbbo)
                 );                
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
-                    log_message(pmbbo->name, "Error setting coupling.", result);
+                    log_message(vdp->mp, pmbbo->name, "Error setting coupling.", result);
                     vdp->mp->channel_configs[channel_index].coupling = previous_coupling;
                 }
             }
@@ -1342,7 +1333,7 @@ write_mbbo (struct mbboRecord *pmbbo)
                 );     
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
-                    log_message(pmbbo->name, "Error setting voltage range.", result);
+                    log_message(vdp->mp, pmbbo->name, "Error setting voltage range.", result);
                     vdp->mp->channel_configs[channel_index].range = previous_range;
                 }
             }
@@ -1366,7 +1357,7 @@ write_mbbo (struct mbboRecord *pmbbo)
                 );                
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
-                    log_message(pmbbo->name, "Error setting bandwidth.", result);
+                    log_message(vdp->mp, pmbbo->name, "Error setting bandwidth.", result);
                     vdp->mp->channel_configs[channel_index].bandwidth = previous_bandwidth;
                 }
             }
@@ -1384,7 +1375,7 @@ write_mbbo (struct mbboRecord *pmbbo)
             ); 
             
             if (result != 0) {
-                log_message(pmbbo->name, "Error setting time per division.", result);
+                log_message(vdp->mp, pmbbo->name, "Error setting time per division.", result);
                 vdp->mp->sample_config.timebase_configs.time_per_division = previous_time_per_division; 
                 break; 
             }
@@ -1406,7 +1397,7 @@ write_mbbo (struct mbboRecord *pmbbo)
             ); 
 
             if (result != 0) {
-                log_message(pmbbo->name, "Error setting time per division unit.", result);
+                log_message(vdp->mp, pmbbo->name, "Error setting time per division unit.", result);
                 vdp->mp->sample_config.timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
                 break; 
             }
@@ -1538,7 +1529,7 @@ write_mbbo (struct mbboRecord *pmbbo)
             }
         return 2;
     }else{
-        re_acquire_waveform();
+        re_acquire_waveform(vdp->mp);
     }
     return 0;
 }
@@ -1658,7 +1649,7 @@ read_mbbi(struct mbbiRecord *pmbbi){
             int16_t resolution;
             uint32_t result = get_resolution(&resolution, vdp->mp->handle);
             if (result != 0) {
-                log_message(pmbbi->name, "Error getting device resolution.", result); 
+                log_message(vdp->mp, pmbbi->name, "Error getting device resolution.", result); 
                 break; 
             }
             pmbbi->rval = resolution;  
@@ -1834,7 +1825,7 @@ read_stringin (struct stringinRecord *pstringin){
             memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
             
             if (result != 0){
-                log_message(pstringin->name, "Error getting device information.", result);
+                log_message(vdp->mp, pstringin->name, "Error getting device information.", result);
             } 
             else {
                 free(device_info); 
@@ -1882,11 +1873,6 @@ struct{
 
 epicsExportAddress(dset, devPicoscopeWaveform);
 
-int16_t* waveform[CHANNEL_NUM];
-struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
-
-struct waveformRecord* pLog;
-
 static long init_record_waveform(struct waveformRecord * pwaveform)
 {
     struct instio  *pinst;
@@ -1928,32 +1914,26 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
     {    
 
         case START_RETRIEVE_WAVEFORM:
-            pWaveformStart = pwaveform;
+            vdp->mp->pWaveformStartPtr = pwaveform;
             break;
       
         case GET_LOG: 
             // Save log PV to process when errors occur
-            pLog = pwaveform; 
+            vdp->mp->pLog = pwaveform; 
             break; 
 
         case UPDATE_WAVEFORM:
             int channel_index = find_channel_index_from_record(pwaveform->name, vdp->mp->channel_configs); 
-            pRecordUpdateWaveform[channel_index] = pwaveform;
-            waveform[channel_index] = calloc(pwaveform->nelm, sizeof(int16_t));
-            if (!waveform[channel_index]) {
+            vdp->mp->pRecordUpdateWaveform[channel_index] = pwaveform;
+            vdp->mp->waveform[channel_index] = calloc(pwaveform->nelm, sizeof(int16_t));
+            if (!vdp->mp->waveform[channel_index]) {
                 errlogPrintf("%s: Waveform memory allocation failed\n", pwaveform->name);
                 return -1;
             }
             break;
 
         case STOP_RETRIEVE_WAVEFORM:
-            if (!(epics_acquisition_flag_mutex = epicsMutexCreate()) ||
-                !(epics_acquisition_thread_mutex = epicsMutexCreate()) ||
-                !(epics_acquisition_restart_mutex = epicsMutexCreate())) {
-                errlogPrintf("%s: Mutex creation failed\n", pwaveform->name);
-                return -1;
-            }
-            pWaveformStop = pwaveform;
+            vdp->mp->pWaveformStopPtr = pwaveform;
             break;
 
         default:
@@ -1965,46 +1945,47 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
 
 void
 captureThreadFunc(void *arg) {
-    epicsMutexLock(epics_acquisition_thread_mutex);
     PS6000AModule* mp = (struct PS6000AModule *)arg;
+    epicsMutexLock(mp->epics_acquisition_thread_mutex);
     epicsThreadId id = epicsThreadGetIdSelf();
     printf("Start ID is %ld\n", id->tid);
     // Setup Picoscope
-    uint32_t status = setup_picoscope(mp, waveform);
+    uint32_t status = setup_picoscope(mp);
     if (status != 0) {
-        log_message("", "Error configuring picoscope for data capture.", status);
+        log_message(mp, "", "Error configuring picoscope for data capture.", status);
         printf("captureThreadFunc Cleanup ID is %ld\n", id->tid);
-        epicsMutexLock(epics_acquisition_flag_mutex);
-        dataAcquisitionFlag = 0;
-        epicsMutexUnlock(epics_acquisition_flag_mutex);
-        epicsMutexUnlock(epics_acquisition_thread_mutex);
+        epicsMutexLock(mp->epics_acquisition_flag_mutex);
+        mp->dataAcquisitionFlag = 0;
+        epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
+        epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
         return;
     }
 
-    while (dataAcquisitionFlag == 1) {
+    while (mp->dataAcquisitionFlag == 1) {
         double time_indisposed_ms = 0;
 
         mp->sample_collected = mp->sample_config.num_samples;
         status = run_block_capture(mp, &time_indisposed_ms);
         if (status != 0) {
-            log_message("", "Error capturing data block.", status);
+            log_message(mp, "", "Error capturing data block.", status);
             break;
         }
 
         // Process the UPDATE_WAVEFORM subroutine to update waveform
         for (size_t i = 0; i < CHANNEL_NUM; i++) {
-            if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status)) {
-                dbProcess((struct dbCommon *)pRecordUpdateWaveform[i]);
+            if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
+                dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
+
             }
         }
     }
 
     stop_capturing(mp->handle);
     printf("Cleanup ID is %ld\n", id->tid);
-    epicsMutexLock(epics_acquisition_flag_mutex);
-    dataAcquisitionFlag = 0;
-    epicsMutexUnlock(epics_acquisition_flag_mutex);
-    epicsMutexUnlock(epics_acquisition_thread_mutex);
+    epicsMutexLock(mp->epics_acquisition_flag_mutex);
+    mp->dataAcquisitionFlag = 0;
+    epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
+    epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
 }
 
 static long
@@ -2014,42 +1995,42 @@ read_waveform(struct waveformRecord *pwaveform) {
     switch (vdp->ioType) {
         case START_RETRIEVE_WAVEFORM:
             printf("Start Retrieving\n");
-            epicsMutexLock(epics_acquisition_flag_mutex);
-            if (dataAcquisitionFlag) {
+            epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
+            if (vdp->mp->dataAcquisitionFlag) {
                 fprintf(stderr, "Capture thread already running\n");
-                epicsMutexUnlock(epics_acquisition_flag_mutex);
+                epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
                 return -1;
             }
-            dataAcquisitionFlag = 1;
-            epicsMutexUnlock(epics_acquisition_flag_mutex);
-	        vdp->mp->triggerReadyEvent = epicsEventCreate(0);
+            vdp->mp->dataAcquisitionFlag = 1;
+            epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
+	        // vdp->mp->triggerReadyEvent = epicsEventCreate(0);
 
             // Create capture thread
             epicsThreadId capture_thread = epicsThreadCreate("captureThread", epicsThreadPriorityMedium,
                                                              0, (EPICSTHREADFUNC)captureThreadFunc, vdp->mp);
             if (!capture_thread) {
                 errlogPrintf("%s: Failed to create capture thread\n", pwaveform->name);
-                epicsMutexLock(epics_acquisition_flag_mutex);
-                dataAcquisitionFlag = 0;
-                epicsMutexUnlock(epics_acquisition_flag_mutex);
+                epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
+                vdp->mp->dataAcquisitionFlag = 0;
+                epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
                 return -1;
             }
             break;
 
         case UPDATE_WAVEFORM:
             int channel_index = find_channel_index_from_record(pwaveform->name, vdp->mp->channel_configs); 
-            epicsMutexLock(epics_acquisition_flag_mutex);
-            if (dataAcquisitionFlag == 1) {
-                memcpy(pwaveform->bptr, waveform[channel_index], vdp->mp->sample_collected * sizeof(int16_t));
+            epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
+            if (vdp->mp->dataAcquisitionFlag == 1) {
+                memcpy(pwaveform->bptr, vdp->mp->waveform[channel_index], vdp->mp->sample_collected * sizeof(int16_t));
                 pwaveform->nord = vdp->mp->sample_collected;
             }
-            epicsMutexUnlock(epics_acquisition_flag_mutex);
+            epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
             break;
 
         case STOP_RETRIEVE_WAVEFORM:
-            epicsMutexLock(epics_acquisition_flag_mutex);
-            dataAcquisitionFlag = 0;
-            epicsMutexUnlock(epics_acquisition_flag_mutex);
+            epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
+            vdp->mp->dataAcquisitionFlag = 0;
+            epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
     		epicsEventSignal(vdp->mp->triggerReadyEvent);
             break;
 
@@ -2072,15 +2053,15 @@ read_waveform(struct waveformRecord *pwaveform) {
  *           error_message Message to go with error. 
  *           status_code The status code from Picoscope API. 
  */
-void log_message(char pv_name[], char error_message[], uint32_t status_code){
+void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[], uint32_t status_code){
     
     int16_t size = snprintf(NULL, 0, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
 
     char log[size+1]; 
     sprintf(log, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
-    memcpy(pLog->bptr, log, strlen(log)+1);
-    pLog->nord = strlen(log)+1;
+    memcpy(mp->pLog->bptr, log, strlen(log)+1);
+    mp->pLog->nord = strlen(log)+1;
 
-    dbProcess((struct dbCommon *)pLog);     
+    dbProcess((struct dbCommon *)mp->pLog);     
     usleep(100); // wait for log PV to process
 }

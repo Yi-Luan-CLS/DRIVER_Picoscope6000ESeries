@@ -1,5 +1,7 @@
 #include "picoscopeConfig.h"
 #include <epicsEvent.h>
+#include <epicsMutex.h>
+
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
 #include <aiRecord.h>
@@ -7,9 +9,21 @@
 typedef struct PS6000AModule 
 {
     char* serial_num;
+
+    int8_t dataAcquisitionFlag;
+    struct waveformRecord* pWaveformStartPtr;
+    struct waveformRecord* pWaveformStopPtr;
+    struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
+    struct waveformRecord* pLog;
+
     int16_t handle;
 
+
 	epicsEventId triggerReadyEvent;
+    epicsMutexId epics_acquisition_flag_mutex;
+    epicsMutexId epics_acquisition_thread_mutex;
+    epicsMutexId epics_acquisition_restart_mutex;
+
     int16_t* waveform[CHANNEL_NUM];
 
     struct SampleConfigs sample_config;
@@ -61,11 +75,11 @@ uint32_t get_analog_offset_limits(
     int16_t handle,
     double* max_analog_offset,
     double* min_analog_offset
-);
+    );
+
 
 uint32_t setup_picoscope(
-    struct PS6000AModule* mp,
-    int16_t* waveform_buffer[CHANNEL_NUM]
+    struct PS6000AModule* mp
     );
 
 // uint32_t interrupt_block_capture();
