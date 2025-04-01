@@ -8,6 +8,9 @@
 typedef struct PS6000AModule 
 {
     char* serial_num;
+    int16_t handle;
+    int16_t device_resolution; 
+
 
     int8_t dataAcquisitionFlag;
     struct waveformRecord* pWaveformStartPtr;
@@ -15,7 +18,6 @@ typedef struct PS6000AModule
     struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
     struct waveformRecord* pLog;
 
-    int16_t handle;
 
 
 	epicsEventId triggerReadyEvent;
@@ -29,11 +31,18 @@ typedef struct PS6000AModule
     struct ChannelConfigs channel_configs[CHANNEL_NUM];
     struct TriggerConfigs trigger_config;
 
-
     EnabledChannelFlags channel_status; 
 
     // Stored PVs for processing at specific time 
     struct aiRecord* pTriggerFbk[2];
+    struct aoRecord* pAnalogOffestRecords[CHANNEL_NUM];
+
+    struct mbboRecord* pTriggerDirection;
+    struct mbbiRecord* pTriggerDirectionFbk;
+    struct mbbiRecord* pTriggerType;
+    struct mbbiRecord* pTriggerChannelFbk;
+    struct mbbiRecord* pTriggerModeFbk;
+
     
     uint64_t sample_collected;
 
@@ -105,5 +114,8 @@ uint32_t validate_sample_interval(
 
 uint32_t stop_capturing(int16_t handle);
 
+int format_device_support_function(char *string, char *paramName, char *serialNum);
+void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[], uint32_t status_code);
+void re_acquire_waveform(struct PS6000AModule *mp);
 
 #endif
