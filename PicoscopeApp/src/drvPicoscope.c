@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <epicsExport.h>
 #include <iocsh.h>
+#include <dbAccess.h>
 
 #include <pthread.h>
 #include "drvPicoscope.h"
@@ -944,6 +945,53 @@ PICO_STATUS stop_capturing(int16_t handle) {
     return status;
 }
 
+void
+acquisition_thread_function(void *arg) {
+    PS6000AModule* mp = (struct PS6000AModule *)arg;
+    while (1)
+    {
+        epicsEventWait((epicsEventId)mp->acquisitionStartEvent);
+        epicsMutexLock(mp->epics_acquisition_thread_mutex);
+        epicsThreadId id = epicsThreadGetIdSelf();
+        printf("Start ID is %ld\n", id->tid);
+        // Setup Picoscope
+        uint32_t status = setup_picoscope(mp);
+        if (status != 0) {
+            printf("Error configuring picoscope for data capture.");
+            epicsMutexLock(mp->epics_acquisition_flag_mutex);
+            mp->dataAcquisitionFlag = 0;
+            epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
+            epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
+            return;
+        }
+
+        while (mp->dataAcquisitionFlag == 1) {
+            double time_indisposed_ms = 0;
+
+            mp->sample_collected = mp->sample_config.num_samples;
+            status = run_block_capture(mp, &time_indisposed_ms);
+            if (status != 0) {
+                printf("Error capturing block data.");
+                break;
+            }
+
+            // Process the UPDATE_WAVEFORM subroutine to update waveform
+            for (size_t i = 0; i < CHANNEL_NUM; i++) {
+                if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
+                    dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
+                }
+            }
+        }
+
+        stop_capturing(mp->handle);
+        printf("Cleanup ID is %ld\n", id->tid);
+        epicsMutexLock(mp->epics_acquisition_flag_mutex);
+        mp->dataAcquisitionFlag = 0;
+        epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
+        epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
+    }
+}
+
  /**********************************************
  *  Module related functions 
  ***********************************************/
@@ -972,6 +1020,7 @@ PS6000ACreateModule(char* serial_num){
         return NULL;
     }
     mp->triggerReadyEvent = epicsEventCreate(0);
+    mp->acquisitionStartEvent = epicsEventCreate(0);
     mp->epics_acquisition_restart_mutex = epicsMutexCreate();
     mp->epics_acquisition_flag_mutex = epicsMutexCreate();
     mp->epics_acquisition_thread_mutex = epicsMutexCreate();
@@ -979,7 +1028,17 @@ PS6000ACreateModule(char* serial_num){
         !(mp->epics_acquisition_thread_mutex = epicsMutexCreate()) ||
         !(mp->epics_acquisition_restart_mutex = epicsMutexCreate())) {
         free(mp);
-        log_error("%s: Mutex creation failed\n", PICO_MEMORY_FAIL, __FILE__, __LINE__);
+        log_error("Mutex creation failed\n", -1, __FILE__, __LINE__);
+        return NULL;
+    }
+    // Create capture thread
+    mp->acquisition_thread_function = epicsThreadCreate("captureThread", epicsThreadPriorityMedium,
+                                                     0, (EPICSTHREADFUNC)acquisition_thread_function, mp);
+    if (!mp->acquisition_thread_function) {
+        log_error("Thread creation failed\n", -1, __FILE__, __LINE__);
+        epicsMutexLock(mp->epics_acquisition_flag_mutex);
+        mp->dataAcquisitionFlag = 0;
+        epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
         return NULL;
     }
     for (size_t i = 0; i < MAX_PICO; i++) {
