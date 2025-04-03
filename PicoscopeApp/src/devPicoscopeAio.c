@@ -20,6 +20,8 @@ enum ioType
     UNKNOWN_IOTYPE, // default case, must be 0 
     SET_NUM_SAMPLES,
     GET_NUM_SAMPLES,
+    SET_TRIGGER_PULSE_WIDTH,
+    GET_TRIGGER_PULSE_WIDTH,
     SET_DOWN_SAMPLE_RATIO,
     GET_DOWN_SAMPLE_RATIO,
     SET_TRIGGER_POSITION_RATIO,
@@ -56,6 +58,8 @@ static struct aioType
     {
         {"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
         {"get_num_samples", isInput, GET_NUM_SAMPLES, ""},
+        {"set_trigger_pulse_width", isOutput, SET_TRIGGER_PULSE_WIDTH, ""},
+        {"get_trigger_pulse_width", isInput, GET_TRIGGER_PULSE_WIDTH, ""},
         {"get_timebase", isInput, GET_TIMEBASE, ""},
         {"set_down_sampling_ratio", isOutput, SET_DOWN_SAMPLE_RATIO, ""},
         {"get_down_sampling_ratio", isInput, GET_DOWN_SAMPLE_RATIO, ""},
@@ -197,8 +201,12 @@ static long read_ai (struct aiRecord *pai){
             break; 
 
         case GET_NUM_SAMPLES: 
-            pai->val = vdp->mp->sample_config.num_samples; 
+            pai->val = vdp->mp->sample_config.num_samples;
             break; 
+
+        case GET_TRIGGER_PULSE_WIDTH: 
+            pai->val = vdp->mp->trigger_config.AUXTriggerSignalPulseWidth;
+            break;
 
         case GET_DOWN_SAMPLE_RATIO: 
             pai->val = vdp->mp->sample_config.down_sample_ratio; 
@@ -318,7 +326,12 @@ static long init_record_ao (struct aoRecord *pao)
     switch (vdp->ioType)    
     {    
         case SET_NUM_SAMPLES: 
-            vdp->mp->sample_config.num_samples = (int)pao->val; 
+            vdp->mp->sample_config.num_samples = (int)pao->val;
+            vdp->mp->sample_config.unadjust_num_samples = (int) pao->val;
+            break; 
+
+        case SET_TRIGGER_PULSE_WIDTH: 
+            vdp->mp->trigger_config.AUXTriggerSignalPulseWidth = (double)pao->val;
             break; 
 
         case SET_ANALOG_OFFSET: 
@@ -407,7 +420,7 @@ static long write_ao (struct aoRecord *pao)
 
             uint64_t previous_num_samples = vdp->mp->sample_config.num_samples; 
             vdp->mp->sample_config.num_samples = (int) pao->val; 
- 
+            vdp->mp->sample_config.unadjust_num_samples = (int) pao->val; 
             result = get_valid_timebase_configs(
                 vdp->mp,
                 &sample_interval, 
@@ -417,7 +430,8 @@ static long write_ao (struct aoRecord *pao)
 
             if (result != 0) {
                 log_message(vdp->mp, pao->name, "Error setting the number of samples.", result);
-                vdp->mp->sample_config.num_samples = previous_num_samples; 
+                vdp->mp->sample_config.num_samples = previous_num_samples;
+                vdp->mp->sample_config.unadjust_num_samples = (int) pao->val; 
                 break; 
             }
 
@@ -425,7 +439,27 @@ static long write_ao (struct aoRecord *pao)
             vdp->mp->sample_config.timebase_configs.timebase = timebase;
             vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;
             break;  
-            
+
+        case SET_TRIGGER_PULSE_WIDTH:
+            vdp->mp->trigger_config.AUXTriggerSignalPulseWidth = (double)pao->val;
+            result = get_valid_timebase_configs(
+                vdp->mp,
+                &sample_interval, 
+                &timebase, 
+                &sample_rate
+            );
+            if (result != 0) {
+                log_message(vdp->mp, pao->name, "Error setting the width of trigger signal.", result);
+                vdp->mp->sample_config.num_samples = previous_num_samples;
+                vdp->mp->sample_config.unadjust_num_samples = (int) pao->val; 
+                break; 
+            }
+
+            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+            vdp->mp->sample_config.timebase_configs.timebase = timebase;
+            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;
+            break;
+
         case SET_DOWN_SAMPLE_RATIO: 
             vdp->mp->sample_config.down_sample_ratio = (int)pao->val; 
             break; 
