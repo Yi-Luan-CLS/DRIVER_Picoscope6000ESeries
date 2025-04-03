@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <dbAccess.h>
 
+
 #include "picoscopeConfig.h"
 #include "devPicoscopeCommon.h"
 
@@ -98,4 +99,25 @@ void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[],
 
     dbProcess((struct dbCommon *)mp->pLog);     
     usleep(100); // wait for log PV to process
+}
+
+
+#include <mbbiRecord.h>
+#include <mbboRecord.h>
+
+void update_enum_options(struct mbboRecord* pmbbo, struct mbbiRecord* pmbbi, MultiBitBinaryEnums options){ 
+
+    void update_field(char* pmbbo_str, char* pmbbi_str, int pmbbo_val, int pmbbi_val, const char* new_str, int new_val) {
+        if (new_str){
+            memcpy(pmbbo_str, new_str, strlen(new_str)+1);
+            memcpy(pmbbi_str, new_str, strlen(new_str)+1);
+            pmbbo_val = new_val; 
+            pmbbi_val = new_val; 
+        }
+    }
+
+    update_field(pmbbo->zrst, pmbbi->zrst, pmbbo->zrvl, pmbbi->zrvl, options.zrst, options.zrvl); 
+    update_field(pmbbo->onst, pmbbi->onst, pmbbo->onvl, pmbbi->onvl, options.onst, options.onvl); 
+    update_field(pmbbo->twst, pmbbi->twst, pmbbo->twvl, pmbbi->twvl, options.twst, options.twvl); 
+
 }

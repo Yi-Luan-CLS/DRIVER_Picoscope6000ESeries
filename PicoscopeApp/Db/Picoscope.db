@@ -365,7 +365,9 @@ record(mbbo, "$(OSC):trigger:type") {
 
     field(ZRST, "NO TRIGGER")     field(ZRVL, "0")
     field(ONST, "SIMPLE EDGE")    field(ONVL, "1")
-    # field(TWST, "WINDOW")       field(TWVL, "2")    
+    field(TWST, "WINDOW")         field(TWVL, "2")    
+    field(THST, "ADVANCED EDGE")  field(THVL, "3")        
+
 
     field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_type")
     field(FLNK, "$(OSC):trigger:type:fbk")
@@ -377,7 +379,8 @@ record(mbbi, "$(OSC):trigger:type:fbk"){
 
     field(ZRST, "NO TRIGGER")     field(ZRVL, "0")
     field(ONST, "SIMPLE EDGE")    field(ONVL, "1")
-    # field(TWST, "WINDOW")       field(TWVL, "2")    
+    field(TWST, "WINDOW")         field(TWVL, "2")   
+    field(THST, "ADVANCED EDGE")  field(THVL, "3")        
 
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_type")
 }
@@ -417,9 +420,8 @@ record(mbbo, "$(OSC):trigger:direction") {
     field(DTYP, "Picoscope")
 
     field(DESC, "Set Trigger Direction.")
-    field(ZRST, "RISING")         field(ZRVL, "2")
-    field(ONST, "FALLING")         field(ONVL, "3")
-    field(TWST, "NONE")          field(TWVL, "2")
+    field(ZRST, "RISING")               field(ZRVL, "2")
+    field(ONST, "FALLING")              field(ONVL, "3")
     # field(TWST, "RISING_UPPER")         field(TWVL, "2")        
     # field(THST, "FALLING_UPPER")     field(THVL, "3")        
     # field(FRST, "RISING_LOW/FALLING_UP") field(FRVL, "4")        
@@ -445,10 +447,8 @@ record(mbbi, "$(OSC):trigger:direction:fbk") {
     field(VAL, "0")
     field(RVAL, "2")
 
-
     field(ZRST, "RISING")         field(ZRVL, "2")
     field(ONST, "FALLING")        field(ONVL, "3")
-    field(TWST, "NONE")           field(TWVL, "-1")
 
     # field(TWST, "RISING_UPPER")         field(TWVL, "2")        
     # field(THST, "FALLING_UPPER")     field(THVL, "3")        
