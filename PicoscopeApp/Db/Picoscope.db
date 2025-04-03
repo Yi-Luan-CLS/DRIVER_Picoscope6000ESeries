@@ -490,6 +490,22 @@ record(ai, "$(OSC):trigger:upper:threshold:fbk") {
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_upper")
 }
 
+record(ao, "$(OSC):trigger:upper:threshold:hysteresis") {
+    field(DTYP, "Picoscope")
+    field(VAL, "5")
+    field(EGU, "%")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_upper_hysteresis")
+    field(FLNK, "$(OSC):trigger:upper:threshold:hysteresis:fbk")
+}
+
+record(ai, "$(OSC):trigger:upper:threshold:hysteresis:fbk") {
+    field(DTYP, "Picoscope")
+    field(VAL, "5")
+    field(EGU, "%")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_upper_hysteresis")
+}
+
+
 record(ao, "$(OSC):trigger:lower:threshold") {
     field(DTYP, "Picoscope")
     field(VAL, "0")
@@ -500,4 +516,19 @@ record(ao, "$(OSC):trigger:lower:threshold") {
 record(ai, "$(OSC):trigger:lower:threshold:fbk") {
     field(DTYP, "Picoscope")
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_lower")
+}
+
+record(ao, "$(OSC):trigger:lower:threshold:hysteresis") {
+    field(DTYP, "Picoscope")
+    field(VAL, "5")
+    field(EGU, "%")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_lower_hysteresis")
+    field(FLNK, "$(OSC):trigger:lower:threshold:hysteresis:fbk")
+}
+
+record(ai, "$(OSC):trigger:lower:threshold:hysteresis:fbk") {
+    field(DTYP, "Picoscope")
+    field(VAL, "5")
+    field(EGU, "%")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_lower_hysteresis")
 }
