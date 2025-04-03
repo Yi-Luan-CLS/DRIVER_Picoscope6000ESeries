@@ -82,10 +82,27 @@ record(ao, "$(OSC):num_samples"){
     field(FLNK, "$(OSC):timebase:fbk:fanout")
 }
 
+record(ao, "$(OSC):trigger_pulse_width"){
+    field(DESC, "Number of samples required.")
+    field(DTYP, "Picoscope")
+    field(VAL, "0.00000005")
+    field(DRVH, "1")
+    field(DRVL, "0") 
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_pulse_width")
+    
+    field(FLNK, "$(OSC):timebase:fbk:fanout")
+}
+
 record(ai, "$(OSC):num_samples:fbk") {
     field(DESC, "Number of samples returned.")
     field(DTYP, "Picoscope")
     field(INP, "@S:$(SERIAL_NUM) @L:get_num_samples")
+}
+
+record(ai, "$(OSC):trigger_pulse_width:fbk") {
+    field(DESC, "Trigger signal pulse width returned.")
+    field(DTYP, "Picoscope")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_pulse_width")
 }
 
 record(ao, "$(OSC):down_sample_ratio"){
@@ -263,6 +280,7 @@ record(fanout, "$(OSC):timebase:fbk:fanout"){
     field(LNK5, "$(OSC):time_per_division:fbk")
     field(LNK6, "$(OSC):num_divisions:fbk")
     field(LNK7, "$(OSC):num_samples:fbk")
+    field(LNK8, "$(OSC):trigger_pulse_width:fbk")
 }
 
 ################################################################

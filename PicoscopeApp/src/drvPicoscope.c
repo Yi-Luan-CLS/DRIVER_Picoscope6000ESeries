@@ -512,22 +512,42 @@ double calculate_sample_rate(double secs_per_div, double samples_per_div) {
  * 
  * @return 0 if successful, otherwise a non-zero error code.
  */
-uint32_t get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_interval, uint32_t* timebase, double* sample_rate) { 
+uint32_t get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_interval, uint32_t* timebase, double* sample_rate) {
 
-    double secs_per_div = convert_to_seconds(mp->sample_config.timebase_configs.time_per_division, mp->sample_config.timebase_configs.time_per_division_unit); 
+    uint32_t available_timebase; 
+    double available_sample_interval;
+    double secs_per_div = convert_to_seconds(mp->sample_config.timebase_configs.time_per_division, mp->sample_config.timebase_configs.time_per_division_unit);
+    uint32_t status;
+    mp->sample_config.num_samples = mp->sample_config.unadjust_num_samples; 
     double samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
-
     double requested_sample_interval = calculate_sample_interval(secs_per_div, samples_per_division); 
+    if (requested_sample_interval > mp->trigger_config.AUXTriggerSignalPulseWidth)
+    {
+        status = validate_sample_interval(mp->trigger_config.AUXTriggerSignalPulseWidth, mp->handle, mp->channel_status, &available_timebase, &available_sample_interval);
+        mp->sample_config.num_samples = secs_per_div * mp->sample_config.timebase_configs.num_divisions /  available_sample_interval;
+        samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
+
+        *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
+        *sample_interval = available_sample_interval; 
+        *timebase = available_timebase;
+        printf("num_samples %ld\n", mp->sample_config.num_samples);
+
+        if (status != 0) {
+            return status; 
+        }
+        return 0;
+    }
+    
+    samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
+
 
     *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
 
-    uint32_t available_timebase; 
-    double available_sample_interval; 
 
-    uint32_t status = validate_sample_interval(requested_sample_interval, mp->handle, mp->channel_status, &available_timebase, &available_sample_interval);
+    status = validate_sample_interval(requested_sample_interval, mp->handle, mp->channel_status, &available_timebase, &available_sample_interval);
     if (status != 0) {
         return status; 
-    } 
+    }
     *sample_interval = available_sample_interval; 
     *timebase = available_timebase;
 

@@ -183,7 +183,7 @@ static long read_waveform(struct waveformRecord *pwaveform) {
             }
             vdp->mp->dataAcquisitionFlag = 1;
             epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
-	        // vdp->mp->triggerReadyEvent = epicsEventCreate(0);
+
             epicsEventSignal((epicsEventId)vdp->mp->acquisitionStartEvent);
 
             break;
