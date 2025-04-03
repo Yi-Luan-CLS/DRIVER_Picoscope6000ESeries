@@ -37,7 +37,7 @@ typedef struct PS6000AModule
     EnabledChannelFlags channel_status; 
 
     // Stored PVs for processing at specific time 
-    struct aiRecord* pTriggerFbk[2];
+    struct aiRecord* pTriggerThresholdFbk[4];
     struct aoRecord* pAnalogOffestRecords[CHANNEL_NUM];
 
     struct mbboRecord* pTriggerDirection;

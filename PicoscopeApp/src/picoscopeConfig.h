@@ -111,7 +111,9 @@ struct TriggerConfigs{
     enum ThresholdDirection thresholdDirection;
     enum ThresholdMode thresholdMode;
     int16_t thresholdUpper;
+    uint16_t thresholdUpperHysteresis;
     int16_t thresholdLower;
+    uint16_t thresholdLowerHysteresis;
     uint32_t autoTriggerMicroSeconds;
 };
 

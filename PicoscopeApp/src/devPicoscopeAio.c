@@ -29,8 +29,12 @@ enum ioType
     GET_ACQUISITION_STATUS,
     SET_TRIGGER_UPPER,
     GET_TRIGGER_UPPER,
+    SET_TRIGGER_UPPER_HYSTERESIS,
+    GET_TRIGGER_UPPER_HYSTERESIS,
     SET_TRIGGER_LOWER,
     GET_TRIGGER_LOWER,
+    SET_TRIGGER_LOWER_HYSTERESIS,
+    GET_TRIGGER_LOWER_HYSTERESIS,
     GET_SAMPLE_INTERVAL,
     SET_NUM_DIVISIONS,
     GET_NUM_DIVISIONS, 
@@ -66,8 +70,12 @@ static struct aioType
         {"get_acquisition_status", isInput, GET_ACQUISITION_STATUS, "" },
         {"set_trigger_upper", isOutput, SET_TRIGGER_UPPER, ""},
         {"get_trigger_upper", isInput, GET_TRIGGER_UPPER, ""},
+        {"set_trigger_upper_hysteresis", isOutput, SET_TRIGGER_UPPER_HYSTERESIS, ""},
+        {"get_trigger_upper_hysteresis", isInput, GET_TRIGGER_UPPER_HYSTERESIS, ""},
         {"set_trigger_lower", isOutput, SET_TRIGGER_LOWER, ""},
         {"get_trigger_lower", isInput, GET_TRIGGER_LOWER, ""},
+        {"set_trigger_lower_hysteresis", isOutput, SET_TRIGGER_LOWER_HYSTERESIS, ""},
+        {"get_trigger_lower_hysteresis", isInput, GET_TRIGGER_LOWER_HYSTERESIS, ""},
         {"get_sample_interval", isInput, GET_SAMPLE_INTERVAL, "" },
         {"get_sample_rate", isInput, GET_SAMPLE_RATE, ""},
         {"set_num_divisions", isOutput, SET_NUM_DIVISIONS, ""},
@@ -166,12 +174,21 @@ static long init_record_ai (struct aiRecord *pai)
     switch(vdp->ioType)
     {
         case GET_TRIGGER_UPPER:
-            vdp->mp->pTriggerFbk[0] = pai;
+            vdp->mp->pTriggerThresholdFbk[0] = pai;
             break;
 
+        case GET_TRIGGER_UPPER_HYSTERESIS: 
+            vdp->mp->pTriggerThresholdFbk[1] = pai; 
+            break; 
+
         case GET_TRIGGER_LOWER:
-            vdp->mp->pTriggerFbk[1] = pai;
+            vdp->mp->pTriggerThresholdFbk[2] = pai;
             break;
+
+        case GET_TRIGGER_LOWER_HYSTERESIS: 
+            vdp->mp->pTriggerThresholdFbk[3] = pai; 
+            break;
+
         default:
             return 2;
     } 
@@ -232,8 +249,16 @@ static long read_ai (struct aiRecord *pai){
             pai->val = vdp->mp->trigger_config.thresholdUpper;
             break;
 
+        case GET_TRIGGER_UPPER_HYSTERESIS: 
+            pai->val = vdp->mp->trigger_config.thresholdUpperHysteresis;
+            break;
+
         case GET_TRIGGER_LOWER:
             pai->val = vdp->mp->trigger_config.thresholdLower;
+            break;
+        
+        case GET_TRIGGER_LOWER_HYSTERESIS: 
+            pai->val = vdp->mp->trigger_config.thresholdUpperHysteresis; 
             break;
 
         case GET_AUTO_TRIGGER_US: 
@@ -348,9 +373,17 @@ static long init_record_ao (struct aoRecord *pao)
         case SET_TRIGGER_UPPER:
             vdp->mp->trigger_config.thresholdUpper = (int16_t) pao->val;
             break;
+        
+        case SET_TRIGGER_UPPER_HYSTERESIS: 
+            vdp->mp->trigger_config.thresholdUpperHysteresis = (uint16_t) pao->val; 
+            break; 
 
         case SET_TRIGGER_LOWER:
             vdp->mp->trigger_config.thresholdLower = (int16_t) pao->val;
+            break;
+        
+        case SET_TRIGGER_LOWER_HYSTERESIS: 
+            vdp->mp->trigger_config.thresholdLowerHysteresis = (uint16_t) pao->val;
             break;
 
         case SET_AUTO_TRIGGER_US: 
@@ -482,20 +515,37 @@ static long write_ao (struct aoRecord *pao)
         
         case SET_TRIGGER_UPPER:
             vdp->mp->trigger_config.thresholdUpper = (int16_t) pao->val;
+            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
+                vdp->mp->trigger_config.thresholdUpper = 0; 
+            } 
+            break;
+
+        case SET_TRIGGER_UPPER_HYSTERESIS: 
+            vdp->mp->trigger_config.thresholdUpperHysteresis = (uint16_t) pao->val; 
+            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
+                vdp->mp->trigger_config.thresholdUpperHysteresis = 0; 
+            } 
             break;
 
         case SET_TRIGGER_LOWER:
             vdp->mp->trigger_config.thresholdLower = (int16_t) pao->val;
+            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
+                vdp->mp->trigger_config.thresholdLower = 0; 
+            } 
+            break;
+
+        case SET_TRIGGER_LOWER_HYSTERESIS: 
+            vdp->mp->trigger_config.thresholdLowerHysteresis = (uint16_t) pao->val; 
+            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
+                vdp->mp->trigger_config.thresholdLowerHysteresis = 0; 
+            } 
             break;
 
         case SET_AUTO_TRIGGER_US: 
-        
+            vdp->mp->trigger_config.autoTriggerMicroSeconds = (uint32_t) pao->val; 
             if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){ 
                 vdp->mp->trigger_config.autoTriggerMicroSeconds = 0; 
             } 
-            else {
-                vdp->mp->trigger_config.autoTriggerMicroSeconds = (uint32_t) pao->val; 
-            }
             break; 
 
         default:
