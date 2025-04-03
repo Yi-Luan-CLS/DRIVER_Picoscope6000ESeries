@@ -169,51 +169,6 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
     return 0;
 }
 
-void
-captureThreadFunc(void *arg) {
-    PS6000AModule* mp = (struct PS6000AModule *)arg;
-    epicsMutexLock(mp->epics_acquisition_thread_mutex);
-    epicsThreadId id = epicsThreadGetIdSelf();
-    printf("Start ID is %ld\n", id->tid);
-    // Setup Picoscope
-    uint32_t status = setup_picoscope(mp);
-    if (status != 0) {
-        log_message(mp, "", "Error configuring picoscope for data capture.", status);
-        printf("captureThreadFunc Cleanup ID is %ld\n", id->tid);
-        epicsMutexLock(mp->epics_acquisition_flag_mutex);
-        mp->dataAcquisitionFlag = 0;
-        epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
-        epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
-        return;
-    }
-
-    while (mp->dataAcquisitionFlag == 1) {
-        double time_indisposed_ms = 0;
-
-        mp->sample_collected = mp->sample_config.num_samples;
-        status = run_block_capture(mp, &time_indisposed_ms);
-        if (status != 0) {
-            log_message(mp, "", "Error capturing data block.", status);
-            break;
-        }
-
-        // Process the UPDATE_WAVEFORM subroutine to update waveform
-        for (size_t i = 0; i < CHANNEL_NUM; i++) {
-            if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
-                dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
-
-            }
-        }
-    }
-
-    stop_capturing(mp->handle);
-    printf("Cleanup ID is %ld\n", id->tid);
-    epicsMutexLock(mp->epics_acquisition_flag_mutex);
-    mp->dataAcquisitionFlag = 0;
-    epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
-    epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
-}
-
 static long read_waveform(struct waveformRecord *pwaveform) {
     struct PicoscopeWaveformData *vdp = (struct PicoscopeWaveformData *)pwaveform->dpvt;
 
@@ -229,17 +184,8 @@ static long read_waveform(struct waveformRecord *pwaveform) {
             vdp->mp->dataAcquisitionFlag = 1;
             epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
 	        // vdp->mp->triggerReadyEvent = epicsEventCreate(0);
+            epicsEventSignal((epicsEventId)vdp->mp->acquisitionStartEvent);
 
-            // Create capture thread
-            epicsThreadId capture_thread = epicsThreadCreate("captureThread", epicsThreadPriorityMedium,
-                                                             0, (EPICSTHREADFUNC)captureThreadFunc, vdp->mp);
-            if (!capture_thread) {
-                errlogPrintf("%s: Failed to create capture thread\n", pwaveform->name);
-                epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
-                vdp->mp->dataAcquisitionFlag = 0;
-                epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
-                return -1;
-            }
             break;
 
         case UPDATE_WAVEFORM:
@@ -253,6 +199,10 @@ static long read_waveform(struct waveformRecord *pwaveform) {
             break;
 
         case STOP_RETRIEVE_WAVEFORM:
+            if (vdp->mp->dataAcquisitionFlag == 0)
+            {
+                break;
+            }
             epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
             vdp->mp->dataAcquisitionFlag = 0;
             epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);

@@ -1,6 +1,7 @@
 #include "picoscopeConfig.h"
 #include <epicsEvent.h>
 #include <epicsMutex.h>
+#include <epicsThread.h>
 
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
@@ -21,9 +22,11 @@ typedef struct PS6000AModule
 
 
 	epicsEventId triggerReadyEvent;
+    epicsEventId acquisitionStartEvent;
     epicsMutexId epics_acquisition_flag_mutex;
     epicsMutexId epics_acquisition_thread_mutex;
     epicsMutexId epics_acquisition_restart_mutex;
+    epicsThreadId acquisition_thread_function;
 
     int16_t* waveform[CHANNEL_NUM];
 
