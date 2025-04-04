@@ -86,7 +86,6 @@ record(ao, "$(OSC):trigger_pulse_width"){
     field(DESC, "Number of samples required.")
     field(DTYP, "Picoscope")
     field(VAL, "0.00000005")
-    field(DRVH, "1")
     field(DRVL, "0") 
     field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_pulse_width")
     

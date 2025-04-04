@@ -396,6 +396,12 @@ This document provides detailed information about the EPICS driver for the Picos
     | 10    | 2000 time/div  | 
     | 11    | 5000 time/div  | 
 
+### OSCNAME:trigger_pulse_width
+- **Type**: `ao` 
+- **Description**: The trigger signal pulse width. 
+- **Fields**:
+  - `VAL`: The duration of a trigger signal in seconds, when this value is set, allows the software to dynamically adjust the number of samples collected to ensure the time interval does not significantly exceed the trigger signal duration. When set to 0, the dynamic adjustment of the sample count is disabled. Default to 50 ns.
+
 ### OSCNAME:time_per_division:fbk
 - **Type**: `mbbi` 
 - **Description**: The currently set time per division. 
@@ -455,6 +461,12 @@ This document provides detailed information about the EPICS driver for the Picos
     | Two Channels      | 0 (200 ps) | 2 (800 ps) |  
     | Three Channels    | 1 (400 ps) | N/A        |  
     | Four Channels     | 1 (400 ps) | N/A        | 
+
+### OSCNAME:trigger_pulse_width:fbk:
+- **Type**: `ai` 
+- **Description**: The trigger signal pulse width set. 
+- **Fields**:
+  - `VAL`: The duration of a trigger signal in seconds, when this value is set, allows the software to dynamically adjust the number of samples collected to ensure the time interval does not significantly exceed the trigger signal duration. When set to 0, the dynamic adjustment of the sample count is disabled. Default to 50 ns.
 
 ---
 **_Channel configurations:_**

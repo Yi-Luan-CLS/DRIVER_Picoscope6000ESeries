@@ -538,11 +538,8 @@ uint32_t get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_int
         return 0;
     }
     
-    samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
-
 
     *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
-
 
     status = validate_sample_interval(requested_sample_interval, mp->handle, mp->channel_status, &available_timebase, &available_sample_interval);
     if (status != 0) {
