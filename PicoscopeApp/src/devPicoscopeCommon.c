@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <dbAccess.h>
 
-
 #include "picoscopeConfig.h"
 #include "devPicoscopeCommon.h"
 
@@ -105,6 +104,13 @@ void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[],
 #include <mbbiRecord.h>
 #include <mbboRecord.h>
 
+/**
+ * Function to update the enum string and values of mbbo and mbbi records. 
+ * 
+ * @param pmbbo A pointer to a PV of type mbboRecord. 
+ *        pmbbi A pointer to a PV of type mbbiRecord. 
+ *        options Contains new string and values for each enum option. 
+ */
 void update_enum_options(struct mbboRecord* pmbbo, struct mbbiRecord* pmbbi, MultiBitBinaryEnums options){ 
 
     void update_field(char* pmbbo_str, char* pmbbi_str, int pmbbo_val, int pmbbi_val, const char* new_str, int new_val) {

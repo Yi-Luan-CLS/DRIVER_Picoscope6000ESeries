@@ -637,10 +637,9 @@ PICO_STATUS set_trigger_directions(struct PS6000AModule* mp) {
 
 PICO_STATUS set_trigger_properties(struct PS6000AModule* mp) {
     int16_t nChannelProperties = 1; // Only support one now 
-   // unsigned short hysteresis = (unsigned short)((UINT16_MAX / 100.0) * 5.0);   // 5% of the full range
-
-   uint16_t hysteresis_upper = (uint16_t)((UINT16_MAX / 100.0) * mp->trigger_config.thresholdUpperHysteresis);  
-   uint16_t hysteresis_lower = (uint16_t)((UINT16_MAX / 100.0) * mp->trigger_config.thresholdLowerHysteresis);  
+    
+    uint16_t hysteresis_upper = (uint16_t)((UINT16_MAX / 100.0) * mp->trigger_config.thresholdUpperHysteresis);  
+    uint16_t hysteresis_lower = (uint16_t)((UINT16_MAX / 100.0) * mp->trigger_config.thresholdLowerHysteresis);  
    
     PICO_TRIGGER_CHANNEL_PROPERTIES channelProperty = { 
         .channel = mp->trigger_config.channel,
