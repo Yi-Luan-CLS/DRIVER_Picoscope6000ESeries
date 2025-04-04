@@ -382,7 +382,9 @@ record(mbbo, "$(OSC):trigger:type") {
 
     field(ZRST, "NO TRIGGER")     field(ZRVL, "0")
     field(ONST, "SIMPLE EDGE")    field(ONVL, "1")
-    # field(TWST, "WINDOW")       field(TWVL, "2")    
+    field(TWST, "WINDOW")         field(TWVL, "2")    
+    field(THST, "ADVANCED EDGE")  field(THVL, "3")        
+
 
     field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_type")
     field(FLNK, "$(OSC):trigger:type:fbk")
@@ -394,7 +396,8 @@ record(mbbi, "$(OSC):trigger:type:fbk"){
 
     field(ZRST, "NO TRIGGER")     field(ZRVL, "0")
     field(ONST, "SIMPLE EDGE")    field(ONVL, "1")
-    # field(TWST, "WINDOW")       field(TWVL, "2")    
+    field(TWST, "WINDOW")         field(TWVL, "2")   
+    field(THST, "ADVANCED EDGE")  field(THVL, "3")        
 
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_type")
 }
@@ -434,23 +437,9 @@ record(mbbo, "$(OSC):trigger:direction") {
     field(DTYP, "Picoscope")
 
     field(DESC, "Set Trigger Direction.")
-    field(ZRST, "RISING")         field(ZRVL, "2")
-    field(ONST, "FALLING")         field(ONVL, "3")
-    field(TWST, "NONE")          field(TWVL, "2")
-    # field(TWST, "RISING_UPPER")         field(TWVL, "2")        
-    # field(THST, "FALLING_UPPER")     field(THVL, "3")        
-    # field(FRST, "RISING_LOW/FALLING_UP") field(FRVL, "4")        
-    # field(FVST, "ABOVE_LOWER")         field(FVVL, "5")        
-    # field(SXST, "BELOW_LOWER")         field(SXVL, "6")        
-    # field(SVST, "RISING_LOWER")         field(SVVL, "7")        
-    # field(EIST, "FALLING_LOWER")     field(EIVL, "8")
-    # field(NIST, "WINDOW_POSITIVE_RUNT")     field(NIVL, "9")
-    # field(TEST, "WINDOW_NEGATIVE_RUNT")     field(TEVL, "10")
-    # field(ELST, "WINDOW_INSIDE")     field(ELVL, "0")
-    # field(TVST, "WINDOW_OUTSIDE")     field(TVVL, "1")
-    # field(TTST, "WINDOW_ENTER")          field(TTVL, "2")
-    # field(FTST, "WINDOW_EXIT")          field(FTVL, "3")
-    # field(FFST, "WINDOW_ENTER_EXIT") field(FFVL, "4")
+    field(ZRST, "RISING")               field(ZRVL, "2")
+    field(ONST, "FALLING")              field(ONVL, "3")
+
     field(RVAL, "2")
     field(FLNK, "$(OSC):trigger:direction:fbk")        
     field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_direction")
@@ -462,25 +451,9 @@ record(mbbi, "$(OSC):trigger:direction:fbk") {
     field(VAL, "0")
     field(RVAL, "2")
 
-
     field(ZRST, "RISING")         field(ZRVL, "2")
     field(ONST, "FALLING")        field(ONVL, "3")
-    field(TWST, "NONE")           field(TWVL, "-1")
 
-    # field(TWST, "RISING_UPPER")         field(TWVL, "2")        
-    # field(THST, "FALLING_UPPER")     field(THVL, "3")        
-    # field(FRST, "RISING_LOW/FALLING_UP") field(FRVL, "4")        
-    # field(FVST, "ABOVE_LOWER")         field(FVVL, "5")        
-    # field(SXST, "BELOW_LOWER")         field(SXVL, "6")        
-    # field(SVST, "RISING_LOWER")         field(SVVL, "7")        
-    # field(EIST, "FALLING_LOWER")     field(EIVL, "8")
-    # field(NIST, "WINDOW_POSITIVE_RUNT")     field(NIVL, "9")
-    # field(TEST, "WINDOW_NEGATIVE_RUNT")     field(TEVL, "10")
-    # field(ELST, "WINDOW_INSIDE")     field(ELVL, "0")
-    # field(TVST, "WINDOW_OUTSIDE")     field(TVVL, "1")
-    # field(TTST, "WINDOW_ENTER")          field(TTVL, "2")
-    # field(FTST, "WINDOW_EXIT")          field(FTVL, "3")
-    # field(FFST, "WINDOW_ENTER_EXIT") field(FFVL, "4")
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_direction")
 }
 
@@ -507,6 +480,22 @@ record(ai, "$(OSC):trigger:upper:threshold:fbk") {
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_upper")
 }
 
+record(ao, "$(OSC):trigger:upper:threshold:hysteresis") {
+    field(DTYP, "Picoscope")
+    field(VAL, "5")
+    field(EGU, "%")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_upper_hysteresis")
+    field(FLNK, "$(OSC):trigger:upper:threshold:hysteresis:fbk")
+}
+
+record(ai, "$(OSC):trigger:upper:threshold:hysteresis:fbk") {
+    field(DTYP, "Picoscope")
+    field(VAL, "5")
+    field(EGU, "%")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_upper_hysteresis")
+}
+
+
 record(ao, "$(OSC):trigger:lower:threshold") {
     field(DTYP, "Picoscope")
     field(VAL, "0")
@@ -517,4 +506,19 @@ record(ao, "$(OSC):trigger:lower:threshold") {
 record(ai, "$(OSC):trigger:lower:threshold:fbk") {
     field(DTYP, "Picoscope")
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_lower")
+}
+
+record(ao, "$(OSC):trigger:lower:threshold:hysteresis") {
+    field(DTYP, "Picoscope")
+    field(VAL, "5")
+    field(EGU, "%")
+    field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_lower_hysteresis")
+    field(FLNK, "$(OSC):trigger:lower:threshold:hysteresis:fbk")
+}
+
+record(ai, "$(OSC):trigger:lower:threshold:hysteresis:fbk") {
+    field(DTYP, "Picoscope")
+    field(VAL, "5")
+    field(EGU, "%")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_lower_hysteresis")
 }

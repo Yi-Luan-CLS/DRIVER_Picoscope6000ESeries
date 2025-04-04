@@ -387,90 +387,138 @@ write_mbbo (struct mbboRecord *pmbbo)
                 vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
                 vdp->mp->trigger_config.thresholdMode = LEVEL; 
                 vdp->mp->trigger_config.thresholdLower = 0; 
+                vdp->mp->trigger_config.thresholdLowerHysteresis = 5; 
                 vdp->mp->trigger_config.thresholdUpper = 0; 
+                vdp->mp->trigger_config.thresholdUpperHysteresis = 5; 
                 vdp->mp->trigger_config.thresholdDirection = NONE; 
                 
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerType); 
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerDirectionFbk);
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerModeFbk);
-
-                for (size_t i = 0; i < sizeof(vdp->mp->pTriggerFbk)/sizeof(vdp->mp->pTriggerFbk[0]); i++)
-                {
-                    dbProcess((struct dbCommon *)vdp->mp->pTriggerFbk[i]);
-                }
             }
             else if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
                 vdp->mp->trigger_config.triggerType = NO_TRIGGER;
                 vdp->mp->trigger_config.thresholdMode = LEVEL; 
                 vdp->mp->trigger_config.thresholdLower = 0; 
+                vdp->mp->trigger_config.thresholdLowerHysteresis = 0; 
                 vdp->mp->trigger_config.thresholdUpper = 0; 
+                vdp->mp->trigger_config.thresholdUpperHysteresis = 0; 
                 vdp->mp->trigger_config.thresholdDirection = NONE; 
-
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerType); 
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerDirectionFbk);
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerModeFbk);
-
-                for (size_t i = 0; i < sizeof(vdp->mp->pTriggerFbk)/sizeof(vdp->mp->pTriggerFbk[0]); i++)
-                {
-                    dbProcess((struct dbCommon *)vdp->mp->pTriggerFbk[i]);
-                }
-            }
-            else { 
-                vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerType); 
             }
 
+            dbProcess((struct dbCommon *)vdp->mp->pTriggerType); 
+            dbProcess((struct dbCommon *)vdp->mp->pTriggerDirectionFbk);
+            dbProcess((struct dbCommon *)vdp->mp->pTriggerModeFbk);
+            for (size_t i = 0; i < sizeof(vdp->mp->pTriggerThresholdFbk)/sizeof(vdp->mp->pTriggerThresholdFbk[0]); i++)
+            {
+                dbProcess((struct dbCommon *)vdp->mp->pTriggerThresholdFbk[i]);
+            }
             break;
 
-        case SET_TRIGGER_TYPE: 
+        case SET_TRIGGER_TYPE:             
             vdp->mp->trigger_config.triggerType = (int)pmbbo->val; 
             
-            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
+            switch (vdp->mp->trigger_config.triggerType)
+            { 
+                case NO_TRIGGER: 
+                    // Update configurations for no trigger 
+                    vdp->mp->trigger_config.channel = NO_CHANNEL; 
+                    vdp->mp->trigger_config.thresholdMode = LEVEL;             
+                    vdp->mp->trigger_config.thresholdLower = 0; 
+                    vdp->mp->trigger_config.thresholdUpper = 0; 
+                    vdp->mp->trigger_config.thresholdLowerHysteresis = 0; 
+                    vdp->mp->trigger_config.thresholdUpperHysteresis = 0; 
+                    vdp->mp->trigger_config.thresholdDirection = NONE; 
+
+                    // Update trigger direction mbbi/mbbo enum options
+                    MultiBitBinaryEnums no_trigger_options = { 
+                        .zrst = "NONE", .zrvl = NONE, 
+                        .onst = "",     .onvl = 0, 
+                        .twst = "",     .twvl = 0
+                    };
+                    update_enum_options(
+                        vdp->mp->pTriggerDirection,
+                        vdp->mp->pTriggerDirectionFbk, 
+                        no_trigger_options
+                    );
+                    break; 
                 
-                // Update configurations for no trigger 
-                vdp->mp->trigger_config.channel = NO_CHANNEL; 
-                vdp->mp->trigger_config.thresholdMode = LEVEL;             
-                vdp->mp->trigger_config.thresholdLower = 0; 
-                vdp->mp->trigger_config.thresholdUpper = 0; 
+                case SIMPLE_EDGE:
+                    // Update configurations to valid options
+                    if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
+                        vdp->mp->trigger_config.channel = TRIGGER_AUX;
+                        vdp->mp->trigger_config.thresholdLowerHysteresis = 5;
+                        vdp->mp->trigger_config.thresholdUpper = 0;
+                        vdp->mp->trigger_config.thresholdUpperHysteresis = 5;
+                    } 
+                    vdp->mp->trigger_config.thresholdMode = LEVEL;         
+                    vdp->mp->trigger_config.thresholdLower = 0;
+
+
+                    // Update trigger direction mbbi/mbbo enum options
+                    MultiBitBinaryEnums simple_edge_options = { 
+                        .zrst = "RISING",  .zrvl = RISING, 
+                        .onst = "FALLING", .onvl = FALLING, 
+                        .twst = "",        .twvl = 0
+                    };
+                    update_enum_options(
+                        vdp->mp->pTriggerDirection,
+                        vdp->mp->pTriggerDirectionFbk, 
+                        simple_edge_options
+                    );
+                    break; 
+
+                case WINDOW:
+                    // Update configurations to valid options
+                    if (vdp->mp->trigger_config.channel == NO_CHANNEL || vdp->mp->trigger_config.channel == TRIGGER_AUX) {
+                        vdp->mp->trigger_config.channel = CHANNEL_A;
+                    } 
+                    vdp->mp->trigger_config.thresholdMode = WINDOW_MODE;         
+                    
+
+                    // Update trigger direction mbbi/mbbo enum options
+                    MultiBitBinaryEnums window_options = { 
+                        .zrst = "ENTER",          .zrvl = ENTER, 
+                        .onst = "EXIT",           .onvl = EXIT, 
+                        .twst = "ENTER OR EXIT",  .twvl = ENTER_OR_EXIT
+                    };
+                    update_enum_options(
+                        vdp->mp->pTriggerDirection,
+                        vdp->mp->pTriggerDirectionFbk, 
+                        window_options
+                    );
+                    break; 
                 
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerChannelFbk);
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerDirectionFbk);
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerModeFbk);
+                case ADVANCED_EDGE: 
+                    // Update configurations to valid options
+                    if (vdp->mp->trigger_config.channel == NO_CHANNEL || vdp->mp->trigger_config.channel == TRIGGER_AUX) {
+                        vdp->mp->trigger_config.channel = CHANNEL_A;
+                    } 
+                    vdp->mp->trigger_config.thresholdMode = LEVEL;         
+                    vdp->mp->trigger_config.thresholdLower = 0;
+                    vdp->mp->trigger_config.thresholdLowerHysteresis = 0;   
 
-                for (size_t i = 0; i < sizeof(vdp->mp->pTriggerFbk)/sizeof(vdp->mp->pTriggerFbk[0]); i++)
-                    {
-                        dbProcess((struct dbCommon *)vdp->mp->pTriggerFbk[i]);
-                    }
+                    // Update trigger direction mbbi/mbbo enum options
+                    MultiBitBinaryEnums advanced_edge_options = { 
+                        .zrst = "RISING",             .zrvl = RISING, 
+                        .onst = "FALLING",            .onvl = FALLING, 
+                        .twst = "RISING OR FALLING",  .twvl = RISING_OR_FALLING
+                    };
+                    update_enum_options(
+                        vdp->mp->pTriggerDirection,
+                        vdp->mp->pTriggerDirectionFbk, 
+                        advanced_edge_options
+                    );
+                    break;
 
-            }        
-            else if (vdp->mp->trigger_config.triggerType == SIMPLE_EDGE) {
-                if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
-                    vdp->mp->trigger_config.channel = TRIGGER_AUX;
-                } 
-                vdp->mp->trigger_config.thresholdMode = LEVEL;         
-                vdp->mp->trigger_config.thresholdLower = 0;    
-
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerChannelFbk);
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerDirectionFbk);
-                dbProcess((struct dbCommon *)vdp->mp->pTriggerModeFbk);
-
-                for (size_t i = 0; i < sizeof(vdp->mp->pTriggerFbk)/sizeof(vdp->mp->pTriggerFbk[0]); i++)
-                    {
-                        dbProcess((struct dbCommon *)vdp->mp->pTriggerFbk[i]);
-                    }
-
+                default: 
+                    return -1; 
             }
-            //else if (vdp->mp->trigger_config.triggerType == WINDOW) {
-            //    vdp->mp->trigger_config.channel = CHANNEL_A; 
-            //    vdp->mp->trigger_config.thresholdMode = WINDOW;             
-              //
-            //    dbProcess((struct dbCommon *)vdp->mp->pTriggerDirectionFbk);
-            //    for (size_t i = 0; i < sizeof(vdp->mp->pTriggerFbk)/sizeof(vdp->mp->pTriggerFbk[0]); i++)
-            //        {
-            //            dbProcess((struct dbCommon *)vdp->mp->pTriggerFbk[i]);
-            //        }
-            //}
 
+            dbProcess((struct dbCommon *)vdp->mp->pTriggerChannelFbk);
+            dbProcess((struct dbCommon *)vdp->mp->pTriggerDirectionFbk);
+            dbProcess((struct dbCommon *)vdp->mp->pTriggerModeFbk);
+            for (size_t i = 0; i < sizeof(vdp->mp->pTriggerThresholdFbk)/sizeof(vdp->mp->pTriggerThresholdFbk[0]); i++)
+                {
+                    dbProcess((struct dbCommon *)vdp->mp->pTriggerThresholdFbk[i]);
+                }
             break; 
 
         case SET_TRIGGER_DIRECTION:
@@ -501,6 +549,8 @@ write_mbbo (struct mbboRecord *pmbbo)
     }
     return 0;
 }
+
+
 
 
 /****************************************************************************************
@@ -642,7 +692,7 @@ static long read_mbbi(struct mbbiRecord *pmbbi){
             break; 
 
         case GET_TRIGGER_MODE:
-            pmbbi->val = vdp->mp->trigger_config.thresholdMode;
+            pmbbi->rval = vdp->mp->trigger_config.thresholdMode;
             break;
 
         case GET_TRIGGER_CHANNEL:
@@ -662,12 +712,7 @@ static long read_mbbi(struct mbbiRecord *pmbbi){
             break;
         
         case GET_TRIGGER_DIRECTION:
-            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
-                pmbbi->rval = -1; // no trigger direction
-            }
-            else {
-                pmbbi->rval = vdp->mp->trigger_config.thresholdDirection; 
-            }
+            pmbbi->rval = vdp->mp->trigger_config.thresholdDirection; 
             break;
         
         case GET_TRIGGER_TYPE: 

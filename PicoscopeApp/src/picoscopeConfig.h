@@ -52,12 +52,14 @@ enum ThresholdDirection
 enum ThresholdMode
 {
   LEVEL = 0,
-  WINDOW = 1
+  WINDOW_MODE = 1
 };
 
 enum TriggerType {
     NO_TRIGGER = 0, 
     SIMPLE_EDGE = 1,
+    WINDOW = 2, 
+    ADVANCED_EDGE = 3,
 }; 
 
 enum RatioMode {
@@ -110,7 +112,9 @@ struct TriggerConfigs{
     enum ThresholdDirection thresholdDirection;
     enum ThresholdMode thresholdMode;
     int16_t thresholdUpper;
+    uint16_t thresholdUpperHysteresis;
     int16_t thresholdLower;
+    uint16_t thresholdLowerHysteresis;
     uint32_t autoTriggerMicroSeconds;
     double AUXTriggerSignalPulseWidth;
 };
