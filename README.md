@@ -253,7 +253,9 @@ This document provides detailed information about the EPICS driver for the Picos
     | 1       | CHANNEL_B   | Use Channel B as the triggering source |  
     | 2       | CHANNEL_C   | Use Channel C as the triggering source        |  
     | 3       | CHANNEL_D   | Use Channel D as the triggering source        |
-    | 1001    | TRIGGER_AUX | Use Auxiliary trigger input as the triggering source, with a fixed threshold of 1.25 V (nominal) to suit 2.5 V CMOS|
+    | 4       | TRIGGER_AUX | Use Auxiliary trigger input as the triggering source, with a fixed threshold of 1.25 V (nominal) to suit 2.5 V CMOS|
+    | 4       | NONE        | No trigger set |
+
 
 - **Example**:
   ```bash
@@ -270,65 +272,57 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger:channel`. 
 
-### OSCNAME:trigger:mode
+### OSCNAME:trigger:mode:fbk
 - **Type**: `mbbo`
-- **Description**: The mode of triggering.
+- **Description**: The mode of triggering, determined by `OSC:trigger:type`. 
 - **Fields**:
   - `VAL`: The mode of triggering.
-    |VAL      |Enum         |Description |  
-    |---------|-------------|------------|  
-    | 0       | LEVEL       | Will only use one threshold    |  
-    | 1       | WINDOW      | Will use two thresholds  |  
+    |VAL      |Enum         |Description                   | Threshold  |
+    |---------|-------------|------------------------------|------------|  
+    | 0       | LEVEL       | Will only use one threshold  | Upper      | 
+    | 1       | WINDOW      | Will use two thresholds      | Lower      |
 
-- **Example**:
-  ```bash
-    # Set triggering mode to LEVEL
-    $ caput OSC1234-01:trigger:mode LEVEL
-
-    # Get triggering source channel
-    $ caget OSC1234-01:trigger:mode
-  ```
-
-### OSCNAME:trigger:mode:fbk 
-- **Type**: `mbbi`
-- **Description**: The feedback PV of `OSCNAME:trigger:mode`
+### OSCNAME:trigger:type 
+- **Type**: `mbbo`
+- **Description**: The type of trigger set. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:trigger:mode`. 
+    - `VAL`:
 
+| VAL | Enum           | Description                                                                                                        | Threshold Used   |
+|-----|----------------|--------------------------------------------------------------------------------------------------------------------|-------------|
+| 0   | NO TRIGGER     | No trigger set, streaming mode.                                                                                    | None        |
+| 1   | SIMPLE EDGE    | Simple trigger, monitors incoming signal and waits for the voltage to rise above (or fall below) a set threshold.  | Upper       |
+| 2   | WINDOW         | Detects the moment when the waveform enters or leaves a voltage range.                                             | Upper/Lower |
+| 3   | ADVANCED EDGE  | Provides rising, falling, and dual edge conditions, as well as adjustable hysteresis.                              | Upper       |
 
 ### OSCNAME:trigger:direction
 - **Type**: `mbbo`
-- **Description**: The direction of the trigger event.
+- **Description**: The direction of the trigger event.The directions available change based on the value set to `OSC:trigger:type`. 
 - **Fields**:
   - `VAL`: The direction of the trigger event.
 
-  | VAL | Enum                  | Description                                          | Threshold |
-  |-----|-----------------------|-----------------------------------------------------|-----------|
-  | 0   | ABOVE_UPPER          | Level mode, triggers when above the upper threshold. | Upper     |
-  | 1   | BELOW_UPPER          | Level mode, triggers when below the upper threshold. | Upper     |
-  | 2   | RISING_UPPER         | Level mode, triggers on a rising edge crossing the upper threshold. | Upper     |
-  | 3   | FALLING_UPPER        | Level mode, triggers on a falling edge crossing the upper threshold. | Upper     |
-  | 4   | RISING_LOW/FALLING_UP| Level mode, triggers on a rising edge crossing the lower threshold, or a falling edge crossing the upper threshold | Lower/Upper     |
-  | 5   | ABOVE_LOWER          | Level mode, triggers when above the lower threshold. | Lower     |
-  | 6   | BELOW_LOWER          | Level mode, triggers when below the lower threshold. | Lower     |
-  | 7   | RISING_LOWER         | Level mode, triggers on a rising edge crossing the lower threshold. | Lower     |
-  | 8   | FALLING_LOWER        | Level mode, triggers on a falling edge crossing the lower threshold. | Lower     |
-  | 9   | WINDOW_POSITIVE_RUNT | Window mode, triggers on a positive runt pulse entering from below. | Both      |
-  | 10  | WINDOW_NEGATIVE_RUNT | Window mode, triggers on a negative runt pulse entering from above. | Both      |
-  | 11  | WINDOW_INSIDE        | Window mode, triggers when the signal is inside the upper and lower thresholds. | Both      |
-  | 12  | WINDOW_OUTSIDE       | Window mode, triggers when the signal is outside the upper and lower thresholds. | Both      |
-  | 13  | WINDOW_ENTER         | Window mode, triggers when the signal enters the range between the upper and lower thresholds. | Both      |
-  | 14  | WINDOW_EXIT          | Window mode, triggers when the signal exits the range between the upper and lower thresholds. | Both      |
-  | 15  | WINDOW_ENTER_EXIT    | Window mode, triggers when the signal either enters or exits the range between the upper and lower thresholds. | Both      |
+  - If `OSC:trigger:type` = NO TRIGGER: 
+      | VAL | Enum                  | Description                                         | Threshold Used |
+      |-----|-----------------------|-----------------------------------------------------|-----------|
+      | 0   | NONE                  | No trigger set.                                     | None      | 
+  - If `OSC:trigger:type` = SIMPLE EDGE: 
+      | VAL | Enum                  | Description                                         | Threshold Used |
+      |-----|-----------------------|-----------------------------------------------------|-----------|
+      | 0   | RISING                | Triggers when rising edge crosses upper threshold.  | Upper     | 
+      | 1   | FALLING               | Triggers when falling edge crosses upper threshold. | Upper     |
+  - If `OSC:trigger:type` = WINDOW:  
+      | VAL | Enum            | Description                                                                                 | Threshold Used  |
+      |-----|-----------------|---------------------------------------------------------------------------------------------|-------------|
+      | 0   | ENTER           | Triggers when the signal enters the range between the upper and lower thresholds.           | Upper/Lower | 
+      | 1   | EXIT            | Triggers when the signal exits the range between the upper and lower thresholds.            | Upper/Lower | 
+      | 2   | ENTER OR EXIT   | Triggers when the signal enters or exits the range between the upper and lower thresholds.  | Upper/Lower |
+  - If `OSC:trigger:type` = ADVANCED EDGE:   
+      | VAL | Enum              | Description                                                  | Threshold Used | 
+      |-----|-------------------|--------------------------------------------------------------|-----------|
+      | 0   | RISING            | Triggers when rising edge crosses upper threshold.           | Upper     | 
+      | 1   | FALLING           | Triggers when falling edge crosses upper threshold.          | Upper     |
+      | 2   | RISING OR FALLING | Triggers when falling or rising edge crosses upper threshold | Upper     |
 
-- **Example**:
-  ```bash
-    # Set triggering direction to rising
-    $ caput OSC1234-01:trigger:direction RISING_UPPER
-
-    # Get triggering direction
-    $ caget OSC1234-01:trigger:direction
-  ```
 
 ### OSCNAME:trigger:direction:fbk 
 - **Type**: `mbbi`
@@ -356,6 +350,14 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger:upper:threshold`.
 
+### OSCNAME:trigger:upper:threshold:hysteresis
+- **Type**: `ao`
+- **Description**: The % hysteresis applied to the upper threshold value.
+
+### OSCNAME:trigger:upper:threshold:hysteresis:fbk
+- **Type**: `ao`
+- **Description**: The % hysteresis applied to the upper threshold value.
+
 ### OSCNAME:trigger:lower:threshold
 - **Type**: `ao`
 - **Description**: The lower threshold of triggering.
@@ -375,6 +377,14 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Description**: The feedback PV of `OSCNAME:trigger:lower`
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger:lower`.
+
+### OSCNAME:trigger:lower:threshold:hysteresis
+- **Type**: `ao`
+- **Description**: The % hysteresis applied to the lower threshold value.
+
+### OSCNAME:trigger:lower:threshold:hysteresis:fbk
+- **Type**: `ao`
+- **Description**: The % hysteresis applied to the lower threshold value.
 
 ### OSCNAME:time_per_division
 - **Type**: `mbbo` 
