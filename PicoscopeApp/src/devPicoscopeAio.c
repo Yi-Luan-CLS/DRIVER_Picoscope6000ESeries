@@ -266,7 +266,7 @@ static long read_ai (struct aiRecord *pai){
             break;
         
         case GET_TRIGGER_LOWER_HYSTERESIS: 
-            pai->val = vdp->mp->trigger_config.thresholdUpperHysteresis; 
+            pai->val = vdp->mp->trigger_config.thresholdLowerHysteresis; 
             break;
 
         case GET_AUTO_TRIGGER_US: 
@@ -549,8 +549,9 @@ static long write_ao (struct aoRecord *pao)
         
         case SET_TRIGGER_UPPER:
             vdp->mp->trigger_config.thresholdUpper = (int16_t) pao->val;
-            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
+            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER || vdp->mp->trigger_config.channel == TRIGGER_AUX){
                 vdp->mp->trigger_config.thresholdUpper = 0; 
+                pao->val = 0;
             } 
             break;
 
@@ -563,8 +564,9 @@ static long write_ao (struct aoRecord *pao)
 
         case SET_TRIGGER_LOWER:
             vdp->mp->trigger_config.thresholdLower = (int16_t) pao->val;
-            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
+            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER || vdp->mp->trigger_config.channel == TRIGGER_AUX){
                 vdp->mp->trigger_config.thresholdLower = 0; 
+                pao->val = 0;
             } 
             break;
 

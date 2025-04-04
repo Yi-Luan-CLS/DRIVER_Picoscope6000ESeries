@@ -387,9 +387,9 @@ write_mbbo (struct mbboRecord *pmbbo)
                 vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
                 vdp->mp->trigger_config.thresholdMode = LEVEL; 
                 vdp->mp->trigger_config.thresholdLower = 0; 
-                vdp->mp->trigger_config.thresholdLowerHysteresis = 5; 
+                vdp->mp->trigger_config.thresholdLowerHysteresis = 0; 
                 vdp->mp->trigger_config.thresholdUpper = 0; 
-                vdp->mp->trigger_config.thresholdUpperHysteresis = 5; 
+                vdp->mp->trigger_config.thresholdUpperHysteresis = 0; 
                 vdp->mp->trigger_config.thresholdDirection = NONE; 
                 
             }
@@ -444,9 +444,8 @@ write_mbbo (struct mbboRecord *pmbbo)
                     // Update configurations to valid options
                     if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
                         vdp->mp->trigger_config.channel = TRIGGER_AUX;
-                        vdp->mp->trigger_config.thresholdLowerHysteresis = 5;
                         vdp->mp->trigger_config.thresholdUpper = 0;
-                        vdp->mp->trigger_config.thresholdUpperHysteresis = 5;
+                        vdp->mp->trigger_config.thresholdUpperHysteresis = 0;
                     } 
                     vdp->mp->trigger_config.thresholdMode = LEVEL;         
                     vdp->mp->trigger_config.thresholdLower = 0;
