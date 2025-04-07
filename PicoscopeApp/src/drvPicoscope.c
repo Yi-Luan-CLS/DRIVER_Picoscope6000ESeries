@@ -552,6 +552,90 @@ uint32_t get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_int
 }
 
 
+/** 
+ * The following is to convert the enum values from $(OSC):CH$(CHANNEL):range to
+ * the corresponding voltage. 
+ * */
+const double ranges_in_volts[] = {
+    0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20 
+};
+double get_range(int index) {
+
+    if (index >= 0 && index < sizeof(ranges_in_volts) / sizeof(ranges_in_volts[0])) {
+        return ranges_in_volts[index];
+    }
+
+    return -1; 
+}
+
+/** 
+ * Calculates the scaled value from a given voltage at a specified voltage range. 
+ * 
+ * @param volts The value to be scaled in voltages. 
+ *        voltage_range The current voltage range. 
+ *        scaled_value On exit, the scaled value. 
+ *        handle The device identifier returned by open_picoscope(). 
+ * 
+ * @return 0 if successful, other a non-zero status code. 
+ * */ 
+uint32_t calculate_scaled_value(double volts, int16_t voltage_range, int16_t* scaled_value, int16_t handle){ 
+    
+    double range_in_volts = get_range(voltage_range); 
+    
+    if (range_in_volts < volts){
+        printf("Voltage is outside of range.\n"); 
+        return -1; 
+    }
+
+    int16_t min, max; 
+    uint32_t status = get_adc_limits(&min, &max, handle);
+    if (status != PICO_OK) {
+        return status; 
+    }
+
+    int16_t scaled = ((double) volts / range_in_volts) * max;
+    printf("(%f / %f) * %d = %d \n", volts, range_in_volts, max, scaled); 
+    
+    *scaled_value = scaled;     
+
+    return status; 
+}
+
+/**
+ * Gets the maximum and minimun sample values that the ADC of the connected picoscope can produce 
+ * at the resolution set. 
+ * 
+ * @param min_val On exit, the minimum sample value. 
+ *        max_val On exit, the maximum sample value. 
+ *        handle The device identifier returned by open_picoscope(). 
+ * 
+ * @return 0 if successful, other a non-zero status code. 
+ * */
+uint32_t get_adc_limits(int16_t* min_val, int16_t* max_val, int16_t handle){ 
+
+    int16_t min, max, resolution;
+
+    uint32_t status = get_resolution(&resolution, handle); 
+    if (status != PICO_OK) {
+        return status; 
+    }
+
+    pthread_mutex_lock(&ps6000a_call_mutex);
+    status = ps6000aGetAdcLimits(handle, resolution, &min, &max);
+    pthread_mutex_unlock(&ps6000a_call_mutex);
+    if (status != PICO_OK){ 
+        log_error("ps6000aGetAdcLimits", status, __FILE__, __LINE__); 
+        return status; 
+    }
+
+    *min_val = min; 
+    *max_val = max; 
+
+    return status;
+}
+
+
+
 typedef struct {
     PICO_STATUS callbackStatus; // Status from the callback
     int dataReady;

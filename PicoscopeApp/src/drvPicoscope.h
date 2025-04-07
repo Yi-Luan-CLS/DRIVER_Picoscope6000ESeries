@@ -38,6 +38,7 @@ typedef struct PS6000AModule
 
     // Stored PVs for processing at specific time 
     struct aiRecord* pTriggerThresholdFbk[4];
+    struct aoRecord* pTriggerThreshold[2]; 
     struct aoRecord* pAnalogOffestRecords[CHANNEL_NUM];
 
     struct mbboRecord* pTriggerDirection;
@@ -73,6 +74,9 @@ uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* chann
 
 uint32_t get_channel_status(int16_t channel, EnabledChannelFlags channel_status);
 
+uint32_t calculate_scaled_value(double volts, int16_t voltage_range, int16_t* scaled_value, int16_t handle);
+
+uint32_t get_adc_limits(int16_t* min_val, int16_t* max_val, int16_t handle);
 
 uint32_t get_valid_timebase_configs(
     struct PS6000AModule* mp,

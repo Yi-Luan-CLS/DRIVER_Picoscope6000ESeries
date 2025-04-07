@@ -213,7 +213,7 @@ static long init_record_mbbo (struct mbboRecord *pmbbo)
             break; 
 
         case SET_TRIGGER_CHANNEL:
-           vdp->mp->trigger_config.channel  = (enum Channel) pmbbo->val;
+           vdp->mp->trigger_config.channel  = (enum Channel) pmbbo->rval;
            break;
 
         case SET_TRIGGER_TYPE: 
@@ -256,6 +256,10 @@ write_mbbo (struct mbboRecord *pmbbo)
                 break;
             }
             vdp->mp->device_resolution = resolution; 
+            
+            for(size_t i = 0; i < sizeof(vdp->mp->pTriggerThreshold)/ sizeof(vdp->mp->pTriggerThreshold[0]); i++){ 
+                dbProcess((struct dbCommon *) vdp->mp->pTriggerThreshold[i]);            
+            }
             break;  
 
         case SET_COUPLING:    
@@ -304,6 +308,10 @@ write_mbbo (struct mbboRecord *pmbbo)
                     log_message(vdp->mp, pmbbo->name, "Error setting voltage range.", result);
                     vdp->mp->channel_configs[channel_index].range = previous_range;
                 }
+            }
+
+            for(size_t i = 0; i < sizeof(vdp->mp->pTriggerThreshold)/ sizeof(vdp->mp->pTriggerThreshold[0]); i++){ 
+                dbProcess((struct dbCommon *) vdp->mp->pTriggerThreshold[i]);            
             }
             break;
 

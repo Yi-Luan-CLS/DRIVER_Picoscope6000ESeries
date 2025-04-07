@@ -254,7 +254,7 @@ static long read_ai (struct aiRecord *pai){
             break;
 
         case GET_TRIGGER_UPPER:
-            pai->val = vdp->mp->trigger_config.thresholdUpper;
+            pai->val = vdp->mp->trigger_config.thresholdUpperVolts;
             break;
 
         case GET_TRIGGER_UPPER_HYSTERESIS: 
@@ -262,7 +262,7 @@ static long read_ai (struct aiRecord *pai){
             break;
 
         case GET_TRIGGER_LOWER:
-            pai->val = vdp->mp->trigger_config.thresholdLower;
+            pai->val = vdp->mp->trigger_config.thresholdLowerVolts;
             break;
         
         case GET_TRIGGER_LOWER_HYSTERESIS: 
@@ -384,6 +384,7 @@ static long init_record_ao (struct aoRecord *pao)
             break;
 
         case SET_TRIGGER_UPPER:
+            vdp->mp->pTriggerThreshold[0] = pao; 
             vdp->mp->trigger_config.thresholdUpper = (int16_t) pao->val;
             break;
         
@@ -392,6 +393,7 @@ static long init_record_ao (struct aoRecord *pao)
             break; 
 
         case SET_TRIGGER_LOWER:
+            vdp->mp->pTriggerThreshold[1] = pao; 
             vdp->mp->trigger_config.thresholdLower = (int16_t) pao->val;
             break;
         
@@ -548,11 +550,29 @@ static long write_ao (struct aoRecord *pao)
             break;
         
         case SET_TRIGGER_UPPER:
-            vdp->mp->trigger_config.thresholdUpper = (int16_t) pao->val;
-            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER || vdp->mp->trigger_config.channel == TRIGGER_AUX){
+            if (vdp->mp->trigger_config.channel == TRIGGER_AUX || vdp->mp->trigger_config.triggerType == NO_TRIGGER) {
+                vdp->mp->trigger_config.thresholdUpper = 0;
+                vdp->mp->trigger_config.thresholdUpperVolts = 0; 
+                pao->val = 0; 
+                break;
+            }
+
+            int16_t upper_scaled; 
+            result = calculate_scaled_value(
+                pao->val, 
+                vdp->mp->channel_configs[vdp->mp->trigger_config.channel].range, 
+                &upper_scaled, 
+                vdp->mp->handle
+            );
+            if (result != 0) { 
+                log_message(vdp->mp, pao->name, "Threshold requested is outside of the trigger channel range.", result); 
                 vdp->mp->trigger_config.thresholdUpper = 0; 
-                pao->val = 0;
-            } 
+                vdp->mp->trigger_config.thresholdUpperVolts = 0; 
+                pao->val = 0; 
+            } else {
+                vdp->mp->trigger_config.thresholdUpperVolts = pao->val;
+                vdp->mp->trigger_config.thresholdUpper = upper_scaled;
+            }
             break;
 
         case SET_TRIGGER_UPPER_HYSTERESIS: 
@@ -563,11 +583,29 @@ static long write_ao (struct aoRecord *pao)
             break;
 
         case SET_TRIGGER_LOWER:
-            vdp->mp->trigger_config.thresholdLower = (int16_t) pao->val;
-            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER || vdp->mp->trigger_config.channel == TRIGGER_AUX){
+            if (vdp->mp->trigger_config.channel == TRIGGER_AUX || vdp->mp->trigger_config.triggerType == NO_TRIGGER) {
                 vdp->mp->trigger_config.thresholdLower = 0; 
-                pao->val = 0;
-            } 
+                vdp->mp->trigger_config.thresholdLowerVolts = 0; 
+                pao->val = 0; 
+                break;
+            }
+
+            int16_t lower_scaled; 
+            result = calculate_scaled_value(
+                pao->val, 
+                vdp->mp->channel_configs[vdp->mp->trigger_config.channel].range, 
+                &lower_scaled, 
+                vdp->mp->handle
+            );
+            if (result != 0){ 
+                log_message(vdp->mp, pao->name, "Threshold requested is outside of the trigger channel range.", result); 
+                vdp->mp->trigger_config.thresholdLower = 0; 
+                vdp->mp->trigger_config.thresholdLowerVolts = 0; 
+                pao->val = 0; 
+            } else {
+                vdp->mp->trigger_config.thresholdLowerVolts = pao->val;            
+                vdp->mp->trigger_config.thresholdLower = lower_scaled;
+            }
             break;
 
         case SET_TRIGGER_LOWER_HYSTERESIS: 
