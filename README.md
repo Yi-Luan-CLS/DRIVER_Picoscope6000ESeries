@@ -332,14 +332,14 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:trigger:upper:threshold
 - **Type**: `ao`
-- **Description**: The upper threshold of triggering.
+- **Description**: The trigger threshold in volts. Used as only threshold in SIMPLE EDGE and ADVANCED EDGE trigger types and used as upper limit when using WINDOW trigger type. 
 - **Fields**:
-  - `VAL`: The scaled value of upper threshold.
+  - `VAL`: The upper threshold in Volts.
 
 - **Example**:
   ```bash
-    # Set triggering upper threshold to 8000
-    $ caput OSC1234-01:trigger:upper:threshold 8000
+    # Set triggering upper threshold to 5 Volts
+    $ caput OSC1234-01:trigger:upper:threshold 5
 
     # Get triggering upper threshold
     $ caget OSC1234-01:trigger:upper:threshold
@@ -360,18 +360,10 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:trigger:lower:threshold
 - **Type**: `ao`
-- **Description**: The lower threshold of triggering.
+- **Description**: The lower trigger threshold in volts. Only used when trigger type is WINDOW. 
 - **Fields**:
-  - `VAL`: The scaled value of lower threshold.
+  - `VAL`: Lower threshold in volts. 
 
-- **Example**:
-  ```bash
-    # Set triggering lower threshold to 4000
-    $ caput OSC1234-01:trigger:lower:threshold 4000
-
-    # Get triggering lower threshold
-    $ caget OSC1234-01:trigger:lower:threshold
-  ```
 ### OSCNAME:trigger:lower:threshold:fbk 
 - **Type**: `ai`
 - **Description**: The feedback PV of `OSCNAME:trigger:lower`
