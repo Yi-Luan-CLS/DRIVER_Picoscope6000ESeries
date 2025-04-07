@@ -409,6 +409,10 @@ write_mbbo (struct mbboRecord *pmbbo)
                 vdp->mp->trigger_config.thresholdUpper = 0; 
                 vdp->mp->trigger_config.thresholdUpperHysteresis = 0; 
                 vdp->mp->trigger_config.thresholdDirection = NONE; 
+            } else {
+                if (vdp->mp->trigger_config.triggerType == NO_TRIGGER) {
+                    vdp->mp->trigger_config.triggerType = SIMPLE_EDGE;
+                }
             }
 
             dbProcess((struct dbCommon *)vdp->mp->pTriggerType); 
