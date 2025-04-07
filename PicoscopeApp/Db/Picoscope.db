@@ -471,12 +471,14 @@ record(mbbi, "$(OSC):trigger:mode:fbk") {
 record(ao, "$(OSC):trigger:upper:threshold") {
     field(DTYP, "Picoscope")
     field(VAL, "0")
+    field(EGU, "Volts")
     field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_upper")
     field(FLNK, "$(OSC):trigger:upper:threshold:fbk")
 }
 
 record(ai, "$(OSC):trigger:upper:threshold:fbk") {
     field(DTYP, "Picoscope")
+    field(EGU, "Volts")
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_upper")
 }
 
@@ -499,12 +501,14 @@ record(ai, "$(OSC):trigger:upper:threshold:hysteresis:fbk") {
 record(ao, "$(OSC):trigger:lower:threshold") {
     field(DTYP, "Picoscope")
     field(VAL, "0")
+    field(EGU, "Volts")
     field(OUT, "@S:$(SERIAL_NUM) @L:set_trigger_lower")
     field(FLNK, "$(OSC):trigger:lower:threshold:fbk")
 }
 
 record(ai, "$(OSC):trigger:lower:threshold:fbk") {
     field(DTYP, "Picoscope")
+    field(EGU, "Volts")
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_lower")
 }
 
