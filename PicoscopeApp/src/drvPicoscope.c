@@ -16,7 +16,6 @@
 #include "drvPicoscope.h"
 #define MAX_PICO 10
 static PS6000AModule *PS6000AModuleList[MAX_PICO] = {NULL};
-pthread_mutex_t block_ready_mutex;
 pthread_mutex_t ps6000a_call_mutex;
 void log_error(char* function_name, uint32_t status, const char* FILE, int LINE){ 
     printf("Error in %s (file: %s, line: %d). Status code: 0x%08X\n", function_name, FILE, LINE, status);
@@ -25,64 +24,62 @@ void log_error(char* function_name, uint32_t status, const char* FILE, int LINE)
 /**
  * Opens the PicoScope device with the specified resolution. 
  * 
- * @param resolution The sampling resolution to be used when opening the PicoScope.  
- *                   The following values are valid: 
- *                      - 0: 8-bit resolution
- *                      - 10: 10-bit resolution
- *                      - 1: 12-bit resolution
- *        serial_num The serial number of the device to be opened. 
- *        handle On exit, the device identifier for future communication. 
+ * @param resolution int16_t The sampling resolution to be used when opening the PicoScope.  
+ *                           The following values are valid: 
+ *                           - 0: 8-bit resolution
+ *                           - 10: 10-bit resolution
+ *                           - 1: 12-bit resolution
+ * @param serial_num char Poitner The serial number of the device to be opened. 
+ * @param handle     int16_t Poitner On exit, the device identifier for future communication. 
  * 
- * @return 0 if the device is successfully opened, or a non-zero error code.  
+ * @return           PICO_STATUS Return 0 if the device is successfully closed, or a non-zero error code. 
 */
-uint32_t open_picoscope(int16_t resolution, char* serial_num, int16_t* handle){
+PICO_STATUS open_picoscope(int16_t resolution, char* serial_num, int16_t* handle){
 
     int16_t handle_buffer; 
-    uint32_t status = ps6000aOpenUnit(&handle_buffer, (int8_t*) serial_num, resolution);
+    PICO_STATUS status = ps6000aOpenUnit(&handle_buffer, (int8_t*) serial_num, resolution);
     if (status != PICO_OK) 
     { 
         log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 
         return status;  
     }
-    pthread_mutex_init(&block_ready_mutex, NULL);
     pthread_mutex_init(&ps6000a_call_mutex, NULL);
 
     *handle = handle_buffer;
-    return 0;
+    return PICO_OK;
 }
 
 /**
  * Close an open PicoScope device.
  *
- * @param handle The device identifier returned by open_picoscope(). 
+ * @param  handle int16_t handle The device identifier returned by open_picoscope(). 
  * 
- * @return 0 if the device is successfully closed, or a non-zero error code. 
+ * @return        PICO_STATUS Return 0 if the device is successfully closed, or a non-zero error code. 
 */
-uint32_t close_picoscope(int16_t handle){ 
+PICO_STATUS close_picoscope(int16_t handle){ 
     pthread_mutex_lock(&ps6000a_call_mutex);
-    uint32_t status = ps6000aCloseUnit(handle);
+    PICO_STATUS status = ps6000aCloseUnit(handle);
     pthread_mutex_unlock(&ps6000a_call_mutex);
     if (status != PICO_OK) 
     { 
         log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
         return status;  
     } 
-    pthread_mutex_destroy(&block_ready_mutex);
     pthread_mutex_destroy(&ps6000a_call_mutex);
 
-    return 0;
+    return PICO_OK;
 }
 
 /**
  * Check that open device is still connected. 
  * 
- * @param handle The device identifier returned by open_picoscope(). 
+ * @param handle int16_t The device identifier returned by open_picoscope(). 
  * 
- * @return 0 if device is connect, otherwise a non-zero error code.
+ * @return       PICO_STATUS Return 0 if device is connect, otherwise a non-zero error code.
 */
-uint32_t ping_picoscope(int16_t handle){ 
+PICO_STATUS ping_picoscope(int16_t handle){ 
     pthread_mutex_lock(&ps6000a_call_mutex);
-    uint32_t status = ps6000aPingUnit(handle);
+    PICO_STATUS status = ps6000aPingUnit(handle);
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     // If driver call in progress, return connected. 
@@ -93,25 +90,25 @@ uint32_t ping_picoscope(int16_t handle){
         log_error("ps6000aPingUnit. Cannot ping device.", status, __FILE__, __LINE__);
         return status; 
     }
-    return 0;
+    return PICO_OK;
 }
 
 /**
  * Set the sample resolution of the currently connected PicoScope. 
  * 
- * @param resolution The sampling resolution to be used.  
- *                   The following values are valid: 
- *                      - 0: 8-bit resolution
- *                      - 10: 10-bit resolution
- *                      - 1: 12-bit resolution
- *        handle The device identifier returned by open_picoscope(). 
+ * @param resolution int16_t The sampling resolution to be used.  
+ *                           The following values are valid: 
+ *                           - 0: 8-bit resolution
+ *                           - 10: 10-bit resolution
+ *                           - 1: 12-bit resolution
+ *        handle     int16_t The device identifier returned by open_picoscope(). 
  * 
- * @return 0 if resolution successfully set, otherwise a non-zero error code.
+ * @return           PICO_STATUS Return 0 if resolution successfully set, otherwise a non-zero error code.
 */
-uint32_t set_device_resolution(int16_t resolution, int16_t handle){ 
+PICO_STATUS set_device_resolution(int16_t resolution, int16_t handle){ 
    
     pthread_mutex_lock(&ps6000a_call_mutex);
-    uint32_t status = ps6000aSetDeviceResolution(handle, resolution); 
+    PICO_STATUS status = ps6000aSetDeviceResolution(handle, resolution); 
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK){ 
@@ -119,23 +116,23 @@ uint32_t set_device_resolution(int16_t resolution, int16_t handle){
         return status;
     }
 
-    return 0; 
+    return PICO_OK; 
 }
 
 /**
  * Get  the sample resolution of the currently connected PicoScope. 
  * 
- * @param on exit, the resolution of the device
- *        handle The device identifier returned by open_picoscope(). 
+ * @param resolution int16_t Pointer On exit, the resolution of the device
+ * @param handle     int16_t The device identifier returned by open_picoscope(). 
  * 
- * @return 0 if resolution returned, otherwise a non-zero error code.
+ * @return           PICO_STATUS Return 0 if resolution returned, otherwise a non-zero error code.
 */
-uint32_t get_resolution(int16_t* resolution, int16_t handle) {
+PICO_STATUS get_resolution(int16_t* resolution, int16_t handle) {
 
     PICO_DEVICE_RESOLUTION device_resolution; 
     
     pthread_mutex_lock(&ps6000a_call_mutex);
-    uint32_t status = ps6000aGetDeviceResolution(handle, &device_resolution); 
+    PICO_STATUS status = ps6000aGetDeviceResolution(handle, &device_resolution); 
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if(status != PICO_OK) {
@@ -143,24 +140,24 @@ uint32_t get_resolution(int16_t* resolution, int16_t handle) {
         return status;
     }
     *resolution = (int16_t)device_resolution; 
-    return 0; 
+    return PICO_OK; 
 }
 
 /**
  * Retrieves the serial number of the currently connected PicoScope. 
  * 
- * @param serial_num A pointer to a pointer that will hold the dynamically allocated address of
- *                  the memory buffer containing the serial number. 
- *        handle The device identifier returned by open_picoscope(). 
+ * @param serial_num Pointer to a pointer of int8_t that will hold the dynamically allocated address of
+ *                             the memory buffer containing the serial number. 
+ * @param handle     int16_t The device identifier returned by open_picoscope(). 
  * 
- * @return 0 if the serial number is successfully retrieved, otherwise a non-zero error code.
+ * @return           PICO_STATUS Return 0 if the serial number is successfully retrieved, otherwise a non-zero error code.
 */
-uint32_t get_serial_num(int8_t** serial_num, int16_t handle) {
+PICO_STATUS get_serial_num(int8_t** serial_num, int16_t handle) {
 
     int16_t required_size = 0; 
 
     pthread_mutex_lock(&ps6000a_call_mutex);
-    uint32_t status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_BATCH_AND_SERIAL);
+    PICO_STATUS status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_BATCH_AND_SERIAL);
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
@@ -182,25 +179,25 @@ uint32_t get_serial_num(int8_t** serial_num, int16_t handle) {
     *serial_num = serial_num_buffer;
 
 
-    return 0;  
+    return PICO_OK;  
 }
 
 
 /**
  * Retrieves the model number of the currently connected PicoScope. 
  * 
- * @param model_num A pointer to a pointer that will hold the dynamically allocated address of
- *                  the memory buffer containing the model number. 
- *        handle The device identifier returned by open_picoscope(). 
+ * @param model_num Pointer to a pointer of int8_t that will hold the dynamically allocated address of
+ *                          the memory buffer containing the model number. 
+ * @param handle    int16_t The device identifier returned by open_picoscope(). 
  * 
- * @return 0 if the model number is successfully retrieved, otherwise a non-zero error code.
+ * @return          PICO_STATUS Return 0 if the model number is successfully retrieved, otherwise a non-zero error code.
 */
-uint32_t get_model_num(int8_t** model_num, int16_t handle) {
+PICO_STATUS get_model_num(int8_t** model_num, int16_t handle) {
 
     int16_t required_size = 0; 
 
     pthread_mutex_lock(&ps6000a_call_mutex);
-    uint32_t status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_VARIANT_INFO);
+    PICO_STATUS status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_VARIANT_INFO);
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (status != PICO_OK) {
@@ -222,25 +219,25 @@ uint32_t get_model_num(int8_t** model_num, int16_t handle) {
 
     *model_num = model_num_buffer;
     
-    return 0;
+    return PICO_OK;
 }
 
 
 /**
- * Retrieves the model and serial number of the currently connected PicoScope. 
- * 
- * @param device_info A pointer to a pointer that will hold the dynamically allocated address of
- *                    the memory buffer containing the device information. 
- *        handle The device identifier returned by open_picoscope(). 
- * 
- * @return 0 if the device information is successfully retrieved, otherwise a non-zero error code.
-*/
-uint32_t get_device_info(int8_t** device_info, int16_t handle) {
+ * Retrieves the model and serial number of the currently connected PicoScope.
+ *
+ * @param device_info Pointer to a pointer of int8_t (String pointer) that will store the address of a dynamically allocated
+ *                            memory buffer containing the device information (e.g., model and serial number).
+ *                            The caller is responsible for freeing this memory.
+ * @param handle      int16_t The device identifier returned by open_picoscope().
+ * @return            PICO_STATUS Returns 0 if the device information is successfully retrieved, otherwise a non-zero error code.
+ */
+PICO_STATUS get_device_info(int8_t** device_info, int16_t handle) {
 
     int8_t* serial_num = NULL;
     int8_t* model_num = NULL; 
 
-    uint32_t status = get_serial_num(&serial_num, handle);
+    PICO_STATUS status = get_serial_num(&serial_num, handle);
     if (status == 0) {
         status = get_model_num(&model_num, handle); 
         if (status == 0) {
@@ -264,13 +261,13 @@ uint32_t get_device_info(int8_t** device_info, int16_t handle) {
  * Enables a specified channel on the connected Picocope with the given configurations. 
  * Setting the channels coupling, range, analog offset, and bandwidth. 
  * 
- * @param channel `ChannelConfigs` structure that contains the configuration to be activated. 
- *                The structure holds the coupling type, voltage range, analog offset, and 
- *                bandwidth to configure the channel. 
- *        handle The device identifier returned by open_picoscope(). 
- *        channel_status On exit, the updated status of Picoscope channels.
+ * @param channel        ChannelConfigs structure that contains the configuration to be activated. 
+ *                                      The structure holds the coupling type, voltage range, analog offset, and 
+ *                                      bandwidth to configure the channel. 
+ * @param handle         int16_t The device identifier returned by open_picoscope(). 
+ * @param channel_status EnabledChannelFlags Pointer On exit, the updated status of Picoscope channels.
  * 
- * @return 0 if the channel is succesfully set on, otherwise a non-zero error code. 
+ * @return               uint32_t Return 0 if the channel is succesfully set on, otherwise a non-zero error code. 
 */
 uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledChannelFlags* channel_status) {
 
@@ -310,16 +307,16 @@ uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledCh
 /**
  * Deactivates the specified channel on the connected Picoscope. 
  * 
- * @param channel The channel to be shut off. 
- *                The following values are valid: 
- *                  - 0: Channel A
- *                  - 1: Channel B 
- *                  - 2: Channel C
- *                  - 3: Channel D
- *        handle The device identifier returned by open_picoscope(). 
- *        channel_status On exit, the updated status of Picoscope channels.
+ * @param channel        int The channel to be shut off. 
+ *                           The following values are valid: 
+ *                             - 0: Channel A
+ *                             - 1: Channel B 
+ *                             - 2: Channel C
+ *                             - 3: Channel D
+ * @param handle         int16_t The device identifier returned by open_picoscope(). 
+ * @param channel_status EnabledChannelFlags Pointer On exit, the updated status of Picoscope channels. 
  *  
- * @return 0 if the channel is successfully turned off, otherwise a non-zero error code.
+ * @return               uint32_t Return 0 if the channel is successfully turned off, otherwise a non-zero error code.
 */
 uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* channel_status) {
     pthread_mutex_lock(&ps6000a_call_mutex);
@@ -357,14 +354,14 @@ uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* chann
 /**
  * Check if the status of the specified channel. 
  * 
- * @param channel The channel you wish to check the status of. 
- *                The following values are valid: 
- *                  - 0: Channel A
- *                  - 1: Channel B 
- *                  - 2: Channel C
- *                  - 3: Channel D 
- * 
- * @return 1 if the channel is enabled, 0 if not, and -1 if channel does not exist
+ * @param channel        int16_t The channel you wish to check the status of. 
+ *                               The following values are valid: 
+ *                               - 0: Channel A
+ *                               - 1: Channel B 
+ *                               - 2: Channel C
+ *                               - 3: Channel D 
+ * @param channel_status EnabledChannelFlags Channels currently enabled on the device identified by the handle. 
+ * @return               uint32_t Return 1 if the channel is enabled, 0 if not, and -1 if channel does not exist
  */
 uint32_t get_channel_status(int16_t channel, EnabledChannelFlags channel_status){ 
     
@@ -386,20 +383,20 @@ uint32_t get_channel_status(int16_t channel, EnabledChannelFlags channel_status)
 /**
  * Uses the range and coupling of a specific channel to retrieve the maximum and minimum analog offset voltages possible. 
  * 
- * @param `ChannelConfigs` structure that contains the configurations of the channel in question. 
- *        handle The device identifier returned by open_picoscope(). 
- *        max_analog_offset On exit, the max analog offset voltage allowed for the range. 
- *        min_analog_offset On exit, the min analog offset voltage allowed for the range. 
+ * @param channel           ChannelConfigs structure that contains the configurations of the channel in question. 
+ * @param handle            int16_t The device identifier returned by open_picoscope(). 
+ * @param max_analog_offset double Pointer On exit, the max analog offset voltage allowed for the range. 
+ * @param min_analog_offset double Pointer On exit, the min analog offset voltage allowed for the range. 
  * 
- * @return 0 if the analog offset limits are succesfully retrieved, otherwise a non-zero error code. 
+ * @return                  PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-uint32_t get_analog_offset_limits(struct ChannelConfigs channel, int16_t handle, double* max_analog_offset, double* min_analog_offset){
+PICO_STATUS get_analog_offset_limits(struct ChannelConfigs channel, int16_t handle, double* max_analog_offset, double* min_analog_offset){
 
     double maximum_voltage; 
     double minimum_voltage;
 
     pthread_mutex_lock(&ps6000a_call_mutex);
-    uint32_t status = ps6000aGetAnalogueOffsetLimits(handle, channel.range, channel.coupling, &maximum_voltage, &minimum_voltage); 
+    PICO_STATUS status = ps6000aGetAnalogueOffsetLimits(handle, channel.range, channel.coupling, &maximum_voltage, &minimum_voltage); 
     pthread_mutex_unlock(&ps6000a_call_mutex);
     if (status != PICO_OK)
     {
@@ -417,21 +414,21 @@ uint32_t get_analog_offset_limits(struct ChannelConfigs channel, int16_t handle,
  * Uses a requested sample interval to determine the closest timebase and sample interval that can 
  * be applied to the connected Picoscope given the resolution and number of channels enabled. 
  * 
- * @param requested_time_interval The requested sample interval in seconds. 
- *        handle The device identifier returned by open_picoscope(). 
- *        channel_status EnabledChannelFlags of channels currently enabled on the device identified by the handle. 
- *        timebase On exit, the value of the closest timebase for the requested interval. 
- *        available_time_interval On exit, the closests sample interval available, given the device configurations, 
+ * @param requested_time_interval double The requested sample interval in seconds. 
+ * @param handle                  int16_t The device identifier returned by open_picoscope(). 
+ * @param channel_status          EnabledChannelFlags Channels currently enabled on the device identified by the handle. 
+ * @param timebase                uint32_t Pointer On exit, the value of the closest timebase for the requested interval. 
+ * @param available_time_interval double Pointer On exit, the closests sample interval available, given the device configurations, 
  *                                to the request interval. 
  * 
- * @return 0 if the call is successful, otherwise a non-zero error code.
+ * @return                        PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-uint32_t validate_sample_interval(double requested_time_interval, int16_t handle, EnabledChannelFlags channel_status, uint32_t* timebase, double* available_time_interval){
+PICO_STATUS validate_sample_interval(double requested_time_interval, int16_t handle, EnabledChannelFlags channel_status, uint32_t* timebase, double* available_time_interval){
 
     uint32_t enabledChannels = *(uint32_t*)&channel_status;
 
     int16_t resolution = 0; 
-    uint32_t status = get_resolution(&resolution, handle);
+    PICO_STATUS status = get_resolution(&resolution, handle);
     if (status != PICO_OK) {
         return status;
     }
@@ -457,15 +454,15 @@ uint32_t validate_sample_interval(double requested_time_interval, int16_t handle
     *available_time_interval = time_interval_available; 
 
 
-    return 0; 
+    return PICO_OK; 
 } 
 
 
 /** 
  * Converts a time in some unit to seconds. 
  * 
- * @params time An amount of time. 
- *         unit The unit used for time.  
+ * @param  time double An amount of time. 
+ * @param  unit UnitPerDiv Enum The unit used for time.  
  * 
  * @returns The time converted to seconds, or -1 if conversion failed. 
 */
@@ -505,19 +502,19 @@ double calculate_sample_rate(double secs_per_div, double samples_per_div) {
 /**
  *  Gets the valid timebase configs given the requested time per division, number of divisions, and number of samples. 
  * 
- * @param mp Pointer to the PS6000AModule structure containing Picoscope device information. 
- *        sample_interval On exit, the interval at which samples will be taken in seconds. 
- *        timebase On exit, the timebase for the requested time per division. 
- *        sample_rate On exit, the sample rate for the request time per division. 
+ * @param mp              PS6000AModule Pointer to the PS6000AModule structure containing Picoscope timebase configurations. 
+ * @param sample_interval double Pointer On exit, the interval at which samples will be taken in seconds. 
+ * @param timebase        uint32_t Pointer On exit, the timebase for the requested time per division. 
+ * @param sample_rate     double Pointer On exit, the sample rate for the request time per division. 
  * 
- * @return 0 if successful, otherwise a non-zero error code.
+ * @return   PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-uint32_t get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_interval, uint32_t* timebase, double* sample_rate) {
+PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_interval, uint32_t* timebase, double* sample_rate) {
 
     uint32_t available_timebase; 
     double available_sample_interval;
     double secs_per_div = convert_to_seconds(mp->sample_config.timebase_configs.time_per_division, mp->sample_config.timebase_configs.time_per_division_unit);
-    uint32_t status;
+    PICO_STATUS status;
     mp->sample_config.num_samples = mp->sample_config.unadjust_num_samples; 
     double samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
     double requested_sample_interval = calculate_sample_interval(secs_per_div, samples_per_division); 
@@ -532,10 +529,10 @@ uint32_t get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_int
         *timebase = available_timebase;
         printf("num_samples %ld\n", mp->sample_config.num_samples);
 
-        if (status != 0) {
+        if (status != PICO_OK) {
             return status; 
         }
-        return 0;
+        return PICO_OK;
     }
     
 
@@ -548,7 +545,7 @@ uint32_t get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_int
     *sample_interval = available_sample_interval; 
     *timebase = available_timebase;
 
-    return 0;
+    return PICO_OK;
 }
 
 
@@ -567,13 +564,11 @@ PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp);
 PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp);
 
 BlockReadyCallbackParams* blockReadyCallbackParams;
+
 /**
  * Configures the data buffer for the specified channel on the Picoscope device.
- * 
- * @param waveform_buffer Pointer to the buffer where the waveform data will be stored.
- * @param channel_config Pointer to the ChannelConfigs structure containing channel-specific settings.
- * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
- * @return int16_t Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ * @param mp PS6000AModule Pointer to the PS6000AModule structure containing Picoscope configurations. 
+ * @return   PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
 PICO_STATUS setup_picoscope(struct PS6000AModule* mp) {
 
@@ -608,7 +603,11 @@ PICO_STATUS setup_picoscope(struct PS6000AModule* mp) {
 }
 
 
-
+/**
+ * Apply the trigger condition configurations.
+ * @param mp PS6000AModule Pointer to the PS6000AModule structure containing Picoscope trigger configurations. 
+ * @return   PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 PICO_STATUS set_trigger_conditions(struct PS6000AModule* mp) {
     int16_t nConditions = 1;
     PICO_STATUS status = 0;
@@ -630,6 +629,11 @@ PICO_STATUS set_trigger_conditions(struct PS6000AModule* mp) {
     return status;
 }
 
+/**
+ * Apply the trigger direction configurations.
+ * @param mp PS6000AModule Pointer to the PS6000AModule structure containing Picoscope trigger configurations. 
+ * @return   PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 PICO_STATUS set_trigger_directions(struct PS6000AModule* mp) {
     int16_t nDirections = 1;    // Only support one now 
     PICO_STATUS status = 0;
@@ -652,6 +656,11 @@ PICO_STATUS set_trigger_directions(struct PS6000AModule* mp) {
     return status;
 }
 
+/**
+ * Apply the trigger propertie configurations.
+ * @param mp PS6000AModule Pointer to the PS6000AModule structure containing Picoscope trigger configurations. 
+ * @return   PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 PICO_STATUS set_trigger_properties(struct PS6000AModule* mp) {
     int16_t nChannelProperties = 1; // Only support one now 
     unsigned short hysteresis = (unsigned short)((UINT16_MAX / 100.0) * 5.0);   // 5% of the full range
@@ -675,7 +684,11 @@ PICO_STATUS set_trigger_properties(struct PS6000AModule* mp) {
     return status;
 }
 
-
+/**
+ * Apply the trigger configurations.
+ * @param mp PS6000AModule Pointer to the PS6000AModule structure containing Picoscope trigger configurations. 
+ * @return   PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp) {
     PICO_STATUS status;
     
@@ -693,13 +706,9 @@ PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp) {
 
 /**
  * Configures the data buffer for the specified channel on the Picoscope device.
- * 
- * @param waveform_buffer Pointer to the buffer where the waveform data will be stored.
- * @param channel_config Pointer to the ChannelConfigs structure containing channel-specific settings.
- * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
- * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ * @param mp PS6000AModule Pointer to the PS6000AModule structure containing data acquisition settings and configurations. 
+ * @return   PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
-
 PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
 
     pthread_mutex_lock(&ps6000a_call_mutex);
@@ -738,7 +747,11 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
 
     return status;
 }
-
+/**
+ * Initialize the blocking mode callback function.
+ * @param  mp PS6000AModule Pointer to the PS6000AModule structure containing data ready flag. 
+ * @return    PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 PICO_STATUS init_block_ready_callback_params(struct PS6000AModule* mp){
     free(blockReadyCallbackParams);
     blockReadyCallbackParams = (BlockReadyCallbackParams*)malloc(sizeof(BlockReadyCallbackParams));
@@ -754,7 +767,7 @@ PICO_STATUS init_block_ready_callback_params(struct PS6000AModule* mp){
 /**
  * Initiates a block capture on the Picoscope device.
  * 
- * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
+ * @param mp PS6000AModule Pointer to the PS6000AModule structure containing data acquisition settings and configurations. 
  * @param time_indisposed_ms Pointer to a variable where the time indisposed (in milliseconds) will be stored.
  * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
@@ -776,8 +789,15 @@ inline PICO_STATUS run_block_capture(struct PS6000AModule* mp, double* time_indi
     return PICO_OK;
 }
 
-
-void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, void *pParameter)
+/**
+ * Defines the blocking mode callback function
+ * 
+ * @param handle     int16_t The device identifier. 
+ * @param status     PICO_STATUS Indicates whether an error occurred during collection of the data.
+ * @param pParameter PICO_POINTER Passed from ps6000aRunBlock(). Send if data is ready.
+ * @return           PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
+void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, PICO_POINTER pParameter)
 {
     BlockReadyCallbackParams *state = (BlockReadyCallbackParams *)pParameter;
     state->callbackStatus = status;
@@ -810,10 +830,9 @@ void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, void *pParame
 /**
  * Initiates a block capture on the Picoscope device.
  * 
- * @param sample_config Pointer to the SampleConfigs structure containing sample-collection settings.
- * @param timebase The timebase value to use for the capture.
- * @param time_indisposed_ms Pointer to a variable where the time indisposed (in milliseconds) will be stored.
- * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ * @param mp                 PS6000AModule Pointer The PS6000AModule structure containing sample-collection settings.
+ * @param time_indisposed_ms double Pointer Where the time indisposed (in milliseconds) will be stored.
+ * @return                   PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
 inline PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_indisposed_ms) {
     PICO_STATUS ps6000aRunBlockStatus;
@@ -873,7 +892,8 @@ inline PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_in
 /**
  * Waits for the block capture to complete by polling the Picoscope device.
  * 
- * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ * @param mp PS6000AModule Pointer The PS6000AModule structure containing sample-collection settings and EPICS Event id.
+ * @return   PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
 inline PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp)
 {
@@ -891,7 +911,6 @@ inline PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp)
         return PICO_CANCELLED;
     }
 
-   // printf("Capture finished.\n");
     status = retrieve_waveform_data(mp);
 
     if (status != PICO_OK) {
@@ -904,8 +923,8 @@ inline PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp)
 /**
  * Retrieves the captured waveform data from the Picoscope device and stores it in the provided buffer.
  * 
- * @param mp Pointer to the PS6000AModule structure containing sample-collection settings.
- * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ * @param mp PS6000AModule Pointer The PS6000AModule structure containing sample-collection settings.
+ * @return   PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
  */
 inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
     uint64_t start_index = 0;
@@ -949,6 +968,12 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
     return PICO_OK;
 }
 
+/**
+ * Stop picoscope data acquisition.
+ * 
+ * @param handle int16_t The handle of picoscope.
+ * @return       PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 PICO_STATUS stop_capturing(int16_t handle) {
     PICO_STATUS status;
     printf("Capture stopping.\n");  
@@ -962,6 +987,12 @@ PICO_STATUS stop_capturing(int16_t handle) {
     return status;
 }
 
+/**
+ * Thread function to handle the data acquisition and process data to epics PV.
+ * 
+ * @param arg Void Pointer Passed in from EPICS thread create, a PS6000A Module pointer.
+ * @return    PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 void
 acquisition_thread_function(void *arg) {
     PS6000AModule* mp = (struct PS6000AModule *)arg;

@@ -177,7 +177,7 @@ static long read_waveform(struct waveformRecord *pwaveform) {
             printf("Start Retrieving\n");
             epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
             if (vdp->mp->dataAcquisitionFlag) {
-                fprintf(stderr, "Capture thread already running\n");
+                fprintf(stderr, "Data acquisition already started\n");
                 epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
                 return -1;
             }
