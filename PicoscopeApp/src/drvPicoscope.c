@@ -976,7 +976,7 @@ acquisition_thread_function(void *arg) {
         // Setup Picoscope
         uint32_t status = setup_picoscope(mp);
         if (status != 0) {
-            printf("Error configuring picoscope for data capture.");
+            log_error("Error configuring picoscope for data capture.", status, __FILE__, __LINE__);
             epicsMutexLock(mp->epics_acquisition_flag_mutex);
             mp->dataAcquisitionFlag = 0;
             epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
