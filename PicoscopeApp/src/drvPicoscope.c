@@ -523,6 +523,9 @@ PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_
     if (requested_sample_interval > mp->trigger_config.AUXTriggerSignalPulseWidth)
     {
         status = validate_sample_interval(mp->trigger_config.AUXTriggerSignalPulseWidth, mp->handle, mp->channel_status, &available_timebase, &available_sample_interval);
+        if (status != PICO_OK) {
+            return status; 
+        }
         mp->sample_config.num_samples = secs_per_div * mp->sample_config.timebase_configs.num_divisions /  available_sample_interval;
         samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
 
@@ -531,9 +534,6 @@ PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_
         *timebase = available_timebase;
         printf("num_samples %ld\n", mp->sample_config.num_samples);
 
-        if (status != PICO_OK) {
-            return status; 
-        }
         return PICO_OK;
     }
     
