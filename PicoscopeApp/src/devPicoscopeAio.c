@@ -426,7 +426,7 @@ static long write_ao (struct aoRecord *pao)
 
     struct PicoscopeAioData *vdp;
     vdp = (struct PicoscopeAioData *)pao->dpvt;
-
+    uint64_t previous_num_samples;
     switch (vdp->ioType)
     {
         case SET_NUM_DIVISIONS: 
@@ -438,7 +438,7 @@ static long write_ao (struct aoRecord *pao)
                 &sample_interval, 
                 &timebase, 
                 &sample_rate
-            );  
+            );
 
             if (result != 0) {
                 log_message(vdp->mp, pao->name, "Error setting the number of divisions.", result);
@@ -453,7 +453,7 @@ static long write_ao (struct aoRecord *pao)
 
         case SET_NUM_SAMPLES:
 
-            uint64_t previous_num_samples = vdp->mp->sample_config.num_samples; 
+            previous_num_samples = vdp->mp->sample_config.num_samples; 
             vdp->mp->sample_config.num_samples = (int) pao->val; 
             vdp->mp->sample_config.unadjust_num_samples = (int) pao->val; 
             result = get_valid_timebase_configs(
@@ -476,6 +476,7 @@ static long write_ao (struct aoRecord *pao)
             break;  
 
         case SET_TRIGGER_PULSE_WIDTH:
+            previous_num_samples = vdp->mp->sample_config.num_samples; 
             vdp->mp->trigger_config.AUXTriggerSignalPulseWidth = (double)pao->val;
             result = get_valid_timebase_configs(
                 vdp->mp,
