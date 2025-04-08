@@ -101,7 +101,8 @@ PICO_STATUS ping_picoscope(int16_t handle){
  *                           - 0: 8-bit resolution
  *                           - 10: 10-bit resolution
  *                           - 1: 12-bit resolution
- *        handle     int16_t The device identifier returned by open_picoscope(). 
+ * @param handle     int16_t The device identifier returned by open_picoscope(). 
+ * 
  * 
  * @return           PICO_STATUS Return 0 if resolution successfully set, otherwise a non-zero error code.
 */
@@ -278,6 +279,7 @@ uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledCh
     {
         log_error("ps6000aSetChannelOn", status, __FILE__, __LINE__);
         return status;
+   
     }
 
     switch (channel.channel)
@@ -801,18 +803,8 @@ void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, PICO_POINTER 
 {
     BlockReadyCallbackParams *state = (BlockReadyCallbackParams *)pParameter;
     state->callbackStatus = status;
-    struct timeval tv1;
-    struct tm *tm_info1;
-    gettimeofday(&tv1, NULL); 
-    tm_info1 = localtime(&tv1.tv_sec);
-    printf("ps6000aBlockReadyCallback Trigger Captured : %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
-         tm_info1->tm_year + 1900,
-         tm_info1->tm_mon + 1,    
-         tm_info1->tm_mday,       
-         tm_info1->tm_hour,       
-         tm_info1->tm_min,        
-         tm_info1->tm_sec,        
-         tv1.tv_usec); 
+
+    print_time("ps6000aBlockReadyCallback");
     printf("-------------------\n");
     if (status == PICO_CANCELLED)
     {
@@ -867,18 +859,7 @@ inline PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_in
             }
         }
     } while (ps6000aRunBlockStatus == PICO_HARDWARE_CAPTURING_CALL_STOP);
-    struct timeval tv;
-    struct tm *tm_info;
-    gettimeofday(&tv, NULL); 
-    tm_info = localtime(&tv.tv_sec);
-    printf("ps6000aRunBlock           Trigger Listening: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
-         tm_info->tm_year + 1900,
-         tm_info->tm_mon + 1,    
-         tm_info->tm_mday,       
-         tm_info->tm_hour,       
-         tm_info->tm_min,        
-         tm_info->tm_sec,        
-         tv.tv_usec); 
+    print_time("ps6000aRunBlock");
     pthread_mutex_unlock(&ps6000a_call_mutex);
 
     if (ps6000aRunBlockStatus != PICO_OK) {
@@ -1131,3 +1112,19 @@ void registerPS6000A(void)
 }
 
 epicsExportRegistrar(registerPS6000A);
+
+void print_time(char* function_name){
+    struct timeval tv;
+    struct tm *tm_info;
+    gettimeofday(&tv, NULL); 
+    tm_info = localtime(&tv.tv_sec);
+    printf("%-25s Trigger Captured: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
+        function_name,
+        tm_info->tm_year + 1900,
+        tm_info->tm_mon + 1,    
+        tm_info->tm_mday,       
+        tm_info->tm_hour,       
+        tm_info->tm_min,        
+        tm_info->tm_sec,        
+        tv.tv_usec);
+}

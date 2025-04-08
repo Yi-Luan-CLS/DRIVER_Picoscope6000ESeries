@@ -51,6 +51,8 @@ typedef struct PS6000AModule
 
 } PS6000AModule;
 
+void print_time(char* function_name);
+
 PS6000AModule* PS6000ACreateModule(char* serial_num);
 
 PS6000AModule* PS6000AGetModule(char* serial_num);
