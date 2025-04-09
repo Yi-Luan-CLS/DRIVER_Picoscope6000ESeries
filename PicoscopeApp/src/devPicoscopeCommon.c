@@ -112,7 +112,7 @@ void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[],
  *        options Contains new string and values for each enum option. 
  */
 void update_enum_options(struct mbboRecord* pmbbo, struct mbbiRecord* pmbbi, MultiBitBinaryEnums options){ 
-
+    
     void update_field(char* pmbbo_str, char* pmbbi_str, int pmbbo_val, int pmbbi_val, const char* new_str, int new_val) {
         if (new_str){
             memcpy(pmbbo_str, new_str, strlen(new_str)+1);
@@ -125,5 +125,18 @@ void update_enum_options(struct mbboRecord* pmbbo, struct mbbiRecord* pmbbi, Mul
     update_field(pmbbo->zrst, pmbbi->zrst, pmbbo->zrvl, pmbbi->zrvl, options.zrst, options.zrvl); 
     update_field(pmbbo->onst, pmbbi->onst, pmbbo->onvl, pmbbi->onvl, options.onst, options.onvl); 
     update_field(pmbbo->twst, pmbbi->twst, pmbbo->twvl, pmbbi->twvl, options.twst, options.twvl); 
+    update_field(pmbbo->thst, pmbbi->thst, pmbbo->thvl, pmbbi->thvl, options.thst, options.thvl); 
+    update_field(pmbbo->frst, pmbbi->frst, pmbbo->frvl, pmbbi->frvl, options.frst, options.frvl); 
+    update_field(pmbbo->fvst, pmbbi->fvst, pmbbo->fvvl, pmbbi->fvvl, options.fvst, options.fvvl); 
+    update_field(pmbbo->sxst, pmbbi->sxst, pmbbo->sxvl, pmbbi->sxvl, options.sxst, options.sxvl); 
+    update_field(pmbbo->svst, pmbbi->svst, pmbbo->svvl, pmbbi->svvl, options.svst, options.svvl); 
+    update_field(pmbbo->eist, pmbbi->eist, pmbbo->eivl, pmbbi->eivl, options.eist, options.eivl); 
+    update_field(pmbbo->nist, pmbbi->nist, pmbbo->nivl, pmbbi->nivl, options.nist, options.nivl); 
+    update_field(pmbbo->test, pmbbi->test, pmbbo->tevl, pmbbi->tevl, options.test, options.tevl); 
+    update_field(pmbbo->elst, pmbbi->elst, pmbbo->elvl, pmbbi->elvl, options.elst, options.elvl); 
+    update_field(pmbbo->tvst, pmbbi->tvst, pmbbo->tvvl, pmbbi->tvvl, options.tvst, options.tvvl); 
+    update_field(pmbbo->ttst, pmbbi->ttst, pmbbo->ttvl, pmbbi->ttvl, options.ttst, options.ttvl); 
+    update_field(pmbbo->ftst, pmbbi->ftst, pmbbo->ftvl, pmbbi->ftvl, options.ftst, options.ftvl); 
+    update_field(pmbbo->ffst, pmbbi->ffst, pmbbo->ffvl, pmbbi->ffvl, options.ffst, options.ffvl); 
 
 }

@@ -8,6 +8,19 @@ typedef struct MultiBitBinaryEnums {
     char* zrst; int zrvl; 
     char* onst; int onvl; 
     char* twst; int twvl; 
+    char* thst; int thvl; 
+    char* frst; int frvl; 
+    char* fvst; int fvvl; 
+    char* sxst; int sxvl; 
+    char* svst; int svvl; 
+    char* eist; int eivl; 
+    char* nist; int nivl; 
+    char* test; int tevl; 
+    char* elst; int elvl; 
+    char* tvst; int tvvl;
+    char* ttst; int ttvl; 
+    char* ftst; int ftvl;
+    char* ffst; int ffvl; 
 } MultiBitBinaryEnums;
 
 void update_enum_options(struct mbboRecord* pmbbo, struct mbbiRecord* pmbbi, MultiBitBinaryEnums options);

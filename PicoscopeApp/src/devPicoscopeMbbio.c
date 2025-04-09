@@ -201,6 +201,7 @@ static long init_record_mbbo (struct mbboRecord *pmbbo)
             break;
 
         case SET_TIME_PER_DIVISION: 
+            vdp->mp->pTimePerDivision = pmbbo; 
             vdp->mp->sample_config.timebase_configs.time_per_division = (int) pmbbo->rval; 
             break; 
 
@@ -361,7 +362,50 @@ write_mbbo (struct mbboRecord *pmbbo)
             vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
             break; 
 
-        case SET_TIME_PER_DIVISION_UNIT: 
+        case SET_TIME_PER_DIVISION_UNIT:
+            if (pmbbo->val == s_per_div) { 
+                // If unit is seconds, limit to 10 secs per div and update PVs. 
+                MultiBitBinaryEnums s_per_div_options = {0};
+                s_per_div_options.frst = ""; s_per_div_options.frvl = 0; 
+                s_per_div_options.fvst = ""; s_per_div_options.fvvl = 0; 
+                s_per_div_options.sxst = ""; s_per_div_options.sxvl = 0; 
+                s_per_div_options.svst = ""; s_per_div_options.svvl = 0; 
+                s_per_div_options.eist = ""; s_per_div_options.eivl = 0; 
+                s_per_div_options.nist = ""; s_per_div_options.nivl = 0; 
+                s_per_div_options.test = ""; s_per_div_options.tevl = 0;
+                s_per_div_options.elst = ""; s_per_div_options.elvl = 0;              
+    
+                update_enum_options(
+                    vdp->mp->pTimePerDivision,
+                    vdp->mp->pTimePerDivisionFbk, 
+                    s_per_div_options
+                );
+
+                // If the time per division is no longer valid, update PVs to valid option. 
+                if (vdp->mp->sample_config.timebase_configs.time_per_division > 10){
+                    vdp->mp->sample_config.timebase_configs.time_per_division = 1; 
+                    dbProcess((struct dbCommon *)vdp->mp->pTimePerDivisionFbk); 
+                }
+
+            } else if (pmbbo->oraw == s_per_div) {  
+                // If last unit was seconds, update time per division options to full set of options. 
+                MultiBitBinaryEnums under_s_per_div_options = {0};
+                under_s_per_div_options.frst = "20";   under_s_per_div_options.frvl = 20; 
+                under_s_per_div_options.fvst = "50";   under_s_per_div_options.fvvl = 50; 
+                under_s_per_div_options.sxst = "100";  under_s_per_div_options.sxvl = 100; 
+                under_s_per_div_options.svst = "200";  under_s_per_div_options.svvl = 200; 
+                under_s_per_div_options.eist = "500";  under_s_per_div_options.eivl = 500; 
+                under_s_per_div_options.nist = "1000"; under_s_per_div_options.nivl = 1000; 
+                under_s_per_div_options.test = "2000"; under_s_per_div_options.tevl = 2000;
+                under_s_per_div_options.elst = "5000"; under_s_per_div_options.elvl = 5000;
+
+                update_enum_options(
+                    vdp->mp->pTimePerDivision,
+                    vdp->mp->pTimePerDivisionFbk, 
+                    under_s_per_div_options
+                );
+
+            }
             int16_t previous_time_per_division_unit = vdp->mp->sample_config.timebase_configs.time_per_division_unit;
             vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pmbbo->val; 
 
@@ -655,6 +699,11 @@ static long init_record_mbbi(struct mbbiRecord * pmbbi)
         case GET_TRIGGER_DIRECTION:
             vdp->mp->pTriggerDirectionFbk = pmbbi; 
             break;  
+
+        case GET_TIME_PER_DIVISION: 
+            vdp->mp->pTimePerDivisionFbk = pmbbi; 
+            break; 
+        
         default: 
             return 0; 
     } 
