@@ -201,6 +201,7 @@ static long init_record_mbbo (struct mbboRecord *pmbbo)
             break;
 
         case SET_TIME_PER_DIVISION: 
+            vdp->mp->pTimePerDivision = pmbbo; 
             vdp->mp->sample_config.timebase_configs.time_per_division = (int) pmbbo->rval; 
             break; 
 
@@ -361,7 +362,50 @@ write_mbbo (struct mbboRecord *pmbbo)
             vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
             break; 
 
-        case SET_TIME_PER_DIVISION_UNIT: 
+        case SET_TIME_PER_DIVISION_UNIT:
+            if (pmbbo->val == s_per_div) { 
+                // If unit is seconds, limit to 10 secs per div and update PVs. 
+                MultiBitBinaryEnums s_per_div_options = {0};
+                s_per_div_options.frst = ""; s_per_div_options.frvl = 0; 
+                s_per_div_options.fvst = ""; s_per_div_options.fvvl = 0; 
+                s_per_div_options.sxst = ""; s_per_div_options.sxvl = 0; 
+                s_per_div_options.svst = ""; s_per_div_options.svvl = 0; 
+                s_per_div_options.eist = ""; s_per_div_options.eivl = 0; 
+                s_per_div_options.nist = ""; s_per_div_options.nivl = 0; 
+                s_per_div_options.test = ""; s_per_div_options.tevl = 0;
+                s_per_div_options.elst = ""; s_per_div_options.elvl = 0;              
+    
+                update_enum_options(
+                    vdp->mp->pTimePerDivision,
+                    vdp->mp->pTimePerDivisionFbk, 
+                    s_per_div_options
+                );
+
+                // If the time per division is no longer valid, update PVs to valid option. 
+                if (vdp->mp->sample_config.timebase_configs.time_per_division > 10){
+                    vdp->mp->sample_config.timebase_configs.time_per_division = 1; 
+                    dbProcess((struct dbCommon *)vdp->mp->pTimePerDivisionFbk); 
+                }
+
+            } else if (pmbbo->oraw == s_per_div) {  
+                // If last unit was seconds, update time per division options to full set of options. 
+                MultiBitBinaryEnums under_s_per_div_options = {0};
+                under_s_per_div_options.frst = "20";   under_s_per_div_options.frvl = 20; 
+                under_s_per_div_options.fvst = "50";   under_s_per_div_options.fvvl = 50; 
+                under_s_per_div_options.sxst = "100";  under_s_per_div_options.sxvl = 100; 
+                under_s_per_div_options.svst = "200";  under_s_per_div_options.svvl = 200; 
+                under_s_per_div_options.eist = "500";  under_s_per_div_options.eivl = 500; 
+                under_s_per_div_options.nist = "1000"; under_s_per_div_options.nivl = 1000; 
+                under_s_per_div_options.test = "2000"; under_s_per_div_options.tevl = 2000;
+                under_s_per_div_options.elst = "5000"; under_s_per_div_options.elvl = 5000;
+
+                update_enum_options(
+                    vdp->mp->pTimePerDivision,
+                    vdp->mp->pTimePerDivisionFbk, 
+                    under_s_per_div_options
+                );
+
+            }
             int16_t previous_time_per_division_unit = vdp->mp->sample_config.timebase_configs.time_per_division_unit;
             vdp->mp->sample_config.timebase_configs.time_per_division_unit = (int) pmbbo->val; 
 
@@ -427,10 +471,11 @@ write_mbbo (struct mbboRecord *pmbbo)
         case SET_TRIGGER_TYPE:             
             vdp->mp->trigger_config.triggerType = (int)pmbbo->val; 
             
+            // Update related configurations based on trigger type selected. Including changes
+            // to trigger direction mbbo/mbbi options and trigger_config members.
             switch (vdp->mp->trigger_config.triggerType)
-            { 
+            {   
                 case NO_TRIGGER: 
-                    // Update configurations for no trigger 
                     vdp->mp->trigger_config.channel = NO_CHANNEL; 
                     vdp->mp->trigger_config.thresholdMode = LEVEL;             
                     vdp->mp->trigger_config.thresholdLower = 0; 
@@ -439,12 +484,11 @@ write_mbbo (struct mbboRecord *pmbbo)
                     vdp->mp->trigger_config.thresholdUpperHysteresis = 0; 
                     vdp->mp->trigger_config.thresholdDirection = NONE; 
 
-                    // Update trigger direction mbbi/mbbo enum options
-                    MultiBitBinaryEnums no_trigger_options = { 
-                        .zrst = "NONE", .zrvl = NONE, 
-                        .onst = "",     .onvl = 0, 
-                        .twst = "",     .twvl = 0
-                    };
+                    MultiBitBinaryEnums no_trigger_options = {0};
+                    no_trigger_options.zrst = "NONE";   no_trigger_options.zrvl = NONE;
+                    no_trigger_options.onst = "";       no_trigger_options.onvl = 0;
+                    no_trigger_options.twst = "";       no_trigger_options.twvl = 0;
+                    
                     update_enum_options(
                         vdp->mp->pTriggerDirection,
                         vdp->mp->pTriggerDirectionFbk, 
@@ -453,7 +497,6 @@ write_mbbo (struct mbboRecord *pmbbo)
                     break; 
                 
                 case SIMPLE_EDGE:
-                    // Update configurations to valid options
                     if (vdp->mp->trigger_config.channel == NO_CHANNEL) {
                         vdp->mp->trigger_config.channel = TRIGGER_AUX;
                         vdp->mp->trigger_config.thresholdUpper = 0;
@@ -461,14 +504,12 @@ write_mbbo (struct mbboRecord *pmbbo)
                     } 
                     vdp->mp->trigger_config.thresholdMode = LEVEL;         
                     vdp->mp->trigger_config.thresholdLower = 0;
-
-
-                    // Update trigger direction mbbi/mbbo enum options
-                    MultiBitBinaryEnums simple_edge_options = { 
-                        .zrst = "RISING",  .zrvl = RISING, 
-                        .onst = "FALLING", .onvl = FALLING, 
-                        .twst = "",        .twvl = 0
-                    };
+                    
+                    MultiBitBinaryEnums simple_edge_options = {0};
+                    simple_edge_options.zrst = "RISING";  simple_edge_options.zrvl = RISING; 
+                    simple_edge_options.onst = "FALLING"; simple_edge_options.onvl = FALLING; 
+                    simple_edge_options.twst = "";        simple_edge_options.twvl = 0;
+                    
                     update_enum_options(
                         vdp->mp->pTriggerDirection,
                         vdp->mp->pTriggerDirectionFbk, 
@@ -477,19 +518,16 @@ write_mbbo (struct mbboRecord *pmbbo)
                     break; 
 
                 case WINDOW:
-                    // Update configurations to valid options
                     if (vdp->mp->trigger_config.channel == NO_CHANNEL || vdp->mp->trigger_config.channel == TRIGGER_AUX) {
                         vdp->mp->trigger_config.channel = CHANNEL_A;
                     } 
                     vdp->mp->trigger_config.thresholdMode = WINDOW_MODE;         
                     
-
-                    // Update trigger direction mbbi/mbbo enum options
-                    MultiBitBinaryEnums window_options = { 
-                        .zrst = "ENTER",          .zrvl = ENTER, 
-                        .onst = "EXIT",           .onvl = EXIT, 
-                        .twst = "ENTER OR EXIT",  .twvl = ENTER_OR_EXIT
-                    };
+                    MultiBitBinaryEnums window_options = {0};
+                    window_options.zrst = "ENTER";          window_options.zrvl = ENTER; 
+                    window_options.onst = "EXIT";           window_options.onvl = EXIT; 
+                    window_options.twst = "ENTER OR EXIT";  window_options.twvl = ENTER_OR_EXIT;
+                   
                     update_enum_options(
                         vdp->mp->pTriggerDirection,
                         vdp->mp->pTriggerDirectionFbk, 
@@ -498,7 +536,6 @@ write_mbbo (struct mbboRecord *pmbbo)
                     break; 
                 
                 case ADVANCED_EDGE: 
-                    // Update configurations to valid options
                     if (vdp->mp->trigger_config.channel == NO_CHANNEL || vdp->mp->trigger_config.channel == TRIGGER_AUX) {
                         vdp->mp->trigger_config.channel = CHANNEL_A;
                     } 
@@ -506,12 +543,11 @@ write_mbbo (struct mbboRecord *pmbbo)
                     vdp->mp->trigger_config.thresholdLower = 0;
                     vdp->mp->trigger_config.thresholdLowerHysteresis = 0;   
 
-                    // Update trigger direction mbbi/mbbo enum options
-                    MultiBitBinaryEnums advanced_edge_options = { 
-                        .zrst = "RISING",             .zrvl = RISING, 
-                        .onst = "FALLING",            .onvl = FALLING, 
-                        .twst = "RISING OR FALLING",  .twvl = RISING_OR_FALLING
-                    };
+                    MultiBitBinaryEnums advanced_edge_options = {0};
+                    advanced_edge_options.zrst = "RISING";             advanced_edge_options.zrvl = RISING;
+                    advanced_edge_options.onst = "FALLING";            advanced_edge_options.onvl = FALLING; 
+                    advanced_edge_options.twst = "RISING OR FALLING";  advanced_edge_options.twvl = RISING_OR_FALLING;
+                   
                     update_enum_options(
                         vdp->mp->pTriggerDirection,
                         vdp->mp->pTriggerDirectionFbk, 
@@ -655,6 +691,11 @@ static long init_record_mbbi(struct mbbiRecord * pmbbi)
         case GET_TRIGGER_DIRECTION:
             vdp->mp->pTriggerDirectionFbk = pmbbi; 
             break;  
+
+        case GET_TIME_PER_DIVISION: 
+            vdp->mp->pTimePerDivisionFbk = pmbbi; 
+            break; 
+        
         default: 
             return 0; 
     } 
