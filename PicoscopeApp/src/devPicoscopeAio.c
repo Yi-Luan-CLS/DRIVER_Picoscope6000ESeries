@@ -280,7 +280,7 @@ static long read_ai (struct aiRecord *pai){
             break; 
 
         case GET_TRIGGER_FREQUENCY: 
-            pai->val = vdp->mp->trigger_freq_secs; 
+            pai->val = vdp->mp->trigger_timing_info.trigger_freq_secs;  
             break;
 
         default:

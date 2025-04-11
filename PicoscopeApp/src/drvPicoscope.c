@@ -1055,22 +1055,22 @@ inline PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t
         log_error("ps6000aGetTriggerInfo", status, __FILE__, __LINE__);    
     }
    
-    mp->trigger_freq_secs = calculate_trigger_freqency(
+    mp->trigger_timing_info.trigger_freq_secs = calculate_trigger_freqency(
         mp->sample_config.timebase_configs.sample_interval_secs,
-        mp->prev_time_stamp,
+        mp->trigger_timing_info.prev_trigger_time,
         triggerInfo[0].timeStampCounter,
         triggerInfo[0].missedTriggers
     );     
     
-    mp->missed_triggers = triggerInfo[0].missedTriggers; 
-    mp->prev_time_stamp = triggerInfo[0].timeStampCounter; 
+    mp->trigger_timing_info.missed_triggers = triggerInfo[0].missedTriggers;
+    mp->trigger_timing_info.prev_trigger_time = triggerInfo[0].timeStampCounter; 
 
     printf("Trigger More info\n");
     printf("Time stamp counter: %ld\n", triggerInfo[0].timeStampCounter);
     printf("Missed triggers %ld\n", triggerInfo[0].missedTriggers); 
     printf("Trigger Time %f\n", triggerInfo[0].triggerTime);
     printf("Trigger index %ld\n", triggerInfo[0].triggerIndex);
-    printf("Timing frequency %.20f secs\n", mp->trigger_freq_secs);
+    printf("Timing frequency %.20f secs\n", mp->trigger_timing_info.trigger_freq_secs);
 
     return 0; 
 }

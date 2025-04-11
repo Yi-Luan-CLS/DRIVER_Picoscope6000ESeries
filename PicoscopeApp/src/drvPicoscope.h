@@ -51,9 +51,7 @@ typedef struct PS6000AModule
     struct mbbiRecord* pTimePerDivisionFbk;
     uint64_t sample_collected;
 
-    uint64_t prev_time_stamp; 
-    uint64_t missed_triggers; 
-    double trigger_freq_secs; 
+    struct TriggerTimingInfo trigger_timing_info; 
 
 } PS6000AModule;
 
