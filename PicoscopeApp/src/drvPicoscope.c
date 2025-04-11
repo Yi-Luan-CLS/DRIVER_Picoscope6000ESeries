@@ -1139,6 +1139,7 @@ acquisition_thread_function(void *arg) {
                 }
             }
             dbProcess((dbCommon*) mp->pTriggerFrequency);
+            dbProcess((dbCommon*) mp->pTriggersMissed); 
         }
 
         stop_capturing(mp->handle);

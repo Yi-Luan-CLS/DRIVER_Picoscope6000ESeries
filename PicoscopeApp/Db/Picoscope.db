@@ -529,8 +529,15 @@ record(ai, "$(OSC):trigger:lower:threshold:hysteresis:fbk") {
 
 record(ai, "$(OSC):trigger:interval"){
     field(DTYP, "Picoscope")
+    field(SCAN, "Passive")
     field(EGU, "seconds")
     field(DESC, "Trigger frequency between the last two data captures")
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_frequency")
-    field(SCAN, "Passive")
+}
+
+record(ai, "$(OSC):trigger:missed"){ 
+    field(DTYP, "Picoscope")
+    field(SCAN, "Passive")  
+    field(DESC, "Number of triggers missed since last detected trigger")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_triggers_missed")
 }
