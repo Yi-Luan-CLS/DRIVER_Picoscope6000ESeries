@@ -121,4 +121,10 @@ struct TriggerConfigs{
     double AUXTriggerSignalPulseWidth;
 };
 
+struct TriggerTimingInfo { 
+    uint64_t prev_trigger_time; 
+    uint64_t missed_triggers; 
+    double trigger_freq_secs;    
+};
+
 #endif

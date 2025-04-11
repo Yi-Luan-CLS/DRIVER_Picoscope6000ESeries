@@ -40,6 +40,9 @@ typedef struct PS6000AModule
     struct aiRecord* pTriggerThresholdFbk[4];
     struct aoRecord* pTriggerThreshold[2]; 
     struct aoRecord* pAnalogOffestRecords[CHANNEL_NUM];
+    
+    struct aiRecord* pTriggerFrequency; 
+    struct aiRecord* pTriggersMissed; 
 
     struct mbboRecord* pTriggerDirection;
     struct mbbiRecord* pTriggerDirectionFbk;
@@ -48,9 +51,9 @@ typedef struct PS6000AModule
     struct mbbiRecord* pTriggerModeFbk;
     struct mbboRecord* pTimePerDivision;
     struct mbbiRecord* pTimePerDivisionFbk;
-
-    
     uint64_t sample_collected;
+
+    struct TriggerTimingInfo trigger_timing_info; 
 
 } PS6000AModule;
 

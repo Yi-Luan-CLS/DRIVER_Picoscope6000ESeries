@@ -44,6 +44,8 @@ enum ioType
     GET_TIMEBASE,
     SET_AUTO_TRIGGER_US, 
     GET_AUTO_TRIGGER_US,
+    GET_TRIGGER_FREQUENCY, 
+    GET_TRIGGERS_MISSED
 };
 
 enum ioFlag
@@ -86,6 +88,8 @@ static struct aioType
         {"get_num_divisions", isInput, GET_NUM_DIVISIONS, ""},
         {"set_auto_trigger_us", isOutput, SET_AUTO_TRIGGER_US, ""},
         {"get_auto_trigger_us", isInput, GET_AUTO_TRIGGER_US, ""},
+        {"get_trigger_frequency", isInput, GET_TRIGGER_FREQUENCY, ""},
+        {"get_triggers_missed", isInput, GET_TRIGGERS_MISSED, ""}
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -193,6 +197,14 @@ static long init_record_ai (struct aiRecord *pai)
             vdp->mp->pTriggerThresholdFbk[3] = pai; 
             break;
 
+        case GET_TRIGGER_FREQUENCY: 
+            vdp->mp->pTriggerFrequency = pai; 
+            break;
+        
+        case GET_TRIGGERS_MISSED: 
+            vdp->mp->pTriggersMissed = pai; 
+            break; 
+
         default:
             return 2;
     } 
@@ -271,6 +283,14 @@ static long read_ai (struct aiRecord *pai){
 
         case GET_AUTO_TRIGGER_US: 
             pai->val = vdp->mp->trigger_config.autoTriggerMicroSeconds; 
+            break; 
+
+        case GET_TRIGGER_FREQUENCY: 
+            pai->val = vdp->mp->trigger_timing_info.trigger_freq_secs;  
+            break;
+
+        case GET_TRIGGERS_MISSED: 
+            pai->val = vdp->mp->trigger_timing_info.missed_triggers - 1; // subtract trigger that was detected 
             break; 
 
         default:
