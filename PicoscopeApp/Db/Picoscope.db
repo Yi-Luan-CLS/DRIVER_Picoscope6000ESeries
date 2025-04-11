@@ -526,3 +526,11 @@ record(ai, "$(OSC):trigger:lower:threshold:hysteresis:fbk") {
     field(EGU, "%")
     field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_lower_hysteresis")
 }
+
+record(ai, "$(OSC):trigger:interval"){
+    field(DTYP, "Picoscope")
+    field(EGU, "seconds")
+    field(DESC, "Trigger frequency between the last two data captures")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_trigger_frequency")
+    field(SCAN, "Passive")
+}

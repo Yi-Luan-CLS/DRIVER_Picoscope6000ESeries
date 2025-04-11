@@ -648,6 +648,8 @@ PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp);
 PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_indisposed_ms);
 PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp);
 PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp);
+PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t segment_index);
+
 
 BlockReadyCallbackParams* blockReadyCallbackParams;
 
@@ -979,7 +981,6 @@ inline PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp)
     }
 
     status = retrieve_waveform_data(mp);
-
     if (status != PICO_OK) {
         return status;
     }  
@@ -1003,6 +1004,7 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
 
     pthread_mutex_lock(&ps6000a_call_mutex);
     do {
+
         ps6000aGetValuesStatus = ps6000aGetValues(
             mp->handle,
             start_index,
@@ -1011,7 +1013,8 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
             mp->sample_config.down_sample_ratio_mode,
             segment_index,
             &overflow
-        );
+        );   
+        update_trigger_timing_info(mp, segment_index);  
 
         if (ps6000aGetValuesStatus == PICO_HARDWARE_CAPTURING_CALL_STOP) {
             getValueRetryFlag++;
@@ -1034,6 +1037,45 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
 
     return PICO_OK;
 }
+
+
+double calculate_trigger_freqency(double sample_interval_secs, uint64_t prev_time_stamp, uint64_t cur_time_stamp, uint64_t missed_triggers) {
+    
+    double samples_between_triggers = ((double)cur_time_stamp - prev_time_stamp) / (double) missed_triggers; 
+    
+    return samples_between_triggers * sample_interval_secs; 
+
+}
+
+inline PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t segment_index) {
+    
+    PICO_TRIGGER_INFO triggerInfo[1];        
+    uint32_t status = ps6000aGetTriggerInfo(mp->handle, triggerInfo, segment_index, 1);
+    if (status != PICO_OK) {
+        log_error("ps6000aGetTriggerInfo", status, __FILE__, __LINE__);    
+    }
+   
+    mp->trigger_freq_secs = calculate_trigger_freqency(
+        mp->sample_config.timebase_configs.sample_interval_secs,
+        mp->prev_time_stamp,
+        triggerInfo[0].timeStampCounter,
+        triggerInfo[0].missedTriggers
+    );     
+    
+    mp->missed_triggers = triggerInfo[0].missedTriggers; 
+    mp->prev_time_stamp = triggerInfo[0].timeStampCounter; 
+
+    printf("Trigger More info\n");
+    printf("Time stamp counter: %ld\n", triggerInfo[0].timeStampCounter);
+    printf("Missed triggers %ld\n", triggerInfo[0].missedTriggers); 
+    printf("Trigger Time %f\n", triggerInfo[0].triggerTime);
+    printf("Trigger index %ld\n", triggerInfo[0].triggerIndex);
+    printf("Timing frequency %.20f secs\n", mp->trigger_freq_secs);
+
+    return 0; 
+}
+
+
 
 /**
  * Stop picoscope data acquisition.
@@ -1096,6 +1138,7 @@ acquisition_thread_function(void *arg) {
                     dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
                 }
             }
+            dbProcess((dbCommon*) mp->pTriggerFrequency);
         }
 
         stop_capturing(mp->handle);
