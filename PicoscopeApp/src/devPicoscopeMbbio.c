@@ -251,7 +251,7 @@ write_mbbo (struct mbboRecord *pmbbo)
 
         case SET_RESOLUTION: 
             int16_t resolution = (int)pmbbo->rval; 
-            uint32_t result = set_device_resolution(resolution, vdp->mp->handle); 
+            uint32_t result = set_resolution(resolution, vdp->mp->handle); 
             if (result !=0) {
                 log_message(vdp->mp, pmbbo->name, "Error setting device resolution.", result);
                 break;

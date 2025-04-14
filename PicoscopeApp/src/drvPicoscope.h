@@ -70,7 +70,7 @@ uint32_t open_picoscope(int16_t resolution, char* serial_num, int16_t* handle);
 
 uint32_t ping_picoscope(int16_t handle);
 
-uint32_t set_device_resolution(int16_t resolution, int16_t handle);
+uint32_t set_resolution(int16_t resolution, int16_t handle);
 
 uint32_t get_resolution(int16_t* resolution, int16_t handle);
 
