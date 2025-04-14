@@ -1,8 +1,8 @@
-#include "drvPicoscope.h"
-#include <waveformRecord.h>
-
 #ifndef DEV_PICOSCOPE
 #define DEV_PICOSCOPE
+
+#include "drvPicoscope.h"
+#include <waveformRecord.h>
 
 typedef struct MultiBitBinaryEnums {
     char* zrst; int zrvl; 
