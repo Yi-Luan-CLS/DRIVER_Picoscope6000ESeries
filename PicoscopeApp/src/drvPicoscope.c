@@ -1039,6 +1039,16 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
 }
 
 
+/** 
+ * Calculates the time between triggers in seconds using the timestamp counter, missed triggers, and current sample interval. 
+ * 
+ * @param sample_interval_secs double The rate at which samples are taken from the Picoscope in seconds. 
+ *        prev_time_stamp uint64_t    The time in samples at which the previous trigger occurred. 
+ *        cur_time_stamp uint64_t     The time in samples at which the most recent trigger occurred. 
+ *        missed_triggers uint64_t    The number of triggers missed between prev_time_stamp and cur_time_stamp 
+ * 
+ * @return double Returns the time betweeen triggers in seconds. 
+*/
 double calculate_trigger_freqency(double sample_interval_secs, uint64_t prev_time_stamp, uint64_t cur_time_stamp, uint64_t missed_triggers) {
     
     double samples_between_triggers = ((double)cur_time_stamp - prev_time_stamp) / (double) missed_triggers; 
@@ -1047,12 +1057,22 @@ double calculate_trigger_freqency(double sample_interval_secs, uint64_t prev_tim
 
 }
 
+/** 
+ * Update trigger timing information, such as the trigger frequency, number of missed triggers, 
+ * and count of previous trigger. 
+ * 
+ * @param mp PS6000AModule Pointer The PS6000AModule structure containing trigger information to be updated.
+ *        segment_index uint64_t The memory segment containing the data to retrieve trigger timing from. 
+ * 
+ * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
 inline PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t segment_index) {
     
     PICO_TRIGGER_INFO triggerInfo[1];        
     uint32_t status = ps6000aGetTriggerInfo(mp->handle, triggerInfo, segment_index, 1);
     if (status != PICO_OK) {
         log_error("ps6000aGetTriggerInfo", status, __FILE__, __LINE__);    
+        return status; 
     }
    
     mp->trigger_timing_info.trigger_freq_secs = calculate_trigger_freqency(
@@ -1065,7 +1085,7 @@ inline PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t
     mp->trigger_timing_info.missed_triggers = triggerInfo[0].missedTriggers;
     mp->trigger_timing_info.prev_trigger_time = triggerInfo[0].timeStampCounter; 
 
-    return 0; 
+    return status; 
 }
 
 

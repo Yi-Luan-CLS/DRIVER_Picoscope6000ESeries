@@ -378,6 +378,14 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Type**: `ao`
 - **Description**: The % hysteresis applied to the lower threshold value.
 
+### OSCNAME:trigger:interval 
+- **Type**: `ai`
+- **Description**: The trigger frequency in seconds. 
+
+### OSCNAME:trigger:missed 
+- **Type**: `ai`
+- **Description**: The number of triggers missed since the last detected trigger and successful data capture. Such as triggers that occurred during data capture. 
+
 ### OSCNAME:time_per_division
 - **Type**: `mbbo` 
 - **Description**: The time per division. 
