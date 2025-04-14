@@ -106,7 +106,7 @@ PICO_STATUS ping_picoscope(int16_t handle){
  * 
  * @return           PICO_STATUS Return 0 if resolution successfully set, otherwise a non-zero error code.
 */
-PICO_STATUS set_device_resolution(int16_t resolution, int16_t handle){ 
+PICO_STATUS set_resolution(int16_t resolution, int16_t handle){ 
    
     pthread_mutex_lock(&ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetDeviceResolution(handle, resolution); 

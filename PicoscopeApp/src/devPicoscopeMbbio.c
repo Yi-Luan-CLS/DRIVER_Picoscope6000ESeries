@@ -251,12 +251,12 @@ write_mbbo (struct mbboRecord *pmbbo)
 
         case SET_RESOLUTION: 
             int16_t resolution = (int)pmbbo->rval; 
-            uint32_t result = set_device_resolution(resolution, vdp->mp->handle); 
+            uint32_t result = set_resolution(resolution, vdp->mp->handle); 
             if (result !=0) {
                 log_message(vdp->mp, pmbbo->name, "Error setting device resolution.", result);
                 break;
             }
-            vdp->mp->device_resolution = resolution; 
+            vdp->mp->resolution = resolution; 
             
             for(size_t i = 0; i < sizeof(vdp->mp->pTriggerThreshold)/ sizeof(vdp->mp->pTriggerThreshold[0]); i++){ 
                 dbProcess((struct dbCommon *) vdp->mp->pTriggerThreshold[i]);            
