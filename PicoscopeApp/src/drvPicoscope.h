@@ -1,10 +1,11 @@
+#ifndef DRV_PICOSCOPE
+#define DRV_PICOSCOPE
+
 #include "picoscopeConfig.h"
 #include <epicsEvent.h>
 #include <epicsMutex.h>
 #include <epicsThread.h>
 
-#ifndef DRV_PICOSCOPE
-#define DRV_PICOSCOPE
 
 typedef struct PS6000AModule 
 {
@@ -21,7 +22,7 @@ typedef struct PS6000AModule
 
 
 
-	epicsEventId triggerReadyEvent;
+    epicsEventId triggerReadyEvent;
     epicsEventId acquisitionStartEvent;
     epicsMutexId epics_acquisition_flag_mutex;
     epicsMutexId epics_acquisition_thread_mutex;

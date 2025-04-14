@@ -1,8 +1,9 @@
+#ifndef PICOSCOPE_CONFIG
+#define PICOSCOPE_CONFIG
+
 #include <unistd.h>
 #include <stdint.h>
 
-#ifndef PICOSCOPE_CONFIG
-#define PICOSCOPE_CONFIG
 
 #define CHANNEL_NUM 4
 
