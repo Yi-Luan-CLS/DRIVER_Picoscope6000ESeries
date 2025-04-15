@@ -808,7 +808,7 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
     );
     pthread_mutex_unlock(&ps6000a_call_mutex);
     
-    for (size_t i = 0; i < CHANNEL_NUM; i++)
+    for (size_t i = 0; i < NUM_CHANNELS; i++)
     {
         if (status != PICO_OK) {
             log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
@@ -1146,7 +1146,7 @@ acquisition_thread_function(void *arg) {
             }
 
             // Process the UPDATE_WAVEFORM subroutine to update waveform
-            for (size_t i = 0; i < CHANNEL_NUM; i++) {
+            for (size_t i = 0; i < NUM_CHANNELS; i++) {
                 if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
                     dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
                 }

@@ -4,7 +4,7 @@
 #ifndef PICOSCOPE_CONFIG
 #define PICOSCOPE_CONFIG
 
-#define CHANNEL_NUM 4
+#define NUM_CHANNELS 4
 
 // The following struct is intended to track which channels 
 // are enabled (1) or disabled (0) using individual bits. 
@@ -24,6 +24,17 @@ enum Channel{
     TRIGGER_AUX = 1001, 
     NO_CHANNEL = 10
 };
+// For mapping PVs to channel in driver 
+static const struct {
+    const char* name;
+    enum Channel channel;
+} PV_TO_CHANNEL_MAP[] = {
+    { "CHA", CHANNEL_A },
+    { "CHB", CHANNEL_B },
+    { "CHC", CHANNEL_C },
+    { "CHD", CHANNEL_D },
+};
+
 enum ThresholdDirection
 {
   ABOVE = 0, //using upper threshold

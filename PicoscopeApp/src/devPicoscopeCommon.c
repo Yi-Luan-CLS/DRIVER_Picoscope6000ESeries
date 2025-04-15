@@ -50,32 +50,32 @@ void re_acquire_waveform(struct PS6000AModule *mp){
  * 
  * @returns Index of channel in the channels array if successful, otherwise returns -1 
  * */
-inline int find_channel_index_from_record(const char* record_name, struct ChannelConfigs channel_configs[CHANNEL_NUM]) {
+inline int find_channel_index_from_record(const char* record_name, struct ChannelConfigs channel_configs[NUM_CHANNELS]) {
     char channel_str[4];
-    sscanf(record_name, "%*[^:]:%4[^:]", channel_str);  // Extract the channel part, e.g., "CHA", "CHB", etc.
+    if (sscanf(record_name, "%*[^:]:%3[^:]", channel_str) != 1){  // Extract the channel part, e.g., "CHA", "CHB", etc.
+        return -1; 
+    }
 
-    enum Channel channel;
-    if (strcmp(channel_str, "CHA") == 0) {
-        channel = CHANNEL_A;
-    } else if (strcmp(channel_str, "CHB") == 0) {
-        channel = CHANNEL_B;
-    } else if (strcmp(channel_str, "CHC") == 0) {
-        channel = CHANNEL_C;
-    } else if (strcmp(channel_str, "CHD") == 0) {
-        channel = CHANNEL_D;
-    } else {
-        printf("Channel not found from record name: %s.\n", record_name); 
-        return -1;  // Invalid channel
+    enum Channel channel = NO_CHANNEL;
+    for (size_t i = 0; i < NUM_CHANNELS; ++i) {
+        if (strcmp(channel_str, PV_TO_CHANNEL_MAP[i].name) == 0) {
+            channel = PV_TO_CHANNEL_MAP[i].channel;
+            break;
+        }
+    }   
+
+    if (channel == NO_CHANNEL){ 
+        return -1; 
     }
 
     // Find the index of the channel in the list
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < NUM_CHANNELS; i++) {
         if (channel_configs[i].channel == channel) {
-            return i;  // Return index if channel matches
+            return i;  
         }
     }
 
-    return -1;  // Channel not found
+    return -1;
 }
 
 
