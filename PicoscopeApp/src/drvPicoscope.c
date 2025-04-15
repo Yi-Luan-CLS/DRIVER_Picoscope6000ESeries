@@ -501,6 +501,10 @@ double calculate_sample_rate(double secs_per_div, double samples_per_div) {
     return samples_per_div / secs_per_div; 
 }
 
+double calculate_num_samples(double secs_per_div, int16_t num_divisions, double time_interval_secs) {
+    return secs_per_div * num_divisions /  time_interval_secs;
+}
+
 /**
  *  Gets the valid timebase configs given the requested time per division, number of divisions, and number of samples. 
  * 
@@ -515,35 +519,56 @@ PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_
 
     uint32_t available_timebase; 
     double available_sample_interval;
-    double secs_per_div = convert_to_seconds(mp->sample_config.timebase_configs.time_per_division, mp->sample_config.timebase_configs.time_per_division_unit);
-    PICO_STATUS status;
-    mp->sample_config.num_samples = mp->sample_config.unadjust_num_samples; 
-    double samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
-    double requested_sample_interval = calculate_sample_interval(secs_per_div, samples_per_division); 
-    if (requested_sample_interval > mp->trigger_config.AUXTriggerSignalPulseWidth)
-    {
-        status = validate_sample_interval(mp->trigger_config.AUXTriggerSignalPulseWidth, mp->handle, mp->channel_status, &available_timebase, &available_sample_interval);
-        if (status != PICO_OK) {
-            return status; 
-        }
-        mp->sample_config.num_samples = secs_per_div * mp->sample_config.timebase_configs.num_divisions /  available_sample_interval;
-        samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
 
-        *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
-        *sample_interval = available_sample_interval; 
-        *timebase = available_timebase;
-        printf("num_samples %ld\n", mp->sample_config.num_samples);
-
-        return PICO_OK;
-    }
+    double secs_per_div = convert_to_seconds(
+        mp->sample_config.timebase_configs.time_per_division, 
+        mp->sample_config.timebase_configs.time_per_division_unit
+    );
     
+    mp->sample_config.num_samples = mp->sample_config.unadjust_num_samples; 
 
-    *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
+    double samples_per_division = calculate_samples_per_division(
+        mp->sample_config.num_samples, 
+        mp->sample_config.timebase_configs.num_divisions
+    );
 
-    status = validate_sample_interval(requested_sample_interval, mp->handle, mp->channel_status, &available_timebase, &available_sample_interval);
-    if (status != 0) {
+    double requested_sample_interval = calculate_sample_interval(secs_per_div, samples_per_division); 
+    double target_sample_interval = requested_sample_interval;
+
+    // Sample interval should be less than the pulse width of AuxIO trigger signal 
+    // set by the user to avoid missed triggers. If requested sample interval is 
+    // larger, use AUX trigger pulse width as the target sample interval. 
+    if (requested_sample_interval > mp->trigger_config.AUXTriggerSignalPulseWidth) {
+        target_sample_interval = mp->trigger_config.AUXTriggerSignalPulseWidth;
+    }
+
+    PICO_STATUS status = validate_sample_interval(
+        target_sample_interval, 
+        mp->handle, 
+        mp->channel_status, 
+        &available_timebase, 
+        &available_sample_interval
+    );
+    if (status != PICO_OK) {
         return status; 
     }
+
+    // If the requested sample interval was adjusted, find number of samples 
+    // required at the set timebase to achieve the target sample interval. 
+    if (target_sample_interval != requested_sample_interval){
+        mp->sample_config.num_samples = calculate_num_samples(
+            secs_per_div, 
+            mp->sample_config.timebase_configs.num_divisions, 
+            available_sample_interval
+        );
+        
+        samples_per_division = calculate_samples_per_division(
+            mp->sample_config.num_samples, 
+            mp->sample_config.timebase_configs.num_divisions
+        );
+    }
+
+    *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
     *sample_interval = available_sample_interval; 
     *timebase = available_timebase;
 
