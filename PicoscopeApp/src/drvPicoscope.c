@@ -246,7 +246,7 @@ PICO_STATUS get_device_info(int8_t** device_info, int16_t handle) {
             int16_t required_size = snprintf(NULL, 0, FORMAT_STR, model_num, serial_num) + 1; 
 
             int8_t* device_info_buffer = malloc(required_size);
-            snprintf((char*)device_info_buffer, required_size, FORMAT_STR, (char*)model_num, (char*)serial_num);
+            snprintf((char*)device_info_buffer, required_size, FORMAT_STR, model_num, serial_num);
             *device_info = device_info_buffer;
         }
     }
