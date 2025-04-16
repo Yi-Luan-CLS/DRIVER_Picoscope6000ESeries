@@ -38,8 +38,6 @@ static struct stringioType
 struct PicoscopeStringioData
 {
     char serial_num[10];
-    int16_t handle; 
-
     enum ioType ioType;
     char *cmdPrefix;
     char paramLabel[32];
