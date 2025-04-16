@@ -89,15 +89,18 @@ inline int find_channel_index_from_record(const char* record_name, struct Channe
  */
 void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[], uint32_t status_code){
     
-    int16_t size = snprintf(NULL, 0, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
+    int16_t max_log_message = mp->pLog->nelm; 
+    char log_message[max_log_message]; 
+    
+    int size = sprintf(log_message, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
 
-    char log[size+1]; 
-    sprintf(log, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
-    memcpy(mp->pLog->bptr, log, strlen(log)+1);
-    mp->pLog->nord = strlen(log)+1;
-
-    dbProcess((struct dbCommon *)mp->pLog);     
-    usleep(100); // wait for log PV to process
+    if (size >= 0) {
+        epicsMutexLock(mp->pLog->mlok);
+        memcpy(mp->pLog->bptr, log_message, strlen(log_message)+1);
+        mp->pLog->nord = strlen(log_message)+1;
+        dbProcess((struct dbCommon *) mp->pLog);
+        epicsMutexUnlock(mp->pLog->mlok);
+    }
 }
 
 

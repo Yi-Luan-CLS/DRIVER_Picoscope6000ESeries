@@ -146,6 +146,7 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
         case GET_LOG: 
             // Save log PV to process when errors occur
             vdp->mp->pLog = pwaveform; 
+            vdp->mp->pLog->mlok = epicsMutexCreate();
             break; 
 
         case UPDATE_WAVEFORM:
