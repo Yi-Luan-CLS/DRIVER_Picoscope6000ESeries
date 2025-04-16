@@ -13,8 +13,6 @@
 
 #include "devPicoscopeCommon.h"
 
-#define MAX_SAMPLE_SIZE 1000000
-
 enum ioType
     {
     UNKNOWN_IOTYPE, // default case, must be 0 
@@ -500,7 +498,6 @@ static long write_ao (struct aoRecord *pao)
             break;  
 
         case SET_TRIGGER_PULSE_WIDTH:
-            previous_num_samples = vdp->mp->sample_config.num_samples; 
             vdp->mp->trigger_config.AUXTriggerSignalPulseWidth = (double)pao->val;
             result = get_valid_timebase_configs(
                 vdp->mp,
@@ -510,7 +507,6 @@ static long write_ao (struct aoRecord *pao)
             );
             if (result != 0) {
                 log_message(vdp->mp, pao->name, "Error setting the width of trigger signal.", result);
-                vdp->mp->sample_config.num_samples = previous_num_samples;
                 vdp->mp->sample_config.unadjust_num_samples = (int) pao->val; 
                 break; 
             }
