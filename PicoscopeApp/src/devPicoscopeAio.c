@@ -290,6 +290,10 @@ static long read_ai (struct aiRecord *pai){
             break;
 
         case GET_TRIGGERS_MISSED: 
+            if (vdp->mp->trigger_timing_info.missed_triggers == 0){ 
+                pai->val = vdp->mp->trigger_timing_info.missed_triggers;
+                break;
+            }
             pai->val = vdp->mp->trigger_timing_info.missed_triggers - 1; // subtract trigger that was detected 
             break; 
 
