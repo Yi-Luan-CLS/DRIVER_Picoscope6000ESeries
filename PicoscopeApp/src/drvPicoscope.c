@@ -1039,7 +1039,6 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
             segment_index,
             &overflow
         );   
-        update_trigger_timing_info(mp, segment_index);  
 
         if (ps6000aGetValuesStatus == PICO_HARDWARE_CAPTURING_CALL_STOP) {
             getValueRetryFlag++;
@@ -1053,6 +1052,15 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
         }
     } while (ps6000aGetValuesStatus == PICO_HARDWARE_CAPTURING_CALL_STOP);
     pthread_mutex_unlock(&ps6000a_call_mutex);
+    
+    if (mp->trigger_config.triggerType != NO_TRIGGER){
+        update_trigger_timing_info(mp, segment_index); 
+    } 
+    else {
+        mp->trigger_timing_info.missed_triggers = 0; 
+        mp->trigger_timing_info.trigger_freq_secs = 0; 
+        mp->trigger_timing_info.prev_trigger_time = 0; 
+    }
 
     if (ps6000aGetValuesStatus != PICO_OK) {
         log_error("ps6000aGetValues", ps6000aGetValuesStatus, __FILE__, __LINE__);
@@ -1099,13 +1107,16 @@ inline PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t
         log_error("ps6000aGetTriggerInfo", status, __FILE__, __LINE__);    
         return status; 
     }
-   
-    mp->trigger_timing_info.trigger_freq_secs = calculate_trigger_freqency(
-        mp->sample_config.timebase_configs.sample_interval_secs,
-        mp->trigger_timing_info.prev_trigger_time,
-        triggerInfo[0].timeStampCounter,
-        triggerInfo[0].missedTriggers
-    );     
+
+    // Ensure previous trigger time is from current capture before calculating trigger frequency
+    if (mp->trigger_timing_info.prev_trigger_time != 0 ){
+        mp->trigger_timing_info.trigger_freq_secs = calculate_trigger_freqency(
+            mp->sample_config.timebase_configs.sample_interval_secs,
+            mp->trigger_timing_info.prev_trigger_time,
+            triggerInfo[0].timeStampCounter,
+            triggerInfo[0].missedTriggers
+        );     
+    }
     
     mp->trigger_timing_info.missed_triggers = triggerInfo[0].missedTriggers;
     mp->trigger_timing_info.prev_trigger_time = triggerInfo[0].timeStampCounter; 
