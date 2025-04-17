@@ -4,7 +4,7 @@
 #ifndef PICOSCOPE_CONFIG
 #define PICOSCOPE_CONFIG
 
-#define CHANNEL_NUM 4
+#define NUM_CHANNELS 4
 
 // The following struct is intended to track which channels 
 // are enabled (1) or disabled (0) using individual bits. 

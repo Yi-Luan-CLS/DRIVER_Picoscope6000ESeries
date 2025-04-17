@@ -50,7 +50,7 @@ void re_acquire_waveform(struct PS6000AModule *mp){
  * 
  * @returns Index of channel in the channels array if successful, otherwise returns -1 
  * */
-inline int find_channel_index_from_record(const char* record_name, struct ChannelConfigs channel_configs[CHANNEL_NUM]) {
+inline int find_channel_index_from_record(const char* record_name, struct ChannelConfigs channel_configs[NUM_CHANNELS]) {
     char channel_str[4];
     sscanf(record_name, "%*[^:]:%4[^:]", channel_str);  // Extract the channel part, e.g., "CHA", "CHB", etc.
 

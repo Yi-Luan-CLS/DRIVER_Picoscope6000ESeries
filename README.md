@@ -254,7 +254,7 @@ This document provides detailed information about the EPICS driver for the Picos
     | 2       | CHANNEL_C   | Use Channel C as the triggering source        |  
     | 3       | CHANNEL_D   | Use Channel D as the triggering source        |
     | 4       | TRIGGER_AUX | Use Auxiliary trigger input as the triggering source, with a fixed threshold of 1.25 V (nominal) to suit 2.5 V CMOS|
-    | 4       | NONE        | No trigger set |
+    | 10       | NONE        | No trigger set |
 
 
 - **Example**:

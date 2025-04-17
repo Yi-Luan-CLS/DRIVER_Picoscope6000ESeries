@@ -16,22 +16,24 @@ typedef struct PS6000AModule
     int8_t dataAcquisitionFlag;
     struct waveformRecord* pWaveformStartPtr;
     struct waveformRecord* pWaveformStopPtr;
-    struct waveformRecord* pRecordUpdateWaveform[CHANNEL_NUM];
+    struct waveformRecord* pRecordUpdateWaveform[NUM_CHANNELS];
     struct waveformRecord* pLog;
-
+    uint16_t subwaveform_num;
 
 
 	epicsEventId triggerReadyEvent;
     epicsEventId acquisitionStartEvent;
+    epicsEventId channelStreamingFinishedEvents[NUM_CHANNELS];
     epicsMutexId epics_acquisition_flag_mutex;
     epicsMutexId epics_acquisition_thread_mutex;
     epicsMutexId epics_acquisition_restart_mutex;
     epicsThreadId acquisition_thread_function;
-
-    int16_t* waveform[CHANNEL_NUM];
+    epicsThreadId channel_streaming_thread_function[4];
+    int16_t* waveform[NUM_CHANNELS];
+	int16_t** streamWaveformBuffers[NUM_CHANNELS];
 
     struct SampleConfigs sample_config;
-    struct ChannelConfigs channel_configs[CHANNEL_NUM];
+    struct ChannelConfigs channel_configs[NUM_CHANNELS];
     struct TriggerConfigs trigger_config;
 
     EnabledChannelFlags channel_status; 
@@ -39,7 +41,7 @@ typedef struct PS6000AModule
     // Stored PVs for processing at specific time 
     struct aiRecord* pTriggerThresholdFbk[4];
     struct aoRecord* pTriggerThreshold[2]; 
-    struct aoRecord* pAnalogOffestRecords[CHANNEL_NUM];
+    struct aoRecord* pAnalogOffestRecords[NUM_CHANNELS];
 
     struct mbboRecord* pTriggerDirection;
     struct mbbiRecord* pTriggerDirectionFbk;
