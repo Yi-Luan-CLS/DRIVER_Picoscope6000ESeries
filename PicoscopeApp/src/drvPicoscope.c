@@ -22,7 +22,7 @@ void log_error(char* function_name, uint32_t status, const char* FILE, int LINE)
 }
 
 /**
- * Opens the PicoScope device with the specified resolution. 
+ * Opens the Picoscope with specified serial number with the requested resolution. 
  * 
  * @param resolution int16_t The sampling resolution to be used when opening the PicoScope.  
  *                           The following values are valid: 
@@ -121,9 +121,9 @@ PICO_STATUS set_resolution(int16_t resolution, int16_t handle){
 }
 
 /**
- * Get  the sample resolution of the currently connected PicoScope. 
+ * Get the sample resolution of the currently connected PicoScope. 
  * 
- * @param resolution int16_t Pointer On exit, the resolution of the device
+ * @param resolution int16_t Pointer On exit, the sampling resolution of the device. 
  * @param handle     int16_t The device identifier returned by open_picoscope(). 
  * 
  * @return           PICO_STATUS Return 0 if resolution returned, otherwise a non-zero error code.
@@ -354,7 +354,7 @@ uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* chann
 }
 
 /**
- * Check if the status of the specified channel. 
+ * Get the status (on/off) of specified channel. 
  * 
  * @param channel        int16_t The channel you wish to check the status of. 
  *                               The following values are valid: 
