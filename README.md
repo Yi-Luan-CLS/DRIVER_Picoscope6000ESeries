@@ -384,37 +384,11 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Type**: `ai`
 - **Description**: The number of triggers missed since the last detected trigger and successful data capture. Such as triggers that occurred during data capture. 
 
-### OSCNAME:time_per_division
-- **Type**: `mbbo` 
-- **Description**: The time per division. 
-- **Fields**:
-  - `VAL`
-    | VAL   | Description    |
-    |-------|----------------|
-    | 0     | 1    time/div  |
-    | 1     | 2    time/div  | 
-    | 2     | 5    time/div  |  
-    | 3     | 10   time/div  | 
-    | 4     | 20   time/div  | 
-    | 5     | 50   time/div  | 
-    | 6     | 100  time/div  | 
-    | 7     | 200  time/div  | 
-    | 8     | 500  time/div  | 
-    | 9     | 1000 time/div  | 
-    | 10    | 2000 time/div  | 
-    | 11    | 5000 time/div  | 
-
 ### OSCNAME:trigger_pulse_width
 - **Type**: `ao` 
 - **Description**: The trigger signal pulse width. 
 - **Fields**:
   - `VAL`: The duration of a trigger signal in seconds, when this value is set, allows the software to dynamically adjust the number of samples collected to ensure the time interval does not significantly exceed the trigger signal duration. When set to 0, the dynamic adjustment of the sample count is disabled. Default to 50 ns.
-
-### OSCNAME:time_per_division:fbk
-- **Type**: `mbbi` 
-- **Description**: The currently set time per division. 
-- **Fields**:
-  - `VAL`: See `OSCNAME:time_per_division`
 
 ### OSCNAME:time_per_division:unit 
 - **Type**: `mbbo` 
@@ -436,7 +410,41 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:num_divisions 
 - **Type**: `ao` 
-- **Description**: The number of divisions. 
+- **Description**: The number of divisions. Defaults to 10 divisions. 
+
+### OSCNAME:time_per_division
+- **Type**: `mbbo` 
+- **Description**: The time per division. 
+- **Fields**:
+- If `OSC:time_per_division:unit` = s/div:
+    | VAL   | Enum  | Description    |
+    |-------|-------|----------------|
+    | 0     |   1   | 1    time/div  |
+    | 1     |   2   | 2    time/div  | 
+    | 2     |   5   | 5    time/div  |  
+    | 3     |   10  | 10   time/div  | 
+- Otherwise, 
+    | VAL   | Enum  | Description    |
+    |-------|-------|----------------|
+    | 0     |  1    | 1    time/div  |
+    | 1     |  2    | 2    time/div  | 
+    | 2     |  5    | 5    time/div  |  
+    | 3     |  10   | 10   time/div  | 
+    | 4     |  20   | 20   time/div  | 
+    | 5     |  50   | 50   time/div  | 
+    | 6     |  100  | 100  time/div  | 
+    | 7     |  200  | 200  time/div  | 
+    | 8     |  500  | 500  time/div  | 
+    | 9     |  1000 | 1000 time/div  | 
+    | 10    |  2000 | 2000 time/div  | 
+    | 11    |  5000 | 5000 time/div  | 
+
+
+### OSCNAME:time_per_division:fbk
+- **Type**: `mbbi` 
+- **Description**: The currently set time per division. 
+- **Fields**:
+  - `VAL`: See `OSCNAME:time_per_division`
 
 ### OSCNAME:num_divisions:fbk
 - **Type**: `ai` 
@@ -445,7 +453,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:sample_interval:fbk
 - **Type**: `ai`
 - **Description**: The sample interval in seconds that will be applied when capturing data.
-  - The value returned is based on the value of `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
+  - The value returned is calculated from `OSCNAME:num_samples`,  `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
 - **Fields**: 
   - `VAL`: The actual sample interval applied in seconds. 
 
@@ -536,24 +544,24 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Description**:  
 - **Fields**:
   - `VAL`: The value of the voltage range.
-    | VAL   | Enum                 | Description                         |
-    |-------|----------------------|-----------------------------------|
-    | 0     | PICO_X1_PROBE_10MV   | Voltage range from -10 mV to 10 mV  |
-    | 1     | PICO_X1_PROBE_20MV   | Voltage range from -20 mV to 20 mV  |
-    | 2     | PICO_X1_PROBE_50MV   | Voltage range from -50 mV to 50 mV  |
-    | 3     | PICO_X1_PROBE_100MV  | Voltage range from -100 mV to 100 mV |
-    | 4     | PICO_X1_PROBE_200MV  | Voltage range from -200 mV to 200 mV |
-    | 5     | PICO_X1_PROBE_500MV  | Voltage range from -500 mV to 500 mV |
-    | 6     | PICO_X1_PROBE_1V     | Voltage range from -1 V to 1 V       |
-    | 7     | PICO_X1_PROBE_2V     | Voltage range from -2 V to 2 V       |
-    | 8     | PICO_X1_PROBE_5V     | Voltage range from -5 V to 5 V       |
-    | 9     | PICO_X1_PROBE_10V    | Voltage range from -10 V to 10 V     |
-    | 10    | PICO_X1_PROBE_20V    | Voltage range from -20 V to 20 V     |
-    | 11    | PICO_X1_PROBE_50V    | Voltage range from -50 V to 50 V     |
-    | 12    | PICO_X1_PROBE_100V   | Voltage range from -100 V to 100 V   |
-    | 13    | PICO_X1_PROBE_200V   | Voltage range from -200 V to 200 V   |
-    | 14    | PICO_X1_PROBE_500V   | Voltage range from -500 V to 500 V   |
-    | 15    | PICO_X1_PROBE_1KV    | Voltage range from -1000 V to 1000 V |
+    | VAL   | Enum    | Description                         |
+    |-------|---------|-----------------------------------|
+    | 0     |  10MV   | Voltage range from -10 mV to 10 mV  |
+    | 1     |  20MV   | Voltage range from -20 mV to 20 mV  |
+    | 2     |  50MV   | Voltage range from -50 mV to 50 mV  |
+    | 3     |  100MV  | Voltage range from -100 mV to 100 mV |
+    | 4     |  200MV  | Voltage range from -200 mV to 200 mV |
+    | 5     |  500MV  | Voltage range from -500 mV to 500 mV |
+    | 6     |  1V     | Voltage range from -1 V to 1 V       |
+    | 7     |  2V     | Voltage range from -2 V to 2 V       |
+    | 8     |  5V     | Voltage range from -5 V to 5 V       |
+    | 9     |  10V    | Voltage range from -10 V to 10 V     |
+    | 10    |  20V    | Voltage range from -20 V to 20 V     |
+    | 11    |  50V    | Voltage range from -50 V to 50 V     |
+    | 12    |  100V   | Voltage range from -100 V to 100 V   |
+    | 13    |  200V   | Voltage range from -200 V to 200 V   |
+    | 14    |  500V   | Voltage range from -500 V to 500 V   |
+    | 15    |  1KV    | Voltage range from -1000 V to 1000 V |
 - **Example**:
   ```bash
     # Set voltage range to -/+20V by number 
@@ -576,11 +584,10 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Description**: The bandwith Oscilloscope start acquiring PV with current configuration(set by other PVs).
 - **Fields**:
   - `VAL`: Trigger to start getting the waveform.
-    | VAL   | Enum             | Description              |
-    |-------|------------------|--------------------------|
-    | 0     | PICO_BW_FULL     | Full bandwith (defualt)  |
-    | 1     | PICO_BW_20MHZ    | Bandwith of 20 MHZ       |
-    | 2     | PICO_BW_200MHZ   | Bandwith of 200 MHZ      |
+    | VAL   | Enum        | Description              |
+    |-------|-------------|--------------------------|
+    | 0     | BW_FULL     | Full bandwith (defualt)  |
+    | 1     | BW_20MHZ    | Bandwith of 20 MHZ       |
 - **Example**:
   ```bash
     # Set bandwith to full bandwith by number
