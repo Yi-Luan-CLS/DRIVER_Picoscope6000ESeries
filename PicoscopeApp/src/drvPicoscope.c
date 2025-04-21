@@ -1270,6 +1270,7 @@ PS6000ACreateModule(char* serial_num){
         free(mp->serial_num);
         free(mp);
         log_error("PS6000ACreateModule", PICO_NO_APPS_AVAILABLE, __FILE__, __LINE__);
+        return NULL; 
     }
 
     return mp; 
