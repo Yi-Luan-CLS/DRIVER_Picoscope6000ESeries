@@ -258,6 +258,8 @@ write_mbbo (struct mbboRecord *pmbbo)
             }
             vdp->mp->resolution = resolution; 
             
+            // Sampling resolution affects max and min trigger thresholds, process threshold PVs
+            // to ensure thresholds are still within the limits at the new resolution.  
             for(size_t i = 0; i < sizeof(vdp->mp->pTriggerThreshold)/ sizeof(vdp->mp->pTriggerThreshold[0]); i++){ 
                 dbProcess((struct dbCommon *) vdp->mp->pTriggerThreshold[i]);            
             }
@@ -267,6 +269,8 @@ write_mbbo (struct mbboRecord *pmbbo)
             record_name = pmbbo->name;
             channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
+            // Coupling affects the range of valid analog offset values, processing this PV will ensure 
+            // the offset for the channel is valid with the new coupling. 
             dbProcess((struct dbCommon *)vdp->mp->pAnalogOffestRecords[channel_index]);     
     
             int16_t previous_coupling = vdp->mp->channel_configs[channel_index].coupling; 
@@ -294,7 +298,9 @@ write_mbbo (struct mbboRecord *pmbbo)
             int16_t previous_range = vdp->mp->channel_configs[channel_index].range; 
 
             vdp->mp->channel_configs[channel_index].range = (int)pmbbo->rval;
-
+        
+            // Voltage range affects the range of valid analog offset values, processing this PV will ensure 
+            // the offset for the channel is valid with the new range. 
             dbProcess((struct dbCommon *)vdp->mp->pAnalogOffestRecords[channel_index]);     
 
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
@@ -311,6 +317,7 @@ write_mbbo (struct mbboRecord *pmbbo)
                 }
             }
 
+            // Process trigger thresholds to ensure triggers are set between ±range. 
             for(size_t i = 0; i < sizeof(vdp->mp->pTriggerThreshold)/ sizeof(vdp->mp->pTriggerThreshold[0]); i++){ 
                 dbProcess((struct dbCommon *) vdp->mp->pTriggerThreshold[i]);            
             }
@@ -459,6 +466,7 @@ write_mbbo (struct mbboRecord *pmbbo)
                 }
             }
 
+            // Update all trigger info to valid options for the trigger channel 
             dbProcess((struct dbCommon *)vdp->mp->pTriggerType); 
             dbProcess((struct dbCommon *)vdp->mp->pTriggerDirectionFbk);
             dbProcess((struct dbCommon *)vdp->mp->pTriggerModeFbk);
@@ -559,6 +567,7 @@ write_mbbo (struct mbboRecord *pmbbo)
                     return -1; 
             }
 
+            // Update all trigger info to valid options for the trigger type
             dbProcess((struct dbCommon *)vdp->mp->pTriggerChannelFbk);
             dbProcess((struct dbCommon *)vdp->mp->pTriggerDirectionFbk);
             dbProcess((struct dbCommon *)vdp->mp->pTriggerModeFbk);
