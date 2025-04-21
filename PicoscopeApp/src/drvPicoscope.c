@@ -239,7 +239,7 @@ PICO_STATUS get_device_info(int8_t** device_info, int16_t handle) {
     int8_t* model_num = NULL; 
 
     PICO_STATUS status = get_serial_num(&serial_num, handle);
-    if (status == 0) {
+    if (status == PICO_OK) {
         status = get_model_num(&model_num, handle); 
         if (status == 0) {
             const static char* FORMAT_STR = "Picoscope %s [%s]";
@@ -268,9 +268,9 @@ PICO_STATUS get_device_info(int8_t** device_info, int16_t handle) {
  * @param handle         int16_t The device identifier returned by open_picoscope(). 
  * @param channel_status EnabledChannelFlags Pointer On exit, the updated status of Picoscope channels.
  * 
- * @return               uint32_t Return 0 if the channel is succesfully set on, otherwise a non-zero error code. 
+ * @return               PICO_STATUS Return PICO_OK if the channel is succesfully set on, otherwise a non-zero error code. 
 */
-uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledChannelFlags* channel_status) {
+PICO_STATUS set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledChannelFlags* channel_status) {
 
     pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aSetChannelOn(handle, channel.channel, channel.coupling, channel.range, channel.analog_offset, channel.bandwidth);
@@ -297,12 +297,12 @@ uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledCh
             channel_status->channel_d = 1;
             break;
         default:
-            return -1;
+            return PICO_INVALID_CHANNEL;
     }
 
     printf("Setting channel %d on.\n", channel.channel);
   
-    return 0;
+    return PICO_OK;
 
 }
 
@@ -318,9 +318,9 @@ uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledCh
  * @param handle         int16_t The device identifier returned by open_picoscope(). 
  * @param channel_status EnabledChannelFlags Pointer On exit, the updated status of Picoscope channels. 
  *  
- * @return               uint32_t Return 0 if the channel is successfully turned off, otherwise a non-zero error code.
+ * @return               PICO_STATUS Return PICO_OK if the channel is successfully turned off, otherwise a non-zero error code.
 */
-uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* channel_status) {
+PICO_STATUS set_channel_off(int channel, int16_t handle, EnabledChannelFlags* channel_status) {
     pthread_mutex_lock(&ps6000a_call_mutex);
     uint32_t status = ps6000aSetChannelOff(handle, channel);
     pthread_mutex_unlock(&ps6000a_call_mutex);
@@ -346,11 +346,11 @@ uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* chann
             channel_status->channel_d = 0;
             break;
         default:
-            return -1;
+            return PICO_INVALID_CHANNEL;
     }
 
     printf("Set channel %d off.\n", channel);
-    return 0;
+    return PICO_OK;
 }
 
 /**
@@ -409,7 +409,7 @@ PICO_STATUS get_analog_offset_limits(struct ChannelConfigs channel, int16_t hand
     *max_analog_offset = maximum_voltage;
     *min_analog_offset = minimum_voltage;
 
-    return 0; 
+    return PICO_OK; 
 }
 
 /**
@@ -600,15 +600,15 @@ double get_range(int index) {
  *        scaled_value On exit, the scaled value. 
  *        handle The device identifier returned by open_picoscope(). 
  * 
- * @return 0 if successful, other a non-zero status code. 
+ * @return PICO_STATUS PICO_OK if successful, other a non-zero status code. 
  * */ 
-uint32_t calculate_scaled_value(double volts, int16_t voltage_range, int16_t* scaled_value, int16_t handle){ 
+PICO_STATUS calculate_scaled_value(double volts, int16_t voltage_range, int16_t* scaled_value, int16_t handle){ 
     
     double range_in_volts = get_range(voltage_range); 
     
     if (range_in_volts < volts){
         printf("Voltage is outside of range.\n"); 
-        return -1; 
+        return PICO_THRESHOLD_OUT_OF_RANGE; 
     }
 
     int16_t min, max; 
@@ -633,9 +633,9 @@ uint32_t calculate_scaled_value(double volts, int16_t voltage_range, int16_t* sc
  *        max_val On exit, the maximum sample value. 
  *        handle The device identifier returned by open_picoscope(). 
  * 
- * @return 0 if successful, other a non-zero status code. 
+ * @return PICO_STATUS PICO_OK if successful, other a non-zero status code. 
  * */
-uint32_t get_adc_limits(int16_t* min_val, int16_t* max_val, int16_t handle){ 
+PICO_STATUS get_adc_limits(int16_t* min_val, int16_t* max_val, int16_t handle){ 
 
     int16_t min, max, resolution;
 
