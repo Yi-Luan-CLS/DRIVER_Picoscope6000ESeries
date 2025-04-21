@@ -539,6 +539,6 @@ record(ai, "$(OSC):trigger:missed"){
     field(DTYP, "Picoscope")
     field(SCAN, "Passive")
     field(VAL, "0")  
-    field(DESC, "Number of triggers missed since last detected trigger")
+    field(DESC, "Num trigs missed since last detected")
     field(INP, "@S:$(SERIAL_NUM) @L:get_triggers_missed")
 }

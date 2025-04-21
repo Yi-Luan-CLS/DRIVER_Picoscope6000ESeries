@@ -1214,19 +1214,10 @@ PS6000AGetModule(char* serial_num){
     return NULL;
 }
 
-struct PS6000AModule*
-PS6000ACreateModule(char* serial_num){
-    struct PS6000AModule* mp = calloc(1, sizeof(struct PS6000AModule));
-    if (!mp) {
-        log_error("PS6000ACreateModule calloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
-        return NULL;
-    }
-    mp->serial_num = strdup(serial_num);
-    if (!mp->serial_num) {
-        free(mp);
-        log_error("PS6000ACreateModule strdup", PICO_MEMORY_FAIL, __FILE__, __LINE__);
-        return NULL;
-    }
+static int init_module(char* serial_num) { 
+
+	PS6000AModule *mp = PS6000AGetModule(serial_num);
+
     mp->triggerReadyEvent = epicsEventCreate(0);
     mp->acquisitionStartEvent = epicsEventCreate(0);
     mp->epics_acquisition_restart_mutex = epicsMutexCreate();
@@ -1237,7 +1228,7 @@ PS6000ACreateModule(char* serial_num){
         !(mp->epics_acquisition_restart_mutex = epicsMutexCreate())) {
         free(mp);
         log_error("Mutex creation failed\n", -1, __FILE__, __LINE__);
-        return NULL;
+        return -1;
     }
     // Create capture thread
     mp->acquisition_thread_function = epicsThreadCreate("captureThread", epicsThreadPriorityMedium,
@@ -1247,18 +1238,41 @@ PS6000ACreateModule(char* serial_num){
         epicsMutexLock(mp->epics_acquisition_flag_mutex);
         mp->dataAcquisitionFlag = 0;
         epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
+        return -1;
+    }
+
+    return 0;
+}
+
+struct PS6000AModule*
+PS6000ACreateModule(char* serial_num){
+   
+    struct PS6000AModule* mp = calloc(1, sizeof(struct PS6000AModule));
+    if (!mp) {
+        log_error("PS6000ACreateModule calloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
         return NULL;
     }
+
+    mp->serial_num = strdup(serial_num);
+    if (!mp->serial_num) {
+        free(mp);
+        log_error("PS6000ACreateModule strdup", PICO_MEMORY_FAIL, __FILE__, __LINE__);
+        return NULL;
+    }
+    
     for (size_t i = 0; i < MAX_PICO; i++) {
         if (PS6000AModuleList[i] == NULL) {
             PS6000AModuleList[i] = mp;
-            return mp;
         }
+    }   
+
+    if (init_module(serial_num) < 0 ){ 
+        free(mp->serial_num);
+        free(mp);
+        log_error("PS6000ACreateModule", PICO_NO_APPS_AVAILABLE, __FILE__, __LINE__);
     }
-    free(mp->serial_num);
-    free(mp);
-    log_error("PS6000ACreateModule", PICO_NO_APPS_AVAILABLE, __FILE__, __LINE__);
-    return NULL;
+
+    return mp; 
 }
 
 static int
