@@ -565,7 +565,7 @@ PREF0 PREF1 PICO_STATUS PREF2 PREF3(ps6000aGetStreamingLatestValues)
 (
 	int16_t															handle,
 	PICO_STREAMING_DATA_INFO					*	streamingDataInfo,
-	uint64_t														nStreamingDataInfos,
+	uint64_t										nStreamingDataInfos,
 	PICO_STREAMING_DATA_TRIGGER_INFO	* triggerInfo
 	);
 
