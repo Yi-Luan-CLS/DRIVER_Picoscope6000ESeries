@@ -16,7 +16,7 @@
 #include "drvPicoscope.h"
 #define MAX_PICO 10
 static PS6000AModule *PS6000AModuleList[MAX_PICO] = {NULL};
-pthread_mutex_t ps6000a_call_mutex;
+epicsMutexId epics_ps6000a_call_mutex;
 void log_error(char* function_name, uint32_t status, const char* FILE, int LINE){ 
     printf("Error in %s (file: %s, line: %d). Status code: 0x%08X\n", function_name, FILE, LINE, status);
 }
@@ -43,8 +43,7 @@ PICO_STATUS open_picoscope(int16_t resolution, char* serial_num, int16_t* handle
         log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 
         return status;  
     }
-    pthread_mutex_init(&ps6000a_call_mutex, NULL);
-
+    epics_ps6000a_call_mutex = epicsMutexCreate();
     *handle = handle_buffer;
     return PICO_OK;
 }
@@ -57,15 +56,15 @@ PICO_STATUS open_picoscope(int16_t resolution, char* serial_num, int16_t* handle
  * @return        PICO_STATUS Return 0 if the device is successfully closed, or a non-zero error code. 
 */
 PICO_STATUS close_picoscope(int16_t handle){ 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aCloseUnit(handle);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
     if (status != PICO_OK) 
     { 
         log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
         return status;  
     } 
-    pthread_mutex_destroy(&ps6000a_call_mutex);
+    epicsMutexDestroy(epics_ps6000a_call_mutex);
 
     return PICO_OK;
 }
@@ -78,9 +77,9 @@ PICO_STATUS close_picoscope(int16_t handle){
  * @return       PICO_STATUS Return 0 if device is connect, otherwise a non-zero error code.
 */
 PICO_STATUS ping_picoscope(int16_t handle){ 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aPingUnit(handle);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     // If driver call in progress, return connected. 
     if (status == PICO_DRIVER_FUNCTION) {
@@ -108,9 +107,9 @@ PICO_STATUS ping_picoscope(int16_t handle){
 */
 PICO_STATUS set_resolution(int16_t resolution, int16_t handle){ 
    
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetDeviceResolution(handle, resolution); 
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (status != PICO_OK){ 
         log_error("ps6000aSetDeviceResolution", status, __FILE__, __LINE__);
@@ -132,9 +131,9 @@ PICO_STATUS get_resolution(int16_t* resolution, int16_t handle) {
 
     PICO_DEVICE_RESOLUTION device_resolution; 
     
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aGetDeviceResolution(handle, &device_resolution); 
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if(status != PICO_OK) {
         log_error("ps6000aGetDeviceResolution", status, __FILE__, __LINE__);
@@ -157,9 +156,9 @@ PICO_STATUS get_serial_num(int8_t** serial_num, int16_t handle) {
 
     int16_t required_size = 0; 
 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_BATCH_AND_SERIAL);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
@@ -168,9 +167,9 @@ PICO_STATUS get_serial_num(int8_t** serial_num, int16_t handle) {
 
     int8_t* serial_num_buffer = calloc(required_size, sizeof(int8_t)); 
 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     status = ps6000aGetUnitInfo(handle, serial_num_buffer, required_size, &required_size, PICO_BATCH_AND_SERIAL);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
@@ -197,9 +196,9 @@ PICO_STATUS get_model_num(int8_t** model_num, int16_t handle) {
 
     int16_t required_size = 0; 
 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aGetUnitInfo(handle, NULL, 0, &required_size, PICO_VARIANT_INFO);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
@@ -209,9 +208,9 @@ PICO_STATUS get_model_num(int8_t** model_num, int16_t handle) {
     int8_t* model_num_buffer = calloc(required_size, sizeof(int8_t));
 
     
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     status = ps6000aGetUnitInfo(handle, model_num_buffer, required_size, &required_size, PICO_VARIANT_INFO);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aGetUnitInfo", status, __FILE__, __LINE__);
@@ -272,9 +271,9 @@ PICO_STATUS get_device_info(int8_t** device_info, int16_t handle) {
 */
 PICO_STATUS set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledChannelFlags* channel_status) {
 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     uint32_t status = ps6000aSetChannelOn(handle, channel.channel, channel.coupling, channel.range, channel.analog_offset, channel.bandwidth);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
     if (status != PICO_OK) 
     {
         log_error("ps6000aSetChannelOn", status, __FILE__, __LINE__);
@@ -321,9 +320,10 @@ PICO_STATUS set_channel_on(struct ChannelConfigs channel, int16_t handle, Enable
  * @return               PICO_STATUS Return PICO_OK if the channel is successfully turned off, otherwise a non-zero error code.
 */
 PICO_STATUS set_channel_off(int channel, int16_t handle, EnabledChannelFlags* channel_status) {
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
+
     uint32_t status = ps6000aSetChannelOff(handle, channel);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (status != PICO_OK)
     {
@@ -397,9 +397,9 @@ PICO_STATUS get_analog_offset_limits(struct ChannelConfigs channel, int16_t hand
     double maximum_voltage; 
     double minimum_voltage;
 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aGetAnalogueOffsetLimits(handle, channel.range, channel.coupling, &maximum_voltage, &minimum_voltage); 
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
     if (status != PICO_OK)
     {
         log_error("ps6000aGetAnalogueOffsetLimits", status, __FILE__, __LINE__);
@@ -438,9 +438,9 @@ PICO_STATUS validate_sample_interval(double requested_time_interval, int16_t han
     uint32_t timebase_return; 
     double time_interval_available;
 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     status = ps6000aNearestSampleIntervalStateless(handle, enabledChannels, requested_time_interval, resolution, &timebase_return, &time_interval_available); 
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
     
     if (status == PICO_NO_CHANNELS_OR_PORTS_ENABLED) {
         log_error("ps6000aNearestSampleIntervalStateless. No channels enabled.", status, __FILE__, __LINE__);
@@ -501,6 +501,15 @@ double calculate_sample_rate(double secs_per_div, double samples_per_div) {
     return samples_per_div / secs_per_div; 
 }
 
+uint16_t calculate_subwaveform_num(double secs_per_div){
+    uint16_t subwaveform_num = 0;
+    if (secs_per_div >= 0.1)
+    {
+        subwaveform_num = (uint16_t)(secs_per_div * 10);
+    }
+    return subwaveform_num;
+}
+
 double calculate_num_samples(double secs_per_div, int16_t num_divisions, double time_interval_secs) {
     return secs_per_div * num_divisions /  time_interval_secs;
 }
@@ -519,13 +528,14 @@ PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_
 
     uint32_t available_timebase; 
     double available_sample_interval;
-
+    PICO_STATUS status;
     double secs_per_div = convert_to_seconds(
         mp->sample_config.timebase_configs.time_per_division, 
         mp->sample_config.timebase_configs.time_per_division_unit
     );
-    
+    mp->subwaveform_num = calculate_subwaveform_num(secs_per_div);
     mp->sample_config.num_samples = mp->sample_config.unadjust_num_samples; 
+
 
     double samples_per_division = calculate_samples_per_division(
         mp->sample_config.num_samples, 
@@ -542,7 +552,7 @@ PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_
         target_sample_interval = mp->trigger_config.AUXTriggerSignalPulseWidth;
     }
 
-    PICO_STATUS status = validate_sample_interval(
+    status = validate_sample_interval(
         target_sample_interval, 
         mp->handle, 
         mp->channel_status, 
@@ -644,9 +654,9 @@ PICO_STATUS get_adc_limits(int16_t* min_val, int16_t* max_val, int16_t handle){
         return status; 
     }
 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     status = ps6000aGetAdcLimits(handle, resolution, &min, &max);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
     if (status != PICO_OK){ 
         log_error("ps6000aGetAdcLimits", status, __FILE__, __LINE__); 
         return status; 
@@ -729,10 +739,10 @@ PICO_STATUS set_trigger_conditions(struct PS6000AModule* mp) {
         .source = mp->trigger_config.channel,
         .condition = PICO_CONDITION_TRUE
     };
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     ps6000aSetTriggerChannelConditions(mp->handle, &condition, nConditions, PICO_CLEAR_ALL);
     ps6000aSetTriggerChannelConditions(mp->handle, &condition, nConditions, PICO_ADD);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aSetTriggerChannelConditions", status, __FILE__, __LINE__);
@@ -758,9 +768,9 @@ PICO_STATUS set_trigger_directions(struct PS6000AModule* mp) {
         .direction = mp->trigger_config.thresholdDirection,
         .thresholdMode = mp->trigger_config.thresholdMode
     };
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     ps6000aSetTriggerChannelDirections(mp->handle, &direction, nDirections);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aSetTriggerChannelDirections", status, __FILE__, __LINE__);
@@ -787,9 +797,9 @@ PICO_STATUS set_trigger_properties(struct PS6000AModule* mp) {
         .thresholdLower = mp->trigger_config.thresholdLower,
         .thresholdLowerHysteresis = hysteresis_lower
     };
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetTriggerChannelProperties(mp->handle, &channelProperty, nChannelProperties, 0, 0);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (status != PICO_OK) {
         log_error("ps6000aSetTriggerChannelProperties", status, __FILE__, __LINE__);
@@ -806,7 +816,7 @@ PICO_STATUS set_trigger_properties(struct PS6000AModule* mp) {
  */
 PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp) {
     PICO_STATUS status;
-    
+    printf("apply_trigger_configurations\n");
     status = set_trigger_conditions(mp);
     if (status != PICO_OK) return status;
 
@@ -826,42 +836,245 @@ PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp) {
  */
 PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetDataBuffer(
         mp->handle, (PICO_CHANNEL)NULL, NULL, 0, PICO_INT16_T, 0, 0, 
         PICO_CLEAR_ALL      // Clear buffer in Picoscope buffer list
     );
-    pthread_mutex_unlock(&ps6000a_call_mutex);
-    
-    for (size_t i = 0; i < NUM_CHANNELS; i++)
-    {
-        if (status != PICO_OK) {
-            log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
-        }
-        if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status))
+    if (status != PICO_OK) {
+        log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
+        epicsMutexUnlock(epics_ps6000a_call_mutex);
+        return status;
+    }
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
+    if (mp->subwaveform_num > 0)
+    {
+        if (mp->sample_config.down_sample_ratio_mode == RATIO_MODE_AVERAGE)
         {
-            pthread_mutex_lock(&ps6000a_call_mutex);
-            status = ps6000aSetDataBuffer(
-                mp->handle, 
-                mp->channel_configs[i].channel, 
-                mp->waveform[i],
-                mp->sample_config.num_samples, 
-                PICO_INT16_T, 
-                0, 
-                mp->sample_config.down_sample_ratio_mode, 
-                PICO_ADD
-            );
-            pthread_mutex_unlock(&ps6000a_call_mutex);
-            if (status != PICO_OK) {
-                log_error("ps6000aSetDataBuffer PICO_ADD", status, __FILE__, __LINE__);
+            mp->sample_config.subwaveform_num_samples = mp->sample_config.num_samples / mp->subwaveform_num / mp->sample_config.down_sample_ratio;
+        }else{
+            mp->sample_config.subwaveform_num_samples = mp->sample_config.num_samples / mp->subwaveform_num;
+        }
+        
+        for (size_t i = 0; i < NUM_CHANNELS; i++){
+		    mp->streamWaveformBuffers[i] = (int16_t**)calloc(mp->subwaveform_num, sizeof(int16_t*));
+            for (int j = 0; j < mp->subwaveform_num; j++) {
+		        mp->streamWaveformBuffers[i][j] = (int16_t*)calloc(mp->sample_config.subwaveform_num_samples, sizeof(int16_t));
+	        }
+            if (get_channel_status(i, mp->channel_status)){
+                epicsMutexLock(epics_ps6000a_call_mutex);
+	            status = ps6000aSetDataBuffer(
+                    mp->handle,
+                    mp->channel_configs[i].channel,
+                    mp->streamWaveformBuffers[i][0],
+                    mp->sample_config.subwaveform_num_samples,
+                    PICO_INT16_T,
+                    0,
+                    mp->sample_config.down_sample_ratio_mode, 
+                    PICO_ADD
+                );
+                epicsMutexUnlock(epics_ps6000a_call_mutex);
+                if (status != PICO_OK) {
+                    log_error("ps6000aSetDataBuffer subwaveform_num > 0", status, __FILE__, __LINE__);
+                }
+            }
+        }
+    }else{
+        for (size_t i = 0; i < NUM_CHANNELS; i++)
+        {
+            if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status)){
+                epicsMutexLock(epics_ps6000a_call_mutex);
+                status = ps6000aSetDataBuffer(
+                    mp->handle, 
+                    mp->channel_configs[i].channel, 
+                    mp->waveform[i],
+                    mp->sample_config.num_samples, 
+                    PICO_INT16_T, 
+                    0, 
+                    mp->sample_config.down_sample_ratio_mode, 
+                    PICO_ADD
+                );
+                epicsMutexUnlock(epics_ps6000a_call_mutex);
+                if (status != PICO_OK) {
+                    log_error("ps6000aSetDataBuffer subwaveform_num = 0", status, __FILE__, __LINE__);
+                }
             }
         }
     }
     
+    
 
     return status;
 }
+
+typedef struct ChannelStreamingArg 
+{
+    enum Channel channel;
+    struct PS6000AModule* mp;
+} ChannelStreamingArg;
+
+void channel_streaming_thread_function(void *arg){
+    ChannelStreamingArg* ap = (struct ChannelStreamingArg *)arg;
+    PS6000AModule* mp = ap->mp;
+    enum Channel channel_index = ap->channel;
+    int buffer_index = 0;
+    int triggered_flag = 0;
+    int set_buffer_retry = 0;
+	PICO_STREAMING_DATA_INFO streamData;
+    PICO_STREAMING_DATA_TRIGGER_INFO streamTrigger;
+    PICO_STATUS status = PICO_OK;
+    streamData.bufferIndex_ = 0;
+    streamData.channel_ = channel_index;
+    streamData.mode_ = mp->sample_config.down_sample_ratio_mode;
+    streamData.noOfSamples_ = 0;
+    streamData.overflow_ = 0;
+    streamData.startIndex_ = 0;
+    streamData.type_ = PICO_INT16_T;
+    ps6000aSetSimpleTrigger(
+        mp->handle,
+        1,
+        mp->trigger_config.channel,
+        0,
+        mp->trigger_config.thresholdDirection,
+        0,
+        0);
+    while (buffer_index < mp->subwaveform_num) {
+        epicsMutexLock(mp->epics_acquisition_flag_mutex);
+        if (mp->dataAcquisitionFlag == 0)
+        {
+            epicsEventSignal(mp->channelStreamingFinishedEvents[channel_index]);
+            epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
+            return;
+        }
+        epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
+
+        if (streamData.startIndex_ + streamData.noOfSamples_ == mp->sample_config.subwaveform_num_samples){
+            if (buffer_index == 0)
+            {
+                printf("index 0 \n");
+            }
+            do
+            {
+                epicsMutexLock(epics_ps6000a_call_mutex);
+                status = ps6000aSetDataBuffer(
+                    mp->handle,
+                    channel_index,
+                    mp->streamWaveformBuffers[channel_index][buffer_index],
+                    mp->sample_config.subwaveform_num_samples,
+                    PICO_INT16_T,
+                    0,
+                    mp->sample_config.down_sample_ratio_mode,
+                    PICO_ADD
+                    );
+                epicsMutexUnlock(epics_ps6000a_call_mutex);
+                set_buffer_retry ++;
+            } while (status == PICO_DRIVER_FUNCTION && set_buffer_retry < 100);
+            set_buffer_retry = 0;
+            if(status != PICO_OK){
+                log_error("ps6000aSetDataBuffer", status, __FILE__, __LINE__);
+                return;
+            }
+        }
+        usleep(5000);       // Sleep give Picoscope device time to collect data
+        epicsMutexLock(epics_ps6000a_call_mutex);
+        status = ps6000aGetStreamingLatestValues(mp->handle, &streamData, 1, &streamTrigger); // Get the latest values
+        epicsMutexUnlock(epics_ps6000a_call_mutex);
+
+        printf("CH %d, Buffer %d, numSamples %ld, status %d, startIdx %d, sampleCollected %d, buffer %ld, triggered %d\n",
+         channel_index, buffer_index, mp->sample_config.subwaveform_num_samples,
+          status, streamData.startIndex_, streamData.noOfSamples_, streamData.bufferIndex_,
+           triggered_flag);
+
+        if (triggered_flag== 0 && streamTrigger.triggered_== 0 )
+        {
+            continue;
+        }else{
+            triggered_flag =  1;
+        }
+        
+        if ((status == PICO_WAITING_FOR_DATA_BUFFERS && streamData.startIndex_ == 0 && streamData.noOfSamples_ == 0))
+        {
+            // The Error that can be ignored
+            status = PICO_OK;
+            continue;
+        }else if (streamData.startIndex_ + streamData.noOfSamples_ == mp->sample_config.subwaveform_num_samples){
+            if(triggered_flag== 0 && streamTrigger.triggered_== 0){
+                // Do not use the data if it is not triggered
+                continue;
+            }
+            // If buffers full move to next buffer
+            mp->waveform[channel_index] = mp->streamWaveformBuffers[channel_index][buffer_index];
+            mp->sample_collected = mp->sample_config.subwaveform_num_samples;
+            dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[channel_index]);
+        
+            buffer_index++;
+            continue;
+        }else if (status != PICO_OK){
+            log_error("ps6000aGetStreamingLatestValues", status, __FILE__, __LINE__);
+        }
+        
+    }
+    epicsEventSignal(mp->channelStreamingFinishedEvents[channel_index]);
+    printf("epicsEventSignaled\n");
+}
+
+PICO_STATUS run_stream_capture(struct PS6000AModule* mp){
+    printf("----------------------\n");
+	PICO_STREAMING_DATA_INFO streamData[NUM_CHANNELS];
+    PICO_STATUS status;
+    double time = mp->sample_config.timebase_configs.sample_interval_secs;
+    ChannelStreamingArg channel_streaming_args[NUM_CHANNELS];
+
+    int thread_count = 0;
+    status = ps6000aRunStreaming(
+        mp->handle,
+        &time,
+        PICO_S,
+        0,
+        mp->sample_config.subwaveform_num_samples,
+        0,
+        mp->sample_config.down_sample_ratio,
+        mp->sample_config.down_sample_ratio_mode
+        );	// Start continuous streaming
+    if (status == PICO_OK) {
+        for (size_t i = 0; i < NUM_CHANNELS; i++) {
+            if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status)) {
+                channel_streaming_args[i].mp = mp;
+                channel_streaming_args[i].channel = mp->channel_configs[i].channel;
+                mp->channel_streaming_thread_function[i] = epicsThreadCreate("channel_streaming_thread", epicsThreadPriorityMedium,
+                    0, (EPICSTHREADFUNC)channel_streaming_thread_function, &channel_streaming_args[i]);
+                if (!mp->channel_streaming_thread_function[i]) {
+                    log_error("Thread channel_streaming_data_thread creation failed\n", -1, __FILE__, __LINE__);
+                    epicsMutexLock(mp->epics_acquisition_flag_mutex);
+                    mp->dataAcquisitionFlag = 0;
+                    epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
+                    return -1;
+                }
+                thread_count ++;
+            }
+        }
+	}else{
+        log_error("run_stream_capture", status, __FILE__, __LINE__);
+        return status;
+    }
+
+    for (size_t i = 0; i < thread_count; i++)
+    {
+        epicsEventWait(mp->channelStreamingFinishedEvents[i]);
+        printf("SigWait released %d\n", i);
+    }
+
+    printf("DONE\n");
+    status = stop_capturing(mp->handle);
+    for (size_t i = 0; i < NUM_CHANNELS; i++){
+        for (int j = 0; j < mp->subwaveform_num; j++) {
+		    free(mp->streamWaveformBuffers[i][j]);
+	    }
+    }
+    return status;
+}
+
 /**
  * Initialize the blocking mode callback function.
  * @param  mp PS6000AModule Pointer to the PS6000AModule structure containing data ready flag. 
@@ -949,7 +1162,7 @@ inline PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_in
     blockReadyCallbackParams->dataReady = 0;
     int8_t runBlockCaptureRetryFlag = 0;
 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     do {
         ps6000aRunBlockStatus = ps6000aRunBlock(
             mp->handle,
@@ -973,7 +1186,7 @@ inline PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_in
         }
     } while (ps6000aRunBlockStatus == PICO_HARDWARE_CAPTURING_CALL_STOP);
     print_time("ps6000aRunBlock");
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (ps6000aRunBlockStatus != PICO_OK) {
         log_error("ps6000aRunBlock", ps6000aRunBlockStatus, __FILE__, __LINE__);
@@ -1027,7 +1240,7 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
     PICO_STATUS ps6000aStopStatus;
     PICO_STATUS ps6000aGetValuesStatus;
 
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     do {
 
         ps6000aGetValuesStatus = ps6000aGetValues(
@@ -1047,11 +1260,12 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
             ps6000aStopStatus = ps6000aStop(mp->handle);
             if (ps6000aStopStatus != PICO_OK) {
                 printf("Error: Failed to stop capture, status: %d\n", ps6000aStopStatus);
+                epicsMutexUnlock(epics_ps6000a_call_mutex);
                 return ps6000aStopStatus;
             }
         }
     } while (ps6000aGetValuesStatus == PICO_HARDWARE_CAPTURING_CALL_STOP);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
     
     if (mp->trigger_config.triggerType != NO_TRIGGER){
         update_trigger_timing_info(mp, segment_index); 
@@ -1135,14 +1349,29 @@ inline PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t
 PICO_STATUS stop_capturing(int16_t handle) {
     PICO_STATUS status;
     printf("Capture stopping.\n");  
-    pthread_mutex_lock(&ps6000a_call_mutex);
+    epicsMutexLock(epics_ps6000a_call_mutex);
     status = ps6000aStop(handle);
-    pthread_mutex_unlock(&ps6000a_call_mutex);
+    epicsMutexUnlock(epics_ps6000a_call_mutex);
     printf("Capture stopped.\n");     
     if (status != PICO_OK) {
         log_error("wait_for_capture_completion ps6000aStop", status, __FILE__, __LINE__);
     }
     return status;
+}
+
+void free_subwaveforms(struct PS6000AModule* mp){
+    for (size_t channel_index = 0; channel_index < NUM_CHANNELS; channel_index++)
+    {
+        if (mp->streamWaveformBuffers[channel_index])
+        {
+            for (uint16_t buffer_index = 0; buffer_index < mp->subwaveform_num; buffer_index++)
+            {
+                free(mp->streamWaveformBuffers[channel_index][buffer_index]);
+            }
+            free(mp->streamWaveformBuffers[channel_index]);
+        }
+    }
+    
 }
 
 /**
@@ -1161,7 +1390,7 @@ acquisition_thread_function(void *arg) {
         epicsThreadId id = epicsThreadGetIdSelf();
         printf("Start ID is %ld\n", id->tid);
         // Setup Picoscope
-        uint32_t status = setup_picoscope(mp);
+        PICO_STATUS status = setup_picoscope(mp);
         if (status != 0) {
             log_error("Error configuring picoscope for data capture.", status, __FILE__, __LINE__);
             epicsMutexLock(mp->epics_acquisition_flag_mutex);
@@ -1170,23 +1399,30 @@ acquisition_thread_function(void *arg) {
             epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
             return;
         }
-
         while (mp->dataAcquisitionFlag == 1) {
             double time_indisposed_ms = 0;
-
-            mp->sample_collected = mp->sample_config.num_samples;
-            status = run_block_capture(mp, &time_indisposed_ms);
-            if (status != 0) {
-                printf("Error capturing block data.");
-                break;
-            }
-
-            // Process the UPDATE_WAVEFORM subroutine to update waveform
-            for (size_t i = 0; i < NUM_CHANNELS; i++) {
-                if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
-                    dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
+            if (mp->subwaveform_num > 1){
+                set_data_buffer(mp);
+                status = run_stream_capture(mp);
+                if (status != PICO_OK) {
+                    printf("Error capturing stream data.");
+                    break;
+                }
+            }else{
+                mp->sample_collected = mp->sample_config.num_samples;
+                status = run_block_capture(mp, &time_indisposed_ms);
+                if (status != PICO_OK) {
+                    printf("Error capturing block data.");
+                    break;
+                }
+                // Process the UPDATE_WAVEFORM subroutine to update waveform
+                for (size_t i = 0; i < NUM_CHANNELS; i++) {
+                    if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
+                        dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
+                    }
                 }
             }
+
             dbProcess((dbCommon*) mp->pTriggerFrequency);
             dbProcess((dbCommon*) mp->pTriggersMissed); 
         }
@@ -1217,9 +1453,11 @@ PS6000AGetModule(char* serial_num){
 static int init_module(char* serial_num) { 
 
 	PS6000AModule *mp = PS6000AGetModule(serial_num);
-
     mp->triggerReadyEvent = epicsEventCreate(0);
     mp->acquisitionStartEvent = epicsEventCreate(0);
+    for (size_t i = 0; i < NUM_CHANNELS; i++){
+        mp->channelStreamingFinishedEvents[i] = epicsEventCreate(0);
+    }
     mp->epics_acquisition_restart_mutex = epicsMutexCreate();
     mp->epics_acquisition_flag_mutex = epicsMutexCreate();
     mp->epics_acquisition_thread_mutex = epicsMutexCreate();
@@ -1230,6 +1468,7 @@ static int init_module(char* serial_num) {
         log_error("Mutex creation failed\n", -1, __FILE__, __LINE__);
         return -1;
     }
+    mp->subwaveform_num = 0;
     // Create capture thread
     mp->acquisition_thread_function = epicsThreadCreate("captureThread", epicsThreadPriorityMedium,
                                                      0, (EPICSTHREADFUNC)acquisition_thread_function, mp);

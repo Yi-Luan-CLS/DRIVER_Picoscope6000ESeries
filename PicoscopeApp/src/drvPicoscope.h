@@ -19,17 +19,20 @@ typedef struct PS6000AModule
     struct waveformRecord* pWaveformStopPtr;
     struct waveformRecord* pRecordUpdateWaveform[NUM_CHANNELS];
     struct waveformRecord* pLog;
-
+    uint16_t subwaveform_num;
 
 
     epicsEventId triggerReadyEvent;
     epicsEventId acquisitionStartEvent;
+    epicsEventId channelStreamingFinishedEvents[NUM_CHANNELS];
     epicsMutexId epics_acquisition_flag_mutex;
     epicsMutexId epics_acquisition_thread_mutex;
     epicsMutexId epics_acquisition_restart_mutex;
     epicsThreadId acquisition_thread_function;
-
+    epicsThreadId channel_streaming_thread_function[4];
     int16_t* waveform[NUM_CHANNELS];
+    int16_t** streamWaveformBuffers[NUM_CHANNELS];
+
 
     struct SampleConfigs sample_config;
     struct ChannelConfigs channel_configs[NUM_CHANNELS];
@@ -41,7 +44,7 @@ typedef struct PS6000AModule
     struct aiRecord* pTriggerThresholdFbk[4];
     struct aoRecord* pTriggerThreshold[2]; 
     struct aoRecord* pAnalogOffestRecords[NUM_CHANNELS];
-    
+
     struct aiRecord* pTriggerFrequency; 
     struct aiRecord* pTriggersMissed; 
 
@@ -101,9 +104,9 @@ uint32_t get_analog_offset_limits(
     );
 
 
-uint32_t setup_picoscope(
-    struct PS6000AModule* mp
-    );
+// uint32_t setup_picoscope(
+//     struct PS6000AModule* mp
+//     );
 
 // uint32_t interrupt_block_capture();
 
