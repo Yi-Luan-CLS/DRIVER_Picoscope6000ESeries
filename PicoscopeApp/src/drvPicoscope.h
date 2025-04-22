@@ -104,9 +104,9 @@ uint32_t get_analog_offset_limits(
     );
 
 
-uint32_t setup_picoscope(
-    struct PS6000AModule* mp
-    );
+// uint32_t setup_picoscope(
+//     struct PS6000AModule* mp
+//     );
 
 // uint32_t interrupt_block_capture();
 
