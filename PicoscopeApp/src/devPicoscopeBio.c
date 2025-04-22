@@ -49,8 +49,6 @@ struct bioType
 struct PicoscopeBioData
     {   
         char serial_num[10];
-        int16_t handle; 
-
         enum ioType ioType;
         char *cmdPrefix;
         char paramLabel[32];
@@ -148,7 +146,7 @@ init_record_bo (struct boRecord *pbo)
         case OPEN_PICOSCOPE: 
             // On initialization open picoscope with default resolution. 
             int16_t handle = 0; 
-            int16_t result = open_picoscope(vdp->mp->device_resolution, vdp->serial_num, &handle);
+            int16_t result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
             if (result != 0) {
                 printf("Error opening picoscope with serial number %s\n", vdp->serial_num);
                 pbo->val = 0; // Cannot connect to picoscope, set PV to OFF. 
@@ -198,7 +196,7 @@ write_bo (struct boRecord *pbo)
             
             if (pv_value == 1){
                 int16_t handle; 
-                result = open_picoscope(vdp->mp->device_resolution, vdp->serial_num, &handle);
+                result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
                 if (result != 0) {
                     sprintf(message, "Error opening picoscope with serial number %s.", vdp->serial_num);
                     log_message(vdp->mp, pbo->name, message, result);

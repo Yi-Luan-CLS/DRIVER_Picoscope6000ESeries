@@ -22,7 +22,7 @@ void log_error(char* function_name, uint32_t status, const char* FILE, int LINE)
 }
 
 /**
- * Opens the PicoScope device with the specified resolution. 
+ * Opens the Picoscope with specified serial number with the requested resolution. 
  * 
  * @param resolution int16_t The sampling resolution to be used when opening the PicoScope.  
  *                           The following values are valid: 
@@ -105,7 +105,7 @@ PICO_STATUS ping_picoscope(int16_t handle){
  * 
  * @return           PICO_STATUS Return 0 if resolution successfully set, otherwise a non-zero error code.
 */
-PICO_STATUS set_device_resolution(int16_t resolution, int16_t handle){ 
+PICO_STATUS set_resolution(int16_t resolution, int16_t handle){ 
    
     epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetDeviceResolution(handle, resolution); 
@@ -120,9 +120,9 @@ PICO_STATUS set_device_resolution(int16_t resolution, int16_t handle){
 }
 
 /**
- * Get  the sample resolution of the currently connected PicoScope. 
+ * Get the sample resolution of the currently connected PicoScope. 
  * 
- * @param resolution int16_t Pointer On exit, the resolution of the device
+ * @param resolution int16_t Pointer On exit, the sampling resolution of the device. 
  * @param handle     int16_t The device identifier returned by open_picoscope(). 
  * 
  * @return           PICO_STATUS Return 0 if resolution returned, otherwise a non-zero error code.
@@ -238,14 +238,14 @@ PICO_STATUS get_device_info(int8_t** device_info, int16_t handle) {
     int8_t* model_num = NULL; 
 
     PICO_STATUS status = get_serial_num(&serial_num, handle);
-    if (status == 0) {
+    if (status == PICO_OK) {
         status = get_model_num(&model_num, handle); 
         if (status == 0) {
             const static char* FORMAT_STR = "Picoscope %s [%s]";
-            int16_t required_size = strlen((const char*)serial_num) + strlen((const char*)model_num) + *FORMAT_STR; 
+            int16_t required_size = snprintf(NULL, 0, FORMAT_STR, model_num, serial_num) + 1; 
 
             int8_t* device_info_buffer = malloc(required_size);
-            snprintf((char*)device_info_buffer, required_size, FORMAT_STR, (char*)model_num, (char*)serial_num);
+            snprintf((char*)device_info_buffer, required_size, FORMAT_STR, model_num, serial_num);
             *device_info = device_info_buffer;
         }
     }
@@ -267,9 +267,9 @@ PICO_STATUS get_device_info(int8_t** device_info, int16_t handle) {
  * @param handle         int16_t The device identifier returned by open_picoscope(). 
  * @param channel_status EnabledChannelFlags Pointer On exit, the updated status of Picoscope channels.
  * 
- * @return               uint32_t Return 0 if the channel is succesfully set on, otherwise a non-zero error code. 
+ * @return               PICO_STATUS Return PICO_OK if the channel is succesfully set on, otherwise a non-zero error code. 
 */
-uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledChannelFlags* channel_status) {
+PICO_STATUS set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledChannelFlags* channel_status) {
 
     epicsMutexLock(epics_ps6000a_call_mutex);
     uint32_t status = ps6000aSetChannelOn(handle, channel.channel, channel.coupling, channel.range, channel.analog_offset, channel.bandwidth);
@@ -296,12 +296,12 @@ uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledCh
             channel_status->channel_d = 1;
             break;
         default:
-            return -1;
+            return PICO_INVALID_CHANNEL;
     }
 
     printf("Setting channel %d on.\n", channel.channel);
   
-    return 0;
+    return PICO_OK;
 
 }
 
@@ -317,10 +317,11 @@ uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledCh
  * @param handle         int16_t The device identifier returned by open_picoscope(). 
  * @param channel_status EnabledChannelFlags Pointer On exit, the updated status of Picoscope channels. 
  *  
- * @return               uint32_t Return 0 if the channel is successfully turned off, otherwise a non-zero error code.
+ * @return               PICO_STATUS Return PICO_OK if the channel is successfully turned off, otherwise a non-zero error code.
 */
-uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* channel_status) {
+PICO_STATUS set_channel_off(int channel, int16_t handle, EnabledChannelFlags* channel_status) {
     epicsMutexLock(epics_ps6000a_call_mutex);
+
     uint32_t status = ps6000aSetChannelOff(handle, channel);
     epicsMutexUnlock(epics_ps6000a_call_mutex);
 
@@ -345,15 +346,15 @@ uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* chann
             channel_status->channel_d = 0;
             break;
         default:
-            return -1;
+            return PICO_INVALID_CHANNEL;
     }
 
     printf("Set channel %d off.\n", channel);
-    return 0;
+    return PICO_OK;
 }
 
 /**
- * Check if the status of the specified channel. 
+ * Get the status (on/off) of specified channel. 
  * 
  * @param channel        int16_t The channel you wish to check the status of. 
  *                               The following values are valid: 
@@ -408,7 +409,7 @@ PICO_STATUS get_analog_offset_limits(struct ChannelConfigs channel, int16_t hand
     *max_analog_offset = maximum_voltage;
     *min_analog_offset = minimum_voltage;
 
-    return 0; 
+    return PICO_OK; 
 }
 
 /**
@@ -508,6 +509,8 @@ uint16_t calculate_subwaveform_num(double secs_per_div){
     }
     return subwaveform_num;
     
+double calculate_num_samples(double secs_per_div, int16_t num_divisions, double time_interval_secs) {
+    return secs_per_div * num_divisions /  time_interval_secs;
 }
 
 /**
@@ -524,34 +527,57 @@ PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_
 
     uint32_t available_timebase; 
     double available_sample_interval;
-    double secs_per_div = convert_to_seconds(mp->sample_config.timebase_configs.time_per_division, mp->sample_config.timebase_configs.time_per_division_unit);
-    mp->subwaveform_num = calculate_subwaveform_num(secs_per_div);
     PICO_STATUS status;
+    double secs_per_div = convert_to_seconds(
+        mp->sample_config.timebase_configs.time_per_division, 
+        mp->sample_config.timebase_configs.time_per_division_unit
+    );
+    mp->subwaveform_num = calculate_subwaveform_num(secs_per_div);
     mp->sample_config.num_samples = mp->sample_config.unadjust_num_samples; 
-    double samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
+
+
+    double samples_per_division = calculate_samples_per_division(
+        mp->sample_config.num_samples, 
+        mp->sample_config.timebase_configs.num_divisions
+    );
+
     double requested_sample_interval = calculate_sample_interval(secs_per_div, samples_per_division); 
-    if (requested_sample_interval > mp->trigger_config.AUXTriggerSignalPulseWidth)
-    {
-        status = validate_sample_interval(mp->trigger_config.AUXTriggerSignalPulseWidth, mp->handle, mp->channel_status, &available_timebase, &available_sample_interval);
-        if (status != PICO_OK) {
-            return status; 
-        }
-        mp->sample_config.num_samples = secs_per_div * mp->sample_config.timebase_configs.num_divisions /  available_sample_interval;
-        samples_per_division = calculate_samples_per_division(mp->sample_config.num_samples, mp->sample_config.timebase_configs.num_divisions);
+    double target_sample_interval = requested_sample_interval;
 
-        *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
-        *sample_interval = available_sample_interval; 
-        *timebase = available_timebase;
-        return PICO_OK;
+    // Sample interval should be less than the pulse width of AuxIO trigger signal 
+    // set by the user to avoid missed triggers. If requested sample interval is 
+    // larger, use AUX trigger pulse width as the target sample interval. 
+    if (requested_sample_interval > mp->trigger_config.AUXTriggerSignalPulseWidth) {
+        target_sample_interval = mp->trigger_config.AUXTriggerSignalPulseWidth;
     }
-    
 
-    *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
-
-    status = validate_sample_interval(requested_sample_interval, mp->handle, mp->channel_status, &available_timebase, &available_sample_interval);
-    if (status != 0) {
+    PICO_STATUS status = validate_sample_interval(
+        target_sample_interval, 
+        mp->handle, 
+        mp->channel_status, 
+        &available_timebase, 
+        &available_sample_interval
+    );
+    if (status != PICO_OK) {
         return status; 
     }
+
+    // If the requested sample interval was adjusted, find number of samples 
+    // required at the set timebase to achieve the target sample interval. 
+    if (target_sample_interval != requested_sample_interval){
+        mp->sample_config.num_samples = calculate_num_samples(
+            secs_per_div, 
+            mp->sample_config.timebase_configs.num_divisions, 
+            available_sample_interval
+        );
+        
+        samples_per_division = calculate_samples_per_division(
+            mp->sample_config.num_samples, 
+            mp->sample_config.timebase_configs.num_divisions
+        );
+    }
+
+    *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
     *sample_interval = available_sample_interval; 
     *timebase = available_timebase;
 
@@ -583,15 +609,15 @@ double get_range(int index) {
  *        scaled_value On exit, the scaled value. 
  *        handle The device identifier returned by open_picoscope(). 
  * 
- * @return 0 if successful, other a non-zero status code. 
+ * @return PICO_STATUS PICO_OK if successful, other a non-zero status code. 
  * */ 
-uint32_t calculate_scaled_value(double volts, int16_t voltage_range, int16_t* scaled_value, int16_t handle){ 
+PICO_STATUS calculate_scaled_value(double volts, int16_t voltage_range, int16_t* scaled_value, int16_t handle){ 
     
     double range_in_volts = get_range(voltage_range); 
     
     if (range_in_volts < volts){
         printf("Voltage is outside of range.\n"); 
-        return -1; 
+        return PICO_THRESHOLD_OUT_OF_RANGE; 
     }
 
     int16_t min, max; 
@@ -616,9 +642,9 @@ uint32_t calculate_scaled_value(double volts, int16_t voltage_range, int16_t* sc
  *        max_val On exit, the maximum sample value. 
  *        handle The device identifier returned by open_picoscope(). 
  * 
- * @return 0 if successful, other a non-zero status code. 
+ * @return PICO_STATUS PICO_OK if successful, other a non-zero status code. 
  * */
-uint32_t get_adc_limits(int16_t* min_val, int16_t* max_val, int16_t handle){ 
+PICO_STATUS get_adc_limits(int16_t* min_val, int16_t* max_val, int16_t handle){ 
 
     int16_t min, max, resolution;
 
@@ -656,6 +682,8 @@ PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp);
 PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_indisposed_ms);
 PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp);
 PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp);
+PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t segment_index);
+
 
 BlockReadyCallbackParams* blockReadyCallbackParams;
 
@@ -814,6 +842,8 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
     );
     if (status != PICO_OK) {
         log_error("ps6000aSetDataBuffer PICO_CLEAR_ALL", status, __FILE__, __LINE__);
+        epicsMutexUnlock(epics_ps6000a_call_mutex);
+        return status;
     }
     epicsMutexUnlock(epics_ps6000a_call_mutex);
 
@@ -1192,7 +1222,6 @@ inline PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp)
     }
 
     status = retrieve_waveform_data(mp);
-
     if (status != PICO_OK) {
         return status;
     }  
@@ -1216,6 +1245,7 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
 
     epicsMutexLock(epics_ps6000a_call_mutex);
     do {
+
         ps6000aGetValuesStatus = ps6000aGetValues(
             mp->handle,
             start_index,
@@ -1224,7 +1254,7 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
             mp->sample_config.down_sample_ratio_mode,
             segment_index,
             &overflow
-        );
+        );   
 
         if (ps6000aGetValuesStatus == PICO_HARDWARE_CAPTURING_CALL_STOP) {
             getValueRetryFlag++;
@@ -1239,6 +1269,15 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
         }
     } while (ps6000aGetValuesStatus == PICO_HARDWARE_CAPTURING_CALL_STOP);
     epicsMutexUnlock(epics_ps6000a_call_mutex);
+    
+    if (mp->trigger_config.triggerType != NO_TRIGGER){
+        update_trigger_timing_info(mp, segment_index); 
+    } 
+    else {
+        mp->trigger_timing_info.missed_triggers = 0; 
+        mp->trigger_timing_info.trigger_freq_secs = 0; 
+        mp->trigger_timing_info.prev_trigger_time = 0; 
+    }
 
     if (ps6000aGetValuesStatus != PICO_OK) {
         log_error("ps6000aGetValues", ps6000aGetValuesStatus, __FILE__, __LINE__);
@@ -1248,6 +1287,61 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
 
     return PICO_OK;
 }
+
+
+/** 
+ * Calculates the time between triggers in seconds using the timestamp counter, missed triggers, and current sample interval. 
+ * 
+ * @param sample_interval_secs double The rate at which samples are taken from the Picoscope in seconds. 
+ *        prev_time_stamp uint64_t    The time in samples at which the previous trigger occurred. 
+ *        cur_time_stamp uint64_t     The time in samples at which the most recent trigger occurred. 
+ *        missed_triggers uint64_t    The number of triggers missed between prev_time_stamp and cur_time_stamp 
+ * 
+ * @return double Returns the time betweeen triggers in seconds. 
+*/
+double calculate_trigger_freqency(double sample_interval_secs, uint64_t prev_time_stamp, uint64_t cur_time_stamp, uint64_t missed_triggers) {
+    
+    double samples_between_triggers = ((double)cur_time_stamp - prev_time_stamp) / (double) missed_triggers; 
+    
+    return samples_between_triggers * sample_interval_secs; 
+
+}
+
+/** 
+ * Update trigger timing information, such as the trigger frequency, number of missed triggers, 
+ * and count of previous trigger. 
+ * 
+ * @param mp PS6000AModule Pointer The PS6000AModule structure containing trigger information to be updated.
+ *        segment_index uint64_t The memory segment containing the data to retrieve trigger timing from. 
+ * 
+ * @return PICO_STATUS Returns PICO_OK (0) on success, or a non-zero error code on failure.
+ */
+inline PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t segment_index) {
+    
+    PICO_TRIGGER_INFO triggerInfo[1];        
+    uint32_t status = ps6000aGetTriggerInfo(mp->handle, triggerInfo, segment_index, 1);
+    if (status != PICO_OK) {
+        log_error("ps6000aGetTriggerInfo", status, __FILE__, __LINE__);    
+        return status; 
+    }
+
+    // Ensure previous trigger time is from current capture before calculating trigger frequency
+    if (mp->trigger_timing_info.prev_trigger_time != 0 ){
+        mp->trigger_timing_info.trigger_freq_secs = calculate_trigger_freqency(
+            mp->sample_config.timebase_configs.sample_interval_secs,
+            mp->trigger_timing_info.prev_trigger_time,
+            triggerInfo[0].timeStampCounter,
+            triggerInfo[0].missedTriggers
+        );     
+    }
+    
+    mp->trigger_timing_info.missed_triggers = triggerInfo[0].missedTriggers;
+    mp->trigger_timing_info.prev_trigger_time = triggerInfo[0].timeStampCounter; 
+
+    return status; 
+}
+
+
 
 /**
  * Stop picoscope data acquisition.
@@ -1317,7 +1411,6 @@ acquisition_thread_function(void *arg) {
                     printf("Error capturing stream data.");
                     break;
                 }
-
             }else{
                 mp->sample_collected = mp->sample_config.num_samples;
                 status = run_block_capture(mp, &time_indisposed_ms);
@@ -1333,7 +1426,8 @@ acquisition_thread_function(void *arg) {
                 }
             }
 
-
+            dbProcess((dbCommon*) mp->pTriggerFrequency);
+            dbProcess((dbCommon*) mp->pTriggersMissed); 
         }
 
         stop_capturing(mp->handle);
@@ -1359,25 +1453,14 @@ PS6000AGetModule(char* serial_num){
     return NULL;
 }
 
-struct PS6000AModule*
-PS6000ACreateModule(char* serial_num){
-    struct PS6000AModule* mp = calloc(1, sizeof(struct PS6000AModule));
-    if (!mp) {
-        log_error("PS6000ACreateModule calloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
-        return NULL;
-    }
-    mp->serial_num = strdup(serial_num);
-    if (!mp->serial_num) {
-        free(mp);
-        log_error("PS6000ACreateModule strdup", PICO_MEMORY_FAIL, __FILE__, __LINE__);
-        return NULL;
-    }
+static int init_module(char* serial_num) { 
+
+	PS6000AModule *mp = PS6000AGetModule(serial_num);
+    mp->triggerReadyEvent = epicsEventCreate(0);
+    mp->acquisitionStartEvent = epicsEventCreate(0);
     for (size_t i = 0; i < NUM_CHANNELS; i++){
         mp->channelStreamingFinishedEvents[i] = epicsEventCreate(0);
     }
-    
-    mp->triggerReadyEvent = epicsEventCreate(0);
-    mp->acquisitionStartEvent = epicsEventCreate(0);
     mp->epics_acquisition_restart_mutex = epicsMutexCreate();
     mp->epics_acquisition_flag_mutex = epicsMutexCreate();
     mp->epics_acquisition_thread_mutex = epicsMutexCreate();
@@ -1386,7 +1469,7 @@ PS6000ACreateModule(char* serial_num){
         !(mp->epics_acquisition_restart_mutex = epicsMutexCreate())) {
         free(mp);
         log_error("Mutex creation failed\n", -1, __FILE__, __LINE__);
-        return NULL;
+        return -1;
     }
     mp->subwaveform_num = 0;
     // Create capture thread
@@ -1397,18 +1480,42 @@ PS6000ACreateModule(char* serial_num){
         epicsMutexLock(mp->epics_acquisition_flag_mutex);
         mp->dataAcquisitionFlag = 0;
         epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
+        return -1;
+    }
+
+    return 0;
+}
+
+struct PS6000AModule*
+PS6000ACreateModule(char* serial_num){
+   
+    struct PS6000AModule* mp = calloc(1, sizeof(struct PS6000AModule));
+    if (!mp) {
+        log_error("PS6000ACreateModule calloc", PICO_MEMORY_FAIL, __FILE__, __LINE__);
         return NULL;
     }
+
+    mp->serial_num = strdup(serial_num);
+    if (!mp->serial_num) {
+        free(mp);
+        log_error("PS6000ACreateModule strdup", PICO_MEMORY_FAIL, __FILE__, __LINE__);
+        return NULL;
+    }
+    
     for (size_t i = 0; i < MAX_PICO; i++) {
         if (PS6000AModuleList[i] == NULL) {
             PS6000AModuleList[i] = mp;
-            return mp;
         }
+    }   
+
+    if (init_module(serial_num) < 0 ){ 
+        free(mp->serial_num);
+        free(mp);
+        log_error("PS6000ACreateModule", PICO_NO_APPS_AVAILABLE, __FILE__, __LINE__);
+        return NULL; 
     }
-    free(mp->serial_num);
-    free(mp);
-    log_error("PS6000ACreateModule", PICO_NO_APPS_AVAILABLE, __FILE__, __LINE__);
-    return NULL;
+
+    return mp; 
 }
 
 static int

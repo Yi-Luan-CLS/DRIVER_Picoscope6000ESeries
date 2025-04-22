@@ -1,8 +1,9 @@
+#ifndef PICOSCOPE_CONFIG
+#define PICOSCOPE_CONFIG
+
 #include <unistd.h>
 #include <stdint.h>
 
-#ifndef PICOSCOPE_CONFIG
-#define PICOSCOPE_CONFIG
 
 #define NUM_CHANNELS 4
 
@@ -24,6 +25,17 @@ enum Channel{
     TRIGGER_AUX = 1001, 
     NO_CHANNEL = 10
 };
+// For mapping PVs to channel in driver 
+static const struct {
+    const char* name;
+    enum Channel channel;
+} PV_TO_CHANNEL_MAP[] = {
+    { "CHA", CHANNEL_A },
+    { "CHB", CHANNEL_B },
+    { "CHC", CHANNEL_C },
+    { "CHD", CHANNEL_D },
+};
+
 enum ThresholdDirection
 {
   ABOVE = 0, //using upper threshold
@@ -120,6 +132,12 @@ struct TriggerConfigs{
     uint16_t thresholdLowerHysteresis;
     uint32_t autoTriggerMicroSeconds;
     double AUXTriggerSignalPulseWidth;
+};
+
+struct TriggerTimingInfo { 
+    uint64_t prev_trigger_time; 
+    uint64_t missed_triggers; 
+    double trigger_freq_secs;    
 };
 
 #endif

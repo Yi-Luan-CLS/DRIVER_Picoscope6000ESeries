@@ -1,16 +1,17 @@
+#ifndef DRV_PICOSCOPE
+#define DRV_PICOSCOPE
+
 #include "picoscopeConfig.h"
 #include <epicsEvent.h>
 #include <epicsMutex.h>
 #include <epicsThread.h>
 
-#ifndef DRV_PICOSCOPE
-#define DRV_PICOSCOPE
 
 typedef struct PS6000AModule 
 {
     char* serial_num;
     int16_t handle;
-    int16_t device_resolution; 
+    int16_t resolution; 
 
 
     int8_t dataAcquisitionFlag;
@@ -21,7 +22,7 @@ typedef struct PS6000AModule
     uint16_t subwaveform_num;
 
 
-	epicsEventId triggerReadyEvent;
+    epicsEventId triggerReadyEvent;
     epicsEventId acquisitionStartEvent;
     epicsEventId channelStreamingFinishedEvents[NUM_CHANNELS];
     epicsMutexId epics_acquisition_flag_mutex;
@@ -30,7 +31,8 @@ typedef struct PS6000AModule
     epicsThreadId acquisition_thread_function;
     epicsThreadId channel_streaming_thread_function[4];
     int16_t* waveform[NUM_CHANNELS];
-	int16_t** streamWaveformBuffers[NUM_CHANNELS];
+    int16_t** streamWaveformBuffers[NUM_CHANNELS];
+
 
     struct SampleConfigs sample_config;
     struct ChannelConfigs channel_configs[NUM_CHANNELS];
@@ -43,14 +45,19 @@ typedef struct PS6000AModule
     struct aoRecord* pTriggerThreshold[2]; 
     struct aoRecord* pAnalogOffestRecords[NUM_CHANNELS];
 
+    struct aiRecord* pTriggerFrequency; 
+    struct aiRecord* pTriggersMissed; 
+
     struct mbboRecord* pTriggerDirection;
     struct mbbiRecord* pTriggerDirectionFbk;
     struct mbbiRecord* pTriggerType;
     struct mbbiRecord* pTriggerChannelFbk;
     struct mbbiRecord* pTriggerModeFbk;
-
-    
+    struct mbboRecord* pTimePerDivision;
+    struct mbbiRecord* pTimePerDivisionFbk;
     uint64_t sample_collected;
+
+    struct TriggerTimingInfo trigger_timing_info; 
 
 } PS6000AModule;
 
@@ -66,7 +73,7 @@ uint32_t open_picoscope(int16_t resolution, char* serial_num, int16_t* handle);
 
 uint32_t ping_picoscope(int16_t handle);
 
-uint32_t set_device_resolution(int16_t resolution, int16_t handle);
+uint32_t set_resolution(int16_t resolution, int16_t handle);
 
 uint32_t get_resolution(int16_t* resolution, int16_t handle);
 

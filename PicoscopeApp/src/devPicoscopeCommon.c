@@ -52,30 +52,30 @@ void re_acquire_waveform(struct PS6000AModule *mp){
  * */
 inline int find_channel_index_from_record(const char* record_name, struct ChannelConfigs channel_configs[NUM_CHANNELS]) {
     char channel_str[4];
-    sscanf(record_name, "%*[^:]:%4[^:]", channel_str);  // Extract the channel part, e.g., "CHA", "CHB", etc.
+    if (sscanf(record_name, "%*[^:]:%3[^:]", channel_str) != 1){  // Extract the channel part, e.g., "CHA", "CHB", etc.
+        return -1; 
+    }
 
-    enum Channel channel;
-    if (strcmp(channel_str, "CHA") == 0) {
-        channel = CHANNEL_A;
-    } else if (strcmp(channel_str, "CHB") == 0) {
-        channel = CHANNEL_B;
-    } else if (strcmp(channel_str, "CHC") == 0) {
-        channel = CHANNEL_C;
-    } else if (strcmp(channel_str, "CHD") == 0) {
-        channel = CHANNEL_D;
-    } else {
-        printf("Channel not found from record name: %s.\n", record_name); 
-        return -1;  // Invalid channel
+    enum Channel channel = NO_CHANNEL;
+    for (size_t i = 0; i < NUM_CHANNELS; ++i) {
+        if (strcmp(channel_str, PV_TO_CHANNEL_MAP[i].name) == 0) {
+            channel = PV_TO_CHANNEL_MAP[i].channel;
+            break;
+        }
+    }   
+
+    if (channel == NO_CHANNEL){ 
+        return -1; 
     }
 
     // Find the index of the channel in the list
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < NUM_CHANNELS; i++) {
         if (channel_configs[i].channel == channel) {
-            return i;  // Return index if channel matches
+            return i;  
         }
     }
 
-    return -1;  // Channel not found
+    return -1;
 }
 
 
@@ -89,15 +89,18 @@ inline int find_channel_index_from_record(const char* record_name, struct Channe
  */
 void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[], uint32_t status_code){
     
-    int16_t size = snprintf(NULL, 0, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
+    int16_t max_log_message = mp->pLog->nelm; 
+    char log_message[max_log_message]; 
+    
+    int size = sprintf(log_message, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
 
-    char log[size+1]; 
-    sprintf(log, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
-    memcpy(mp->pLog->bptr, log, strlen(log)+1);
-    mp->pLog->nord = strlen(log)+1;
-
-    dbProcess((struct dbCommon *)mp->pLog);     
-    usleep(100); // wait for log PV to process
+    if (size >= 0) {
+        epicsMutexLock(mp->pLog->mlok);
+        memcpy(mp->pLog->bptr, log_message, strlen(log_message)+1);
+        mp->pLog->nord = strlen(log_message)+1;
+        dbProcess((struct dbCommon *) mp->pLog);
+        epicsMutexUnlock(mp->pLog->mlok);
+    }
 }
 
 
@@ -112,7 +115,7 @@ void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[],
  *        options Contains new string and values for each enum option. 
  */
 void update_enum_options(struct mbboRecord* pmbbo, struct mbbiRecord* pmbbi, MultiBitBinaryEnums options){ 
-
+    
     void update_field(char* pmbbo_str, char* pmbbi_str, int pmbbo_val, int pmbbi_val, const char* new_str, int new_val) {
         if (new_str){
             memcpy(pmbbo_str, new_str, strlen(new_str)+1);
@@ -125,5 +128,18 @@ void update_enum_options(struct mbboRecord* pmbbo, struct mbbiRecord* pmbbi, Mul
     update_field(pmbbo->zrst, pmbbi->zrst, pmbbo->zrvl, pmbbi->zrvl, options.zrst, options.zrvl); 
     update_field(pmbbo->onst, pmbbi->onst, pmbbo->onvl, pmbbi->onvl, options.onst, options.onvl); 
     update_field(pmbbo->twst, pmbbi->twst, pmbbo->twvl, pmbbi->twvl, options.twst, options.twvl); 
+    update_field(pmbbo->thst, pmbbi->thst, pmbbo->thvl, pmbbi->thvl, options.thst, options.thvl); 
+    update_field(pmbbo->frst, pmbbi->frst, pmbbo->frvl, pmbbi->frvl, options.frst, options.frvl); 
+    update_field(pmbbo->fvst, pmbbi->fvst, pmbbo->fvvl, pmbbi->fvvl, options.fvst, options.fvvl); 
+    update_field(pmbbo->sxst, pmbbi->sxst, pmbbo->sxvl, pmbbi->sxvl, options.sxst, options.sxvl); 
+    update_field(pmbbo->svst, pmbbi->svst, pmbbo->svvl, pmbbi->svvl, options.svst, options.svvl); 
+    update_field(pmbbo->eist, pmbbi->eist, pmbbo->eivl, pmbbi->eivl, options.eist, options.eivl); 
+    update_field(pmbbo->nist, pmbbi->nist, pmbbo->nivl, pmbbi->nivl, options.nist, options.nivl); 
+    update_field(pmbbo->test, pmbbi->test, pmbbo->tevl, pmbbi->tevl, options.test, options.tevl); 
+    update_field(pmbbo->elst, pmbbi->elst, pmbbo->elvl, pmbbi->elvl, options.elst, options.elvl); 
+    update_field(pmbbo->tvst, pmbbi->tvst, pmbbo->tvvl, pmbbi->tvvl, options.tvst, options.tvvl); 
+    update_field(pmbbo->ttst, pmbbi->ttst, pmbbo->ttvl, pmbbi->ttvl, options.ttst, options.ttvl); 
+    update_field(pmbbo->ftst, pmbbi->ftst, pmbbo->ftvl, pmbbi->ftvl, options.ftst, options.ftvl); 
+    update_field(pmbbo->ffst, pmbbi->ffst, pmbbo->ffvl, pmbbi->ffvl, options.ffst, options.ffvl); 
 
 }

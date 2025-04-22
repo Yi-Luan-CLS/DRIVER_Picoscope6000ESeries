@@ -146,6 +146,7 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
         case GET_LOG: 
             // Save log PV to process when errors occur
             vdp->mp->pLog = pwaveform; 
+            vdp->mp->pLog->mlok = epicsMutexCreate();
             break; 
 
         case UPDATE_WAVEFORM:
@@ -182,6 +183,7 @@ static long read_waveform(struct waveformRecord *pwaveform) {
                 return -1;
             }
             vdp->mp->dataAcquisitionFlag = 1;
+            vdp->mp->trigger_timing_info.prev_trigger_time = 0; // wipe previous trigger data  
             epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
 
             epicsEventSignal((epicsEventId)vdp->mp->acquisitionStartEvent);
