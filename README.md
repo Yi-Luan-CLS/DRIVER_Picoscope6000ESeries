@@ -692,4 +692,41 @@ This document provides detailed information about the EPICS driver for the Picos
     - **Raw Waveform Value**: $`8129`$
     - **Voltage Range (in Scale Units)**: $`\pm 32,512`$.
       $$\text{Actual Voltage} = 20 \text{V} \times \frac{8192}{32512} = 5.04 \text{V}$$
-      
+
+### OSCNAME:num_subwaveforms:fbk
+- **Type**: `ai`
+- **Description**: This PV represents the number of subwaveforms that compose a single waveform.
+- **Fields**:
+  - `VAL`: Number of subwaveforms.
+- **Example**:
+  ```bash
+    $ caget OSC1234-01:num_subwaveforms:fbk
+  ```
+
+## Threading Hierarchy
+
+- **acquisition_thread_function**: *Drives acquisition, updates EPICS PVs.*
+  - **run_block_capture**: *Captures single-shot block data (times/div < 100 ms/div).*
+  - **run_stream_capture**: *Manages streaming, spawns per-channel threads.*
+    - **channel_streaming_thread_function**: *Processes one channel’s streaming data, updates PVs.*
+
+## Control Logic
+
+- **Main Acquisition Thread**:
+  - *Lifecycle*: Runs indefinitely (immortal) unless an error occurs.
+  - *Start*: Waits for `acquisitionStartEvent` to begin acquisition.
+  - *Stop*: Sets `dataAcquisitionFlag` to `FALSE` to halt looping and wait on `acquisitionStartEvent`.
+  - *Mode*: Selects block (`subwaveform_num == 0`) or streaming (`subwaveform_num > 0`) mode.
+
+- **Channel Streaming Thread**:
+  - *Lifecycle*: Runs until all subwaveforms for one waveform are collected.
+  - *Behavior*: Processes channel data, updates waveform PVs per subwaveform.
+  - *Stop*: Exits if `dataAcquisitionFlag` is `FALSE`, signals completion.
+
+- **Block Capture**:
+  - *Behavior*: Captures one-time block data for all enabled channels, returns data for PV updates.
+  - *Stop*: Halts on errors or if `dataAcquisitionFlag` is `FALSE`.
+
+- **Stream Capture**:
+  - *Behavior*: Starts streaming, spawns channel threads, waits for thread completion.
+  - *Stop*: Halts on errors or if `dataAcquisitionFlag` is `FALSE`.

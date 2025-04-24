@@ -43,7 +43,8 @@ enum ioType
     SET_AUTO_TRIGGER_US, 
     GET_AUTO_TRIGGER_US,
     GET_TRIGGER_FREQUENCY, 
-    GET_TRIGGERS_MISSED
+    GET_TRIGGERS_MISSED,
+    GET_NUM_SUBWAVEFORMS
 };
 
 enum ioFlag
@@ -87,7 +88,9 @@ static struct aioType
         {"set_auto_trigger_us", isOutput, SET_AUTO_TRIGGER_US, ""},
         {"get_auto_trigger_us", isInput, GET_AUTO_TRIGGER_US, ""},
         {"get_trigger_frequency", isInput, GET_TRIGGER_FREQUENCY, ""},
-        {"get_triggers_missed", isInput, GET_TRIGGERS_MISSED, ""}
+        {"get_triggers_missed", isInput, GET_TRIGGERS_MISSED, ""},
+        {"get_num_subwaveforms", isInput, GET_NUM_SUBWAVEFORMS, ""}
+
     };
 
 #define AIO_TYPE_SIZE    (sizeof (AioType) / sizeof (struct aioType))
@@ -294,7 +297,8 @@ static long read_ai (struct aiRecord *pai){
             }
             pai->val = vdp->mp->trigger_timing_info.missed_triggers - 1; // subtract trigger that was detected 
             break; 
-
+        case GET_NUM_SUBWAVEFORMS:
+            pai->val = vdp->mp->subwaveform_num;
         default:
             return 2;
 

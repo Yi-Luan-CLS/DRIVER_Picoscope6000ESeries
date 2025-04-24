@@ -264,6 +264,12 @@ record(ai, "$(OSC):timebase:fbk"){
     field(INP, "@S:$(SERIAL_NUM) @L:get_timebase")
 }
 
+record(ai, "$(OSC):num_subwaveforms:fbk"){ 
+    field(DTYP, "Picoscope")
+    field(DESC, "The number of waveforms to build the requested waveform")
+    field(INP, "@S:$(SERIAL_NUM) @L:get_num_subwaveforms")
+}
+
 record(ai, "$(OSC):sample_rate:fbk") {
     field(DESC, "Samples per second.")
     field(DTYP, "Picoscope")
@@ -280,6 +286,7 @@ record(fanout, "$(OSC):timebase:fbk:fanout"){
     field(LNK6, "$(OSC):num_divisions:fbk")
     field(LNK7, "$(OSC):num_samples:fbk")
     field(LNK8, "$(OSC):trigger_pulse_width:fbk")
+    field(LNK9, "$(OSC):num_subwaveforms:fbk")
 }
 
 ################################################################
