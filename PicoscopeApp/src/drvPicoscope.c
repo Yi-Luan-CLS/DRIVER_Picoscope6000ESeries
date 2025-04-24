@@ -684,7 +684,7 @@ PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_indispose
 PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp);
 PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp);
 PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t segment_index);
-void free_subwaveforms(struct PS6000AModule* mp);
+void free_subwaveforms(struct PS6000AModule* mp, uint16_t subwaveform_num);
 
 
 BlockReadyCallbackParams* blockReadyCallbackParams;
@@ -708,14 +708,12 @@ PICO_STATUS setup_picoscope(struct PS6000AModule* mp) {
         if (status != PICO_OK) {
             return status;
         }        
-        printf("No trigger set.\n");
     } 
     else { 
         status = apply_trigger_configurations(mp);
         if (status != PICO_OK) {
             return status;
         }
-        printf("Trigger set.\n");
     }
 
     status = set_data_buffer(mp);
@@ -817,7 +815,6 @@ PICO_STATUS set_trigger_properties(struct PS6000AModule* mp) {
  */
 PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp) {
     PICO_STATUS status;
-    printf("apply_trigger_configurations\n");
     status = set_trigger_conditions(mp);
     if (status != PICO_OK) return status;
 
@@ -857,7 +854,7 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
         }else{
             mp->sample_config.subwaveform_num_samples = mp->sample_config.num_samples / mp->subwaveform_num;
         }
-        free_subwaveforms(mp);
+
         for (size_t i = 0; i < NUM_CHANNELS; i++){
 		    mp->streamWaveformBuffers[i] = (int16_t**)calloc(mp->subwaveform_num, sizeof(int16_t*));
             for (int j = 0; j < mp->subwaveform_num; j++) {
@@ -932,15 +929,11 @@ void channel_streaming_thread_function(void *arg){
     streamData.overflow_ = 0;
     streamData.startIndex_ = 0;
     streamData.type_ = PICO_INT16_T;
-    ps6000aSetSimpleTrigger(
-        mp->handle,
-        1,
-        mp->trigger_config.channel,
-        0,
-        mp->trigger_config.thresholdDirection,
-        0,
-        0);
-    while (buffer_index < mp->subwaveform_num) {
+    uint16_t subwaveform_num = mp->subwaveform_num;
+    if (mp->trigger_config.triggerType == NO_TRIGGER){ 
+        triggered_flag = 1;
+    } 
+    while (buffer_index < subwaveform_num) {
         epicsMutexLock(mp->epics_acquisition_flag_mutex);
         if (mp->dataAcquisitionFlag == 0)
         {
@@ -978,10 +971,10 @@ void channel_streaming_thread_function(void *arg){
         status = ps6000aGetStreamingLatestValues(mp->handle, &streamData, 1, &streamTrigger); // Get the latest values
         epicsMutexUnlock(epics_ps6000a_call_mutex);
         //     /* code */
-        // printf("CH %d, valid buffer %d, status %d, numSamples %ld, startIdx %d, sampleCollected %d, total buffer %ld, triggered %d\n",
+        // printf("CH %d, valid buffer %d, status %d, numSamples %ld, startIdx %d, sampleCollected %d, total buffer %ld, triggered %d, subwaveform_num: %d\n",
         //         channel_index, buffer_index, status,
         //         mp->sample_config.subwaveform_num_samples, streamData.startIndex_, streamData.noOfSamples_,
-        //         streamData.bufferIndex_, triggered_flag);
+        //         streamData.bufferIndex_, triggered_flag, subwaveform_num);
         
 
         if (triggered_flag == 0 && streamTrigger.triggered_ == 0 )
@@ -1000,7 +993,6 @@ void channel_streaming_thread_function(void *arg){
             mp->waveform[channel_index] = mp->streamWaveformBuffers[channel_index][buffer_index];
             mp->sample_collected = mp->sample_config.subwaveform_num_samples;
             dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[channel_index]);
-        
             buffer_index++;
             continue;
         // }else if (status == PICO_WAITING_FOR_DATA_BUFFERS && streamData.startIndex_ == 0 && streamData.noOfSamples_ == 0)
@@ -1015,7 +1007,6 @@ void channel_streaming_thread_function(void *arg){
         
     }
     epicsEventSignal(mp->channelStreamingFinishedEvents[channel_index]);
-    printf("epicsEventSignaled\n");
 }
 
 PICO_STATUS run_stream_capture(struct PS6000AModule* mp){
@@ -1059,10 +1050,9 @@ PICO_STATUS run_stream_capture(struct PS6000AModule* mp){
     for (size_t i = 0; i < thread_count; i++)
     {
         epicsEventWait(mp->channelStreamingFinishedEvents[i]);
-        // printf("SigWait released %ld\n", i);
     }
+    print_time("All Subwaveform Sent");
 
-    printf("DONE\n");
     status = stop_capturing(mp->handle);
     return status;
 }
@@ -1122,7 +1112,7 @@ void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, PICO_POINTER 
     BlockReadyCallbackParams *state = (BlockReadyCallbackParams *)pParameter;
     state->callbackStatus = status;
 
-    print_time("ps6000aBlockReadyCallback");
+    print_time("ps6000aBlockReadyCallback Trigger Captured");
     printf("-------------------\n");
     if (status == PICO_CANCELLED)
     {
@@ -1177,7 +1167,7 @@ inline PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_in
             }
         }
     } while (ps6000aRunBlockStatus == PICO_HARDWARE_CAPTURING_CALL_STOP);
-    print_time("ps6000aRunBlock");
+    print_time("ps6000aRunBlock Trigger Captured");
     epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (ps6000aRunBlockStatus != PICO_OK) {
@@ -1340,30 +1330,31 @@ inline PICO_STATUS update_trigger_timing_info(struct PS6000AModule* mp, uint64_t
  */
 PICO_STATUS stop_capturing(int16_t handle) {
     PICO_STATUS status;
-    printf("Capture stopping.\n");  
     epicsMutexLock(epics_ps6000a_call_mutex);
     status = ps6000aStop(handle);
     epicsMutexUnlock(epics_ps6000a_call_mutex);
-    printf("Capture stopped.\n");     
     if (status != PICO_OK) {
         log_error("wait_for_capture_completion ps6000aStop", status, __FILE__, __LINE__);
     }
     return status;
 }
 
-void free_subwaveforms(struct PS6000AModule* mp){
+void free_subwaveforms(struct PS6000AModule* mp, uint16_t subwaveform_num){
     for (size_t channel_index = 0; channel_index < NUM_CHANNELS; channel_index++)
     {
         if (mp->streamWaveformBuffers[channel_index])
         {
-            for (uint16_t buffer_index = 0; buffer_index < mp->subwaveform_num; buffer_index++)
+            for (uint16_t buffer_index = 0; buffer_index < subwaveform_num; buffer_index++)
             {
                 free(mp->streamWaveformBuffers[channel_index][buffer_index]);
             }
             free(mp->streamWaveformBuffers[channel_index]);
         }
     }
-    
+}
+
+inline bool do_Streaming(struct PS6000AModule* mp){
+    return mp->subwaveform_num > 0;
 }
 
 /**
@@ -1391,9 +1382,10 @@ acquisition_thread_function(void *arg) {
             epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
             return;
         }
+        uint16_t subwaveform_num = mp->subwaveform_num;
         while (mp->dataAcquisitionFlag == 1) {
             double time_indisposed_ms = 0;
-            if (mp->subwaveform_num > 0){
+            if (do_Streaming(mp)){
                 set_data_buffer(mp);
                 status = run_stream_capture(mp);
                 if (status != PICO_OK) {
@@ -1418,6 +1410,7 @@ acquisition_thread_function(void *arg) {
             dbProcess((dbCommon*) mp->pTriggerFrequency);
             dbProcess((dbCommon*) mp->pTriggersMissed); 
         }
+        free_subwaveforms(mp, subwaveform_num);
 
         stop_capturing(mp->handle);
         printf("Cleanup ID is %ld\n", id->tid);
@@ -1543,7 +1536,7 @@ void print_time(char* function_name){
     struct tm *tm_info;
     gettimeofday(&tv, NULL); 
     tm_info = localtime(&tv.tv_sec);
-    printf("%-25s Trigger Captured: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
+    printf("%-45s: %04d-%02d-%02d %02d:%02d:%02d.%06ld\n",
         function_name,
         tm_info->tm_year + 1900,
         tm_info->tm_mon + 1,    
