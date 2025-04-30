@@ -41,15 +41,17 @@ Picoscope_SRCS_vxWorks += -nil-
 # Add support from base/src/vxWorks if needed
 #Picoscope_OBJS_vxWorks += $(EPICS_BASE_BIN)/vxComLibrary
 
+SNCSEQ=$(TOP)/PicoscopeApp/src/picoscope
 # Finally link to the EPICS Base libraries
 Picoscope_LIBS += $(EPICS_BASE_IOC_LIBS)
-USR_SYS_LIBS += ps6000a
+Picoscope_LIBS += ps6000a
+ps6000a_DIR += $(SNCSEQ)/lib
+
 #===========================
 
 include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD RULES AFTER THIS LINE
-SNCSEQ=$(TOP)/PicoscopeApp/src/picoscope
 USR_CPPFLAGS += -Ofast -I$(SNCSEQ)/include/libps6000a
-USR_LDFLAGS +=  -L$(SNCSEQ)/lib
+# USR_LDFLAGS +=  -L$(SNCSEQ)/lib
 USR_CPPFLAGS += -DUSE_TYPED_RSET 

@@ -12,7 +12,6 @@
 #include <iocsh.h>
 #include <dbAccess.h>
 
-#include <pthread.h>
 #include "drvPicoscope.h"
 #define MAX_PICO 10
 static PS6000AModule *PS6000AModuleList[MAX_PICO] = {NULL};
@@ -1353,8 +1352,8 @@ void free_subwaveforms(struct PS6000AModule* mp, uint16_t subwaveform_num){
     }
 }
 
-inline bool do_Streaming(struct PS6000AModule* mp){
-    return mp->subwaveform_num > 0;
+inline bool do_Blocking(struct PS6000AModule* mp){
+    return mp->subwaveform_num == 0;
 }
 
 /**
@@ -1385,14 +1384,8 @@ acquisition_thread_function(void *arg) {
         uint16_t subwaveform_num = mp->subwaveform_num;
         while (mp->dataAcquisitionFlag == 1) {
             double time_indisposed_ms = 0;
-            if (do_Streaming(mp)){
-                set_data_buffer(mp);
-                status = run_stream_capture(mp);
-                if (status != PICO_OK) {
-                    printf("Error capturing stream data.");
-                    break;
-                }
-            }else{
+            if (do_Blocking(mp)){
+
                 mp->sample_collected = mp->sample_config.num_samples;
                 status = run_block_capture(mp, &time_indisposed_ms);
                 if (status != PICO_OK) {
@@ -1404,6 +1397,14 @@ acquisition_thread_function(void *arg) {
                     if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
                         dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
                     }
+                }
+            }else{
+
+                set_data_buffer(mp);
+                status = run_stream_capture(mp);
+                if (status != PICO_OK) {
+                    printf("Error capturing stream data.\n");
+                    break;
                 }
             }
 

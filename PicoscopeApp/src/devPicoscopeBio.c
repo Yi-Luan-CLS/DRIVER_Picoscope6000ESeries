@@ -147,11 +147,14 @@ init_record_bo (struct boRecord *pbo)
             // On initialization open picoscope with default resolution. 
             int16_t handle = 0; 
             int16_t result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
-            if (result != 0) {
-                printf("Error opening picoscope with serial number %s\n", vdp->serial_num);
-                pbo->val = 0; // Cannot connect to picoscope, set PV to OFF. 
+            while (result!=0)
+            {
+                /* code */
+                result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
+                printf("open_picoscope\n");
+                sleep(2);
             }
-
+            
             vdp->mp->handle = handle; 
             break;
 
@@ -196,7 +199,14 @@ write_bo (struct boRecord *pbo)
             
             if (pv_value == 1){
                 int16_t handle; 
-                result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
+                while (result!=0)
+                {
+                    /* code */
+                    result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
+                    printf("open_picoscope\n");
+                    sleep(2);
+                }
+                
                 if (result != 0) {
                     sprintf(message, "Error opening picoscope with serial number %s.", vdp->serial_num);
                     log_message(vdp->mp, pbo->name, message, result);
