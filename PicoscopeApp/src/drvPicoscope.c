@@ -814,6 +814,12 @@ PICO_STATUS set_trigger_properties(struct PS6000AModule* mp) {
  */
 PICO_STATUS apply_trigger_configurations(struct PS6000AModule* mp) {
     PICO_STATUS status;
+    printf("Trigger channel %d\n", mp->trigger_config.channel);
+    printf("Trigger type %d\n", mp->trigger_config.triggerType);
+    printf("Trigger direction %d, Trigger mode %d\n", mp->trigger_config.thresholdDirection, mp->trigger_config.thresholdMode);
+    printf("Trigger Upper Threshold %d, Trigger Lower Threshold %d\n", mp->trigger_config.thresholdUpper, mp->trigger_config.thresholdLower);
+    printf("Trigger Upper Hysteresis %d, Trigger Lower Hysteresis %d\n", mp->trigger_config.thresholdUpperHysteresis, mp->trigger_config.thresholdLowerHysteresis);
+    printf("Trigger Position Ratio %f\n", mp->sample_config.trigger_position_ratio);
     status = set_trigger_conditions(mp);
     if (status != PICO_OK) return status;
 
@@ -1372,6 +1378,24 @@ acquisition_thread_function(void *arg) {
         epicsThreadId id = epicsThreadGetIdSelf();
         printf("Start ID is %ld\n", id->tid);
         // Setup Picoscope
+        printf("------------ Capture Configurations -----------------\n");
+        printf("Resolution %d\n", mp->resolution);
+        printf("Num samples %ld\n", mp->sample_config.num_samples);
+        printf("timebase %d\n", mp->sample_config.timebase_configs.timebase);
+        for (size_t i = 0; i < NUM_CHANNELS; i++) {
+            if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
+                printf("Updating waveform for Channel: %d, Coupling: %d, Range: %d, Analog Offest: %.10f, Bandwidth: %d\n",
+                 mp->channel_configs[i].channel,
+                 mp->channel_configs[i].coupling,
+                 mp->channel_configs[i].range,
+                 mp->channel_configs[i].analog_offset,
+                 mp->channel_configs[i].bandwidth);
+            }
+        }
+        printf("Num divisions %d\n", mp->sample_config.timebase_configs.num_divisions);
+        printf("Time per divisions %f\n", mp->sample_config.timebase_configs.time_per_division);
+        printf("Time per divisions unit %d\n", mp->sample_config.timebase_configs.time_per_division_unit);
+        printf("Sample Interval (secs) %.10f\n", mp->sample_config.timebase_configs.sample_interval_secs);
         PICO_STATUS status = setup_picoscope(mp);
         if (status != 0) {
             log_error("Error configuring picoscope for data capture.", status, __FILE__, __LINE__);
@@ -1382,6 +1406,9 @@ acquisition_thread_function(void *arg) {
             return;
         }
         uint16_t subwaveform_num = mp->subwaveform_num;
+        printf("subwaveform_num %d, subwaveform_num_samples %ld\n\n", subwaveform_num, mp->sample_config.subwaveform_num_samples);
+        printf("------------ Capture Configurations OVER--------------\n");
+
         while (mp->dataAcquisitionFlag == 1) {
             double time_indisposed_ms = 0;
             if (do_Blocking(mp)){
@@ -1393,29 +1420,9 @@ acquisition_thread_function(void *arg) {
                     break;
                 }
 
-                printf("------------ Capture Configurations -----------------\n");
-                printf("Resolution %d\n", mp->resolution);
-                printf("Num samples %ld\n", mp->sample_config.num_samples);
-                printf("Num divisions %d\n", mp->sample_config.timebase_configs.num_divisions);
-                printf("Time per divisions %f\n", mp->sample_config.timebase_configs.time_per_division);
-                printf("Time per divisions unit %d\n", mp->sample_config.timebase_configs.time_per_division_unit);
-                printf("Sample Interval (secs) %f\n", mp->sample_config.timebase_configs.sample_interval_secs);
-
-                printf("Trigger channel %d\n", mp->trigger_config.channel);
-                printf("Trigger type %d\n", mp->trigger_config.triggerType);
-                printf("Trigger direction %d\n", mp->trigger_config.thresholdDirection);
-                printf("Trigger Upper Threshold %d\n", mp->trigger_config.thresholdUpper);
-                printf("Trigger Position Ratio %f\n", mp->sample_config.trigger_position_ratio);
-
                 // Process the UPDATE_WAVEFORM subroutine to update waveform
                 for (size_t i = 0; i < NUM_CHANNELS; i++) {
                     if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
-                        printf("\n**Updating waveform for Channel: %d**\n", mp->channel_configs[i].channel);
-                        printf("Coupling: %d\n", mp->channel_configs[i].coupling);
-                        printf("Range: %d\n", mp->channel_configs[i].range);
-                        printf("Analog Offest: %f\n", mp->channel_configs[i].analog_offset);
-                        printf("Bandwidth: %d\n", mp->channel_configs[i].bandwidth);
-
                         dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
                     }
                 }

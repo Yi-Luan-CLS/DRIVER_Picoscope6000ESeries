@@ -199,6 +199,7 @@ write_bo (struct boRecord *pbo)
             
             if (pv_value == 1){
                 int16_t handle; 
+                result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
                 while (result!=0)
                 {
                     /* code */
