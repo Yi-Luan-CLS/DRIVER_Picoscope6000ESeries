@@ -1392,9 +1392,30 @@ acquisition_thread_function(void *arg) {
                     printf("Error capturing block data.");
                     break;
                 }
+
+                printf("------------ Capture Configurations -----------------\n");
+                printf("Resolution %d\n", mp->resolution);
+                printf("Num samples %ld\n", mp->sample_config.num_samples);
+                printf("Num divisions %d\n", mp->sample_config.timebase_configs.num_divisions);
+                printf("Time per divisions %f\n", mp->sample_config.timebase_configs.time_per_division);
+                printf("Time per divisions unit %d\n", mp->sample_config.timebase_configs.time_per_division_unit);
+                printf("Sample Interval (secs) %f\n", mp->sample_config.timebase_configs.sample_interval_secs);
+
+                printf("Trigger channel %d\n", mp->trigger_config.channel);
+                printf("Trigger type %d\n", mp->trigger_config.triggerType);
+                printf("Trigger direction %d\n", mp->trigger_config.thresholdDirection);
+                printf("Trigger Upper Threshold %d\n", mp->trigger_config.thresholdUpper);
+                printf("Trigger Position Ratio %f\n", mp->sample_config.trigger_position_ratio);
+
                 // Process the UPDATE_WAVEFORM subroutine to update waveform
                 for (size_t i = 0; i < NUM_CHANNELS; i++) {
                     if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
+                        printf("\n**Updating waveform for Channel: %d**\n", mp->channel_configs[i].channel);
+                        printf("Coupling: %d\n", mp->channel_configs[i].coupling);
+                        printf("Range: %d\n", mp->channel_configs[i].range);
+                        printf("Analog Offest: %f\n", mp->channel_configs[i].analog_offset);
+                        printf("Bandwidth: %d\n", mp->channel_configs[i].bandwidth);
+
                         dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
                     }
                 }
