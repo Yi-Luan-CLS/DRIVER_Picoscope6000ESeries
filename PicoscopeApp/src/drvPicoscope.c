@@ -1003,7 +1003,7 @@ void channel_streaming_thread_function(void *arg){
             }
             // If buffers full move to next buffer
             mp->waveform[channel_index] = mp->streamWaveformBuffers[channel_index][buffer_index];
-            mp->sample_collected = mp->sample_config.subwaveform_num_samples;
+            *mp->sample_collected = mp->sample_config.subwaveform_num_samples;
             dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[channel_index]);
             buffer_index++;
             continue;
@@ -1208,7 +1208,7 @@ inline PICO_STATUS wait_for_capture_completion(struct PS6000AModule* mp)
     }
 
     if (!blockReadyCallbackParams->dataReady) {
-        mp->sample_collected = 0;
+        *mp->sample_collected = 0;
         return PICO_CANCELLED;
     }
 
@@ -1240,7 +1240,7 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
         ps6000aGetValuesStatus = ps6000aGetValues(
             mp->handle,
             start_index,
-            &mp->sample_collected,
+            mp->sample_collected,
             mp->sample_config.down_sample_ratio,
             mp->sample_config.down_sample_ratio_mode,
             segment_index,
@@ -1379,7 +1379,7 @@ void
 acquisition_thread_function(void *arg) {
     PS6000AModule* mp = malloc(sizeof(PS6000AModule));
     *mp = *(struct PS6000AModule *)arg;
-
+    printf("pRecordUpdateWaveform %p\n", mp->pRecordUpdateWaveform[0]);
     while (1) // keep thread alive
     {
         epicsEventWait((epicsEventId)mp->acquisitionStartEvent);
@@ -1392,6 +1392,8 @@ acquisition_thread_function(void *arg) {
         printf("Resolution %d\n", mp->resolution);
         printf("Num samples %ld\n", mp->sample_config.num_samples);
         printf("timebase %d\n", mp->sample_config.timebase_configs.timebase);
+        printf("pRecordUpdateWaveform aft %p\n", mp->pRecordUpdateWaveform[0]);
+
         for (size_t i = 0; i < NUM_CHANNELS; i++) {
             if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
                 printf("Updating waveform for Channel: %d, Coupling: %d, Range: %d, Analog Offest: %.10f, Bandwidth: %d\n",
@@ -1424,7 +1426,7 @@ acquisition_thread_function(void *arg) {
             double time_indisposed_ms = 0;
             if (do_Blocking(mp)){
 
-                mp->sample_collected = mp->sample_config.num_samples;
+                *mp->sample_collected = mp->sample_config.num_samples;
                 status = run_block_capture(mp, &time_indisposed_ms);
                 if (status != PICO_OK) {
                     printf("Error capturing block data.");
@@ -1486,6 +1488,7 @@ static int init_module(char* serial_num) {
         mp->channelStreamingFinishedEvents[i] = epicsEventCreate(0);
     }
     mp->dataAcquisitionFlag = calloc(1 ,sizeof(int8_t));
+    mp->sample_collected = calloc(1 ,sizeof(uint64_t));
     mp->epics_acquisition_restart_mutex = epicsMutexCreate();
     mp->epics_acquisition_flag_mutex = epicsMutexCreate();
     mp->epics_acquisition_thread_mutex = epicsMutexCreate();
