@@ -14,7 +14,7 @@ typedef struct PS6000AModule
     int16_t resolution; 
 
 
-    int8_t dataAcquisitionFlag;
+    int8_t *dataAcquisitionFlag;
     struct waveformRecord* pWaveformStartPtr;
     struct waveformRecord* pWaveformStopPtr;
     struct waveformRecord* pRecordUpdateWaveform[NUM_CHANNELS];

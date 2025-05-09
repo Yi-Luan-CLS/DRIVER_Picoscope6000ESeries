@@ -25,7 +25,7 @@ int convertPicoscopeParams(char *string, char *paramName, char *serialNum)
 }
 
 void re_acquire_waveform(struct PS6000AModule *mp){
-    if (mp->dataAcquisitionFlag!=1) {
+    if (*mp->dataAcquisitionFlag!=1) {
         return;
     }
     epicsMutexLock(mp->epics_acquisition_restart_mutex);    // this is to make sure Stop and Start PV invoked in sequence.

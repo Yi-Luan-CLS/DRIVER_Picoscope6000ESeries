@@ -177,12 +177,12 @@ static long read_waveform(struct waveformRecord *pwaveform) {
         case START_RETRIEVE_WAVEFORM:
             printf("Start Retrieving\n");
             epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
-            if (vdp->mp->dataAcquisitionFlag) {
+            if (*vdp->mp->dataAcquisitionFlag) {
                 fprintf(stderr, "Data acquisition already started\n");
                 epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
                 return -1;
             }
-            vdp->mp->dataAcquisitionFlag = 1;
+            *vdp->mp->dataAcquisitionFlag = 1;
             vdp->mp->trigger_timing_info.prev_trigger_time = 0; // wipe previous trigger data  
             epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
 
@@ -193,7 +193,7 @@ static long read_waveform(struct waveformRecord *pwaveform) {
         case UPDATE_WAVEFORM:
             int channel_index = find_channel_index_from_record(pwaveform->name, vdp->mp->channel_configs); 
             epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
-            if (vdp->mp->dataAcquisitionFlag == 1) {
+            if (*vdp->mp->dataAcquisitionFlag == 1) {
                 memcpy(pwaveform->bptr, vdp->mp->waveform[channel_index], vdp->mp->sample_collected * sizeof(int16_t));
                 pwaveform->nord = vdp->mp->sample_collected;
             }
@@ -201,12 +201,12 @@ static long read_waveform(struct waveformRecord *pwaveform) {
             break;
 
         case STOP_RETRIEVE_WAVEFORM:
-            if (vdp->mp->dataAcquisitionFlag == 0)
+            if (*vdp->mp->dataAcquisitionFlag == 0)
             {
                 break;
             }
             epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
-            vdp->mp->dataAcquisitionFlag = 0;
+            *vdp->mp->dataAcquisitionFlag = 0;
             epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
     		epicsEventSignal(vdp->mp->triggerReadyEvent);
             break;

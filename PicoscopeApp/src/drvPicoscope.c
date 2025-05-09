@@ -696,21 +696,28 @@ BlockReadyCallbackParams* blockReadyCallbackParams;
 PICO_STATUS setup_picoscope(struct PS6000AModule* mp) {
 
     PICO_STATUS status = 0;
-    init_block_ready_callback_params(mp);
+    status = init_block_ready_callback_params(mp);
     if (status != PICO_OK) {
         return status;
     }
+
     if (mp->trigger_config.triggerType == NO_TRIGGER) {
         // If no trigger set, clear previous triggers and do not set new one 
         PICO_CONDITION condition;
+        epicsMutexLock(epics_ps6000a_call_mutex);
         status = ps6000aSetTriggerChannelConditions(mp->handle, &condition, 0, PICO_CLEAR_ALL);   
+        epicsMutexUnlock(epics_ps6000a_call_mutex);
+
         if (status != PICO_OK) {
+            log_error("ps6000aSetTriggerChannelConditions", status, __FILE__, __LINE__);
             return status;
         }        
     } 
     else { 
         status = apply_trigger_configurations(mp);
+
         if (status != PICO_OK) {
+            log_error("apply_trigger_configurations", status, __FILE__, __LINE__);
             return status;
         }
     }
@@ -940,7 +947,7 @@ void channel_streaming_thread_function(void *arg){
     } 
     while (buffer_index < subwaveform_num) {
         epicsMutexLock(mp->epics_acquisition_flag_mutex);
-        if (mp->dataAcquisitionFlag == 0)
+        if (*mp->dataAcquisitionFlag == 0)
         {
             epicsEventSignal(mp->channelStreamingFinishedEvents[channel_index]);
             epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
@@ -1040,7 +1047,7 @@ PICO_STATUS run_stream_capture(struct PS6000AModule* mp){
                 if (!mp->channel_streaming_thread_function[i]) {
                     log_error("Thread channel_streaming_data_thread creation failed\n", -1, __FILE__, __LINE__);
                     epicsMutexLock(mp->epics_acquisition_flag_mutex);
-                    mp->dataAcquisitionFlag = 0;
+                    *mp->dataAcquisitionFlag = 0;
                     epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
                     return -1;
                 }
@@ -1223,7 +1230,7 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
     uint64_t start_index = 0;
     uint64_t segment_index = 0;
     int16_t overflow = 0;
-    int8_t getValueRetryFlag = 0;
+    uint64_t getValueRetryFlag = 0;
     PICO_STATUS ps6000aStopStatus;
     PICO_STATUS ps6000aGetValuesStatus;
 
@@ -1243,7 +1250,7 @@ inline PICO_STATUS retrieve_waveform_data(struct PS6000AModule* mp) {
         if (ps6000aGetValuesStatus == PICO_HARDWARE_CAPTURING_CALL_STOP) {
             getValueRetryFlag++;
             printf("dataReady %d\n",blockReadyCallbackParams->dataReady);
-            printf("ps6000aGetValues Retry attempt: %d\n", getValueRetryFlag);
+            printf("ps6000aGetValues Retry attempt: %ld\n", getValueRetryFlag);
             ps6000aStopStatus = ps6000aStop(mp->handle);
             if (ps6000aStopStatus != PICO_OK) {
                 printf("Error: Failed to stop capture, status: %d\n", ps6000aStopStatus);
@@ -1370,10 +1377,13 @@ inline bool do_Blocking(struct PS6000AModule* mp){
  */
 void
 acquisition_thread_function(void *arg) {
-    PS6000AModule* mp = (struct PS6000AModule *)arg;
+    PS6000AModule* mp = malloc(sizeof(PS6000AModule));
+    *mp = *(struct PS6000AModule *)arg;
+
     while (1) // keep thread alive
     {
         epicsEventWait((epicsEventId)mp->acquisitionStartEvent);
+        *mp = *(struct PS6000AModule *)arg;
         epicsMutexLock(mp->epics_acquisition_thread_mutex);
         epicsThreadId id = epicsThreadGetIdSelf();
         printf("Start ID is %ld\n", id->tid);
@@ -1400,16 +1410,17 @@ acquisition_thread_function(void *arg) {
         if (status != 0) {
             log_error("Error configuring picoscope for data capture.", status, __FILE__, __LINE__);
             epicsMutexLock(mp->epics_acquisition_flag_mutex);
-            mp->dataAcquisitionFlag = 0;
+            *mp->dataAcquisitionFlag = 0;
             epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
             epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
+            free(mp);
             return;
         }
         uint16_t subwaveform_num = mp->subwaveform_num;
         printf("subwaveform_num %d, subwaveform_num_samples %ld\n\n", subwaveform_num, mp->sample_config.subwaveform_num_samples);
         printf("------------ Capture Configurations OVER--------------\n");
 
-        while (mp->dataAcquisitionFlag == 1) {
+        while (*mp->dataAcquisitionFlag == 1) {
             double time_indisposed_ms = 0;
             if (do_Blocking(mp)){
 
@@ -1444,10 +1455,12 @@ acquisition_thread_function(void *arg) {
         stop_capturing(mp->handle);
         printf("Cleanup ID is %ld\n", id->tid);
         epicsMutexLock(mp->epics_acquisition_flag_mutex);
-        mp->dataAcquisitionFlag = 0;
+        *mp->dataAcquisitionFlag = 0;
         epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
         epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
+
     }
+        free(mp);
 }
 
  /**********************************************
@@ -1472,6 +1485,7 @@ static int init_module(char* serial_num) {
     for (size_t i = 0; i < NUM_CHANNELS; i++){
         mp->channelStreamingFinishedEvents[i] = epicsEventCreate(0);
     }
+    mp->dataAcquisitionFlag = calloc(1 ,sizeof(int8_t));
     mp->epics_acquisition_restart_mutex = epicsMutexCreate();
     mp->epics_acquisition_flag_mutex = epicsMutexCreate();
     mp->epics_acquisition_thread_mutex = epicsMutexCreate();
@@ -1489,7 +1503,7 @@ static int init_module(char* serial_num) {
     if (!mp->acquisition_thread_function) {
         log_error("Thread creation failed\n", -1, __FILE__, __LINE__);
         epicsMutexLock(mp->epics_acquisition_flag_mutex);
-        mp->dataAcquisitionFlag = 0;
+        *mp->dataAcquisitionFlag = 0;
         epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
         return -1;
     }

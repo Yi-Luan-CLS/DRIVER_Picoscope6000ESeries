@@ -263,7 +263,7 @@ static long read_ai (struct aiRecord *pai){
             break; 
         
         case GET_ACQUISITION_STATUS:
-            pai->val = (float)vdp->mp->dataAcquisitionFlag;
+            pai->val = (float)*vdp->mp->dataAcquisitionFlag;
             break;
 
         case GET_TRIGGER_UPPER:
@@ -602,9 +602,9 @@ static long write_ao (struct aoRecord *pao)
 
         case SET_TRIGGER_UPPER_HYSTERESIS: 
             vdp->mp->trigger_config.thresholdUpperHysteresis = (uint16_t) pao->val; 
-            if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
-                vdp->mp->trigger_config.thresholdUpperHysteresis = 0; 
-            } 
+            // if (vdp->mp->trigger_config.triggerType == NO_TRIGGER){
+            //     vdp->mp->trigger_config.thresholdUpperHysteresis = 0; 
+            // } 
             break;
 
         case SET_TRIGGER_LOWER:
