@@ -63,7 +63,7 @@ PICO_STATUS close_picoscope(int16_t handle){
         log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
         return status;  
     } 
-    epicsMutexDestroy(epics_ps6000a_call_mutex);
+    //epicsMutexDestroy(epics_ps6000a_call_mutex);
 
     return PICO_OK;
 }

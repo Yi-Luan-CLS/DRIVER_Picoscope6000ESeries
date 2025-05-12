@@ -266,7 +266,7 @@ record(ai, "$(OSC):timebase:fbk"){
 
 record(ai, "$(OSC):num_subwaveforms:fbk"){ 
     field(DTYP, "Picoscope")
-    field(DESC, "The number of waveforms to build the requested waveform")
+    field(DESC, "#ofwaveforms to build requested waveform")
     field(INP, "@S:$(SERIAL_NUM) @L:get_num_subwaveforms")
 }
 
