@@ -198,18 +198,11 @@ write_bo (struct boRecord *pbo)
             if (pv_value == 1){
                 int16_t handle; 
                 result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
-                while (result!=0)
-                {
-                    /* code */
-                    result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
-                    printf("open_picoscope\n");
-                    sleep(2);
-                }
-                
                 if (result != 0) {
                     sprintf(message, "Error opening picoscope with serial number %s.", vdp->serial_num);
                     log_message(vdp->mp, pbo->name, message, result);
                     rbv = 0; 
+                    break;
                 }  
                 vdp->mp->handle = handle; // Update
             } else {
