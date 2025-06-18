@@ -41,7 +41,7 @@ Picoscope_SRCS_vxWorks += -nil-
 # Add support from base/src/vxWorks if needed
 #Picoscope_OBJS_vxWorks += $(EPICS_BASE_BIN)/vxComLibrary
 
-SNCSEQ=$(TOP)/PicoscopeApp/src/picoscope
+SNCSEQ=$(TOP)/PicoscopeApp/picoscopeSupport
 # Finally link to the EPICS Base libraries
 Picoscope_LIBS += $(EPICS_BASE_IOC_LIBS)
 Picoscope_LIBS += ps6000a
