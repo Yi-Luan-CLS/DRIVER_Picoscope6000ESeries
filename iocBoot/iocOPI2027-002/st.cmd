@@ -16,7 +16,11 @@ Picoscope_registerRecordDeviceDriver pdbbase
 ## OSC is the prefix for all PVs, it is expected to have the following format OSCXXXX-XX
 ## SERIAL_NUM is the serial number of the Picoscope to be opened by this application
 dbLoadRecords("PicoscopeApp/Db/Picoscope.db", "OSC=OSC1022-11, SERIAL_NUM=JR624/0023")
-dbLoadTemplate("PicoscopeApp/Db/Picoscope.substitutions", "OSC=OSC1022-11, SERIAL_NUM=JR624/0023")
+dbLoadRecords("PicoscopeApp/Db/Picoscope.template", "OSC=OSC1022-11, SERIAL_NUM=JR624/0023, channel=A")
+dbLoadRecords("PicoscopeApp/Db/Picoscope.template", "OSC=OSC1022-11, SERIAL_NUM=JR624/0023, channel=B")
+dbLoadRecords("PicoscopeApp/Db/Picoscope.template", "OSC=OSC1022-11, SERIAL_NUM=JR624/0023, channel=C")
+dbLoadRecords("PicoscopeApp/Db/Picoscope.template", "OSC=OSC1022-11, SERIAL_NUM=JR624/0023, channel=D")
+
 PS6000ASetup("JR624/0023")
 
 cd "${TOP}/iocBoot/${IOC}"
