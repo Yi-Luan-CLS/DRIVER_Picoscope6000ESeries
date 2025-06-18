@@ -149,9 +149,7 @@ init_record_bo (struct boRecord *pbo)
             int16_t result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
             while (result!=0)
             {
-                /* code */
                 result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
-                printf("open_picoscope\n");
                 sleep(2);
             }
             

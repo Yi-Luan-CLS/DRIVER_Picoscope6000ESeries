@@ -1379,7 +1379,6 @@ void
 acquisition_thread_function(void *arg) {
     PS6000AModule* mp = malloc(sizeof(PS6000AModule));
     *mp = *(struct PS6000AModule *)arg;
-    printf("pRecordUpdateWaveform %p\n", mp->pRecordUpdateWaveform[0]);
     while (1) // keep thread alive
     {
         epicsEventWait((epicsEventId)mp->acquisitionStartEvent);
