@@ -1,10 +1,21 @@
-#include <unistd.h>
-#include <stdint.h>
-
 #ifndef PICOSCOPE_CONFIG
 #define PICOSCOPE_CONFIG
 
-#define CHANNEL_NUM 4
+#include <unistd.h>
+#include <stdint.h>
+
+
+#define NUM_CHANNELS 4
+
+// The following struct is intended to track which channels 
+// are enabled (1) or disabled (0) using individual bits. 
+// This is needed for some function calls to the picoscope API. 
+typedef struct {
+    uint32_t channel_a : 1;
+    uint32_t channel_b : 1;
+    uint32_t channel_c : 1;
+    uint32_t channel_d : 1;
+} EnabledChannelFlags; 
 
 enum Channel{
     CHANNEL_A = 0,
@@ -14,6 +25,17 @@ enum Channel{
     TRIGGER_AUX = 1001, 
     NO_CHANNEL = 10
 };
+// For mapping PVs to channel in driver 
+static const struct {
+    const char* name;
+    enum Channel channel;
+} PV_TO_CHANNEL_MAP[] = {
+    { "CHA", CHANNEL_A },
+    { "CHB", CHANNEL_B },
+    { "CHC", CHANNEL_C },
+    { "CHD", CHANNEL_D },
+};
+
 enum ThresholdDirection
 {
   ABOVE = 0, //using upper threshold
@@ -42,12 +64,14 @@ enum ThresholdDirection
 enum ThresholdMode
 {
   LEVEL = 0,
-  WINDOW = 1
+  WINDOW_MODE = 1
 };
 
 enum TriggerType {
     NO_TRIGGER = 0, 
     SIMPLE_EDGE = 1,
+    WINDOW = 2, 
+    ADVANCED_EDGE = 3,
 }; 
 
 enum RatioMode {
@@ -75,10 +99,11 @@ struct ChannelConfigs{
     int32_t bandwidth;
 };
 
-
 /** Structure for data capture configurations*/
 struct SampleConfigs{ 
-    uint64_t num_samples; 
+    uint64_t num_samples;
+    uint64_t subwaveform_num_samples;
+    uint64_t unadjust_num_samples;
     float trigger_position_ratio;
     uint64_t down_sample_ratio;
     enum RatioMode down_sample_ratio_mode; 
@@ -100,11 +125,19 @@ struct TriggerConfigs{
     enum ThresholdDirection thresholdDirection;
     enum ThresholdMode thresholdMode;
     int16_t thresholdUpper;
+    double thresholdUpperVolts;
+    uint16_t thresholdUpperHysteresis;
     int16_t thresholdLower;
+    double thresholdLowerVolts; 
+    uint16_t thresholdLowerHysteresis;
     uint32_t autoTriggerMicroSeconds;
+    double AUXTriggerSignalPulseWidth;
 };
 
-/** Get the channel from the record formatted "OSCXXXX-XX:CH[A-B]:" and return index in channels array */
-int find_channel_index_from_record(const char* record_name, struct ChannelConfigs* channels[]);
+struct TriggerTimingInfo { 
+    uint64_t prev_trigger_time; 
+    uint64_t missed_triggers; 
+    double trigger_freq_secs;    
+};
 
 #endif

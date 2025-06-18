@@ -1,4 +1,7 @@
 # DRIVER_Picoscope6000ESeries
+>[!CAUTION]
+>This repository has been archived. Please use the require module found here -> https://github.lightsource.ca/epics-modules/Picoscope6000ESeries
+
 ## Overview
 This document provides detailed information about the EPICS driver for the Picoscope 6000E Series oscilloscope. The driver allows control and monitoring of the oscilloscope through EPICS Process Variables (PVs).
 
@@ -13,7 +16,7 @@ This document provides detailed information about the EPICS driver for the Picos
   - `<OSCNAME>:CH[A-D]:bandwidth`  
   - `<OSCNAME>:CH[A-D]:analog_offset`    
 >[!Note] 
->Changes to the above PVs will turn the channel ON. Changes apply immediately and can be verified by checking the :fbk PVs.  
+>Changes to the above PVs will apply immediately and can be verified by checking the :fbk PVs.  
 >To ensure a channel is ON, verify the status with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
 
 - **Simple usage example walkthrough:**
@@ -31,13 +34,11 @@ This document provides detailed information about the EPICS driver for the Picos
 
   # On another terminal
   caput OSC1022-01:CHB:range 10       # Set the voltage range for Channel B to +/-20V
-  caput OSC1022-01:num_samples 1000   # Set the number of samples to 1,000
-  caget OSC1022-01:CHB:ON:fbk         # Check if Channel B is ON. If not, try: caput OSC1022-01:CHB:ON ON. 
-  caput OSC1022-11:sample_interval 0.001    # Set the sample time interval to 1 ms
+  caget OSC1022-01:CHB:ON:fbk         # Check if Channel B is ON. If not, try: caput OSC1022-01:CHB:ON ON.
   caput OSC1022-01:CHB:waveform:start 1 # Start the waveform capturing (Use external triggering)
   caget OSC1022-01:CHB:waveform         # when waveform is ready, get the waveform. The waveform has a maximum size of 1,000,000 elements. Only the first 10,000 elements will contain data; the rest will be zeros.
   ```
-  All details of these configurations can be found in this document.
+  All details of other configurations can be found in this document.
 
   **The waveform data is a scaled value. The calculation is located at the bottom.**
   - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
@@ -253,7 +254,9 @@ This document provides detailed information about the EPICS driver for the Picos
     | 1       | CHANNEL_B   | Use Channel B as the triggering source |  
     | 2       | CHANNEL_C   | Use Channel C as the triggering source        |  
     | 3       | CHANNEL_D   | Use Channel D as the triggering source        |
-    | 1001    | TRIGGER_AUX | Use Auxiliary trigger input as the triggering source, with a fixed threshold of 1.25 V (nominal) to suit 2.5 V CMOS|
+    | 4       | TRIGGER_AUX | Use Auxiliary trigger input as the triggering source, with a fixed threshold of 1.25 V (nominal) to suit 2.5 V CMOS|
+    | 10       | NONE        | No trigger set |
+
 
 - **Example**:
   ```bash
@@ -270,65 +273,57 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger:channel`. 
 
-### OSCNAME:trigger:mode
+### OSCNAME:trigger:mode:fbk
 - **Type**: `mbbo`
-- **Description**: The mode of triggering.
+- **Description**: The mode of triggering, determined by `OSC:trigger:type`. 
 - **Fields**:
   - `VAL`: The mode of triggering.
-    |VAL      |Enum         |Description |  
-    |---------|-------------|------------|  
-    | 0       | LEVEL       | Will only use one threshold    |  
-    | 1       | WINDOW      | Will use two thresholds  |  
+    |VAL      |Enum         |Description                   | Threshold  |
+    |---------|-------------|------------------------------|------------|  
+    | 0       | LEVEL       | Will only use one threshold  | Upper      | 
+    | 1       | WINDOW      | Will use two thresholds      | Lower      |
 
-- **Example**:
-  ```bash
-    # Set triggering mode to LEVEL
-    $ caput OSC1234-01:trigger:mode LEVEL
-
-    # Get triggering source channel
-    $ caget OSC1234-01:trigger:mode
-  ```
-
-### OSCNAME:trigger:mode:fbk 
-- **Type**: `mbbi`
-- **Description**: The feedback PV of `OSCNAME:trigger:mode`
+### OSCNAME:trigger:type 
+- **Type**: `mbbo`
+- **Description**: The type of trigger set. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:trigger:mode`. 
+    - `VAL`:
 
+| VAL | Enum           | Description                                                                                                        | Threshold Used   |
+|-----|----------------|--------------------------------------------------------------------------------------------------------------------|-------------|
+| 0   | NO TRIGGER     | No trigger set, streaming mode.                                                                                    | None        |
+| 1   | SIMPLE EDGE    | Simple trigger, monitors incoming signal and waits for the voltage to rise above (or fall below) a set threshold.  | Upper       |
+| 2   | WINDOW         | Detects the moment when the waveform enters or leaves a voltage range.                                             | Upper/Lower |
+| 3   | ADVANCED EDGE  | Provides rising, falling, and dual edge conditions, as well as adjustable hysteresis.                              | Upper       |
 
 ### OSCNAME:trigger:direction
 - **Type**: `mbbo`
-- **Description**: The direction of the trigger event.
+- **Description**: The direction of the trigger event.The directions available change based on the value set to `OSC:trigger:type`. 
 - **Fields**:
   - `VAL`: The direction of the trigger event.
 
-  | VAL | Enum                  | Description                                          | Threshold |
-  |-----|-----------------------|-----------------------------------------------------|-----------|
-  | 0   | ABOVE_UPPER          | Level mode, triggers when above the upper threshold. | Upper     |
-  | 1   | BELOW_UPPER          | Level mode, triggers when below the upper threshold. | Upper     |
-  | 2   | RISING_UPPER         | Level mode, triggers on a rising edge crossing the upper threshold. | Upper     |
-  | 3   | FALLING_UPPER        | Level mode, triggers on a falling edge crossing the upper threshold. | Upper     |
-  | 4   | RISING_LOW/FALLING_UP| Level mode, triggers on a rising edge crossing the lower threshold, or a falling edge crossing the upper threshold | Lower/Upper     |
-  | 5   | ABOVE_LOWER          | Level mode, triggers when above the lower threshold. | Lower     |
-  | 6   | BELOW_LOWER          | Level mode, triggers when below the lower threshold. | Lower     |
-  | 7   | RISING_LOWER         | Level mode, triggers on a rising edge crossing the lower threshold. | Lower     |
-  | 8   | FALLING_LOWER        | Level mode, triggers on a falling edge crossing the lower threshold. | Lower     |
-  | 9   | WINDOW_POSITIVE_RUNT | Window mode, triggers on a positive runt pulse entering from below. | Both      |
-  | 10  | WINDOW_NEGATIVE_RUNT | Window mode, triggers on a negative runt pulse entering from above. | Both      |
-  | 11  | WINDOW_INSIDE        | Window mode, triggers when the signal is inside the upper and lower thresholds. | Both      |
-  | 12  | WINDOW_OUTSIDE       | Window mode, triggers when the signal is outside the upper and lower thresholds. | Both      |
-  | 13  | WINDOW_ENTER         | Window mode, triggers when the signal enters the range between the upper and lower thresholds. | Both      |
-  | 14  | WINDOW_EXIT          | Window mode, triggers when the signal exits the range between the upper and lower thresholds. | Both      |
-  | 15  | WINDOW_ENTER_EXIT    | Window mode, triggers when the signal either enters or exits the range between the upper and lower thresholds. | Both      |
+  - If `OSC:trigger:type` = NO TRIGGER: 
+      | VAL | Enum                  | Description                                         | Threshold Used |
+      |-----|-----------------------|-----------------------------------------------------|-----------|
+      | 0   | NONE                  | No trigger set.                                     | None      | 
+  - If `OSC:trigger:type` = SIMPLE EDGE: 
+      | VAL | Enum                  | Description                                         | Threshold Used |
+      |-----|-----------------------|-----------------------------------------------------|-----------|
+      | 0   | RISING                | Triggers when rising edge crosses upper threshold.  | Upper     | 
+      | 1   | FALLING               | Triggers when falling edge crosses upper threshold. | Upper     |
+  - If `OSC:trigger:type` = WINDOW:  
+      | VAL | Enum            | Description                                                                                 | Threshold Used  |
+      |-----|-----------------|---------------------------------------------------------------------------------------------|-------------|
+      | 0   | ENTER           | Triggers when the signal enters the range between the upper and lower thresholds.           | Upper/Lower | 
+      | 1   | EXIT            | Triggers when the signal exits the range between the upper and lower thresholds.            | Upper/Lower | 
+      | 2   | ENTER OR EXIT   | Triggers when the signal enters or exits the range between the upper and lower thresholds.  | Upper/Lower |
+  - If `OSC:trigger:type` = ADVANCED EDGE:   
+      | VAL | Enum              | Description                                                  | Threshold Used | 
+      |-----|-------------------|--------------------------------------------------------------|-----------|
+      | 0   | RISING            | Triggers when rising edge crosses upper threshold.           | Upper     | 
+      | 1   | FALLING           | Triggers when falling edge crosses upper threshold.          | Upper     |
+      | 2   | RISING OR FALLING | Triggers when falling or rising edge crosses upper threshold | Upper     |
 
-- **Example**:
-  ```bash
-    # Set triggering direction to rising
-    $ caput OSC1234-01:trigger:direction RISING_UPPER
-
-    # Get triggering direction
-    $ caget OSC1234-01:trigger:direction
-  ```
 
 ### OSCNAME:trigger:direction:fbk 
 - **Type**: `mbbi`
@@ -338,14 +333,14 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:trigger:upper:threshold
 - **Type**: `ao`
-- **Description**: The upper threshold of triggering.
+- **Description**: The trigger threshold in volts. Used as only threshold in SIMPLE EDGE and ADVANCED EDGE trigger types and used as upper limit when using WINDOW trigger type. 
 - **Fields**:
-  - `VAL`: The scaled value of upper threshold.
+  - `VAL`: The upper threshold in Volts.
 
 - **Example**:
   ```bash
-    # Set triggering upper threshold to 8000
-    $ caput OSC1234-01:trigger:upper:threshold 8000
+    # Set triggering upper threshold to 5 Volts
+    $ caput OSC1234-01:trigger:upper:threshold 5
 
     # Get triggering upper threshold
     $ caget OSC1234-01:trigger:upper:threshold
@@ -356,51 +351,47 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger:upper:threshold`.
 
+### OSCNAME:trigger:upper:threshold:hysteresis
+- **Type**: `ao`
+- **Description**: The % hysteresis applied to the upper threshold value.
+
+### OSCNAME:trigger:upper:threshold:hysteresis:fbk
+- **Type**: `ao`
+- **Description**: The % hysteresis applied to the upper threshold value.
+
 ### OSCNAME:trigger:lower:threshold
 - **Type**: `ao`
-- **Description**: The lower threshold of triggering.
+- **Description**: The lower trigger threshold in volts. Only used when trigger type is WINDOW. 
 - **Fields**:
-  - `VAL`: The scaled value of lower threshold.
+  - `VAL`: Lower threshold in volts. 
 
-- **Example**:
-  ```bash
-    # Set triggering lower threshold to 4000
-    $ caput OSC1234-01:trigger:lower:threshold 4000
-
-    # Get triggering lower threshold
-    $ caget OSC1234-01:trigger:lower:threshold
-  ```
 ### OSCNAME:trigger:lower:threshold:fbk 
 - **Type**: `ai`
 - **Description**: The feedback PV of `OSCNAME:trigger:lower`
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger:lower`.
 
-### OSCNAME:time_per_division
-- **Type**: `mbbo` 
-- **Description**: The time per division. 
-- **Fields**:
-  - `VAL`
-    | VAL   | Description    |
-    |-------|----------------|
-    | 0     | 1    time/div  |
-    | 1     | 2    time/div  | 
-    | 2     | 5    time/div  |  
-    | 3     | 10   time/div  | 
-    | 4     | 20   time/div  | 
-    | 5     | 50   time/div  | 
-    | 6     | 100  time/div  | 
-    | 7     | 200  time/div  | 
-    | 8     | 500  time/div  | 
-    | 9     | 1000 time/div  | 
-    | 10    | 2000 time/div  | 
-    | 11    | 5000 time/div  | 
+### OSCNAME:trigger:lower:threshold:hysteresis
+- **Type**: `ao`
+- **Description**: The % hysteresis applied to the lower threshold value.
 
-### OSCNAME:time_per_division:fbk
-- **Type**: `mbbi` 
-- **Description**: The currently set time per division. 
+### OSCNAME:trigger:lower:threshold:hysteresis:fbk
+- **Type**: `ao`
+- **Description**: The % hysteresis applied to the lower threshold value.
+
+### OSCNAME:trigger:interval 
+- **Type**: `ai`
+- **Description**: The trigger frequency in seconds. 
+
+### OSCNAME:trigger:missed 
+- **Type**: `ai`
+- **Description**: The number of triggers missed since the last detected trigger and successful data capture. Such as triggers that occurred during data capture. 
+
+### OSCNAME:trigger_pulse_width
+- **Type**: `ao` 
+- **Description**: The trigger signal pulse width. 
 - **Fields**:
-  - `VAL`: See `OSCNAME:time_per_division`
+  - `VAL`: The duration of a trigger signal in seconds, when this value is set, allows the software to dynamically adjust the number of samples collected to ensure the time interval does not significantly exceed the trigger signal duration. When set to 0, the dynamic adjustment of the sample count is disabled. Default to 50 ns.
 
 ### OSCNAME:time_per_division:unit 
 - **Type**: `mbbo` 
@@ -422,7 +413,41 @@ This document provides detailed information about the EPICS driver for the Picos
 
 ### OSCNAME:num_divisions 
 - **Type**: `ao` 
-- **Description**: The number of divisions. 
+- **Description**: The number of divisions. Defaults to 10 divisions. 
+
+### OSCNAME:time_per_division
+- **Type**: `mbbo` 
+- **Description**: The time per division. 
+- **Fields**:
+- If `OSC:time_per_division:unit` = s/div:
+    | VAL   | Enum  | Description    |
+    |-------|-------|----------------|
+    | 0     |   1   | 1    time/div  |
+    | 1     |   2   | 2    time/div  | 
+    | 2     |   5   | 5    time/div  |  
+    | 3     |   10  | 10   time/div  | 
+- Otherwise, 
+    | VAL   | Enum  | Description    |
+    |-------|-------|----------------|
+    | 0     |  1    | 1    time/div  |
+    | 1     |  2    | 2    time/div  | 
+    | 2     |  5    | 5    time/div  |  
+    | 3     |  10   | 10   time/div  | 
+    | 4     |  20   | 20   time/div  | 
+    | 5     |  50   | 50   time/div  | 
+    | 6     |  100  | 100  time/div  | 
+    | 7     |  200  | 200  time/div  | 
+    | 8     |  500  | 500  time/div  | 
+    | 9     |  1000 | 1000 time/div  | 
+    | 10    |  2000 | 2000 time/div  | 
+    | 11    |  5000 | 5000 time/div  | 
+
+
+### OSCNAME:time_per_division:fbk
+- **Type**: `mbbi` 
+- **Description**: The currently set time per division. 
+- **Fields**:
+  - `VAL`: See `OSCNAME:time_per_division`
 
 ### OSCNAME:num_divisions:fbk
 - **Type**: `ai` 
@@ -431,7 +456,7 @@ This document provides detailed information about the EPICS driver for the Picos
 ### OSCNAME:sample_interval:fbk
 - **Type**: `ai`
 - **Description**: The sample interval in seconds that will be applied when capturing data.
-  - The value returned is based on the value of `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
+  - The value returned is calculated from `OSCNAME:num_samples`,  `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
 - **Fields**: 
   - `VAL`: The actual sample interval applied in seconds. 
 
@@ -455,6 +480,12 @@ This document provides detailed information about the EPICS driver for the Picos
     | Two Channels      | 0 (200 ps) | 2 (800 ps) |  
     | Three Channels    | 1 (400 ps) | N/A        |  
     | Four Channels     | 1 (400 ps) | N/A        | 
+
+### OSCNAME:trigger_pulse_width:fbk:
+- **Type**: `ai` 
+- **Description**: The trigger signal pulse width set. 
+- **Fields**:
+  - `VAL`: The duration of a trigger signal in seconds, when this value is set, allows the software to dynamically adjust the number of samples collected to ensure the time interval does not significantly exceed the trigger signal duration. When set to 0, the dynamic adjustment of the sample count is disabled. Default to 50 ns.
 
 ---
 **_Channel configurations:_**
@@ -516,24 +547,24 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Description**:  
 - **Fields**:
   - `VAL`: The value of the voltage range.
-    | VAL   | Enum                 | Description                         |
-    |-------|----------------------|-----------------------------------|
-    | 0     | PICO_X1_PROBE_10MV   | Voltage range from -10 mV to 10 mV  |
-    | 1     | PICO_X1_PROBE_20MV   | Voltage range from -20 mV to 20 mV  |
-    | 2     | PICO_X1_PROBE_50MV   | Voltage range from -50 mV to 50 mV  |
-    | 3     | PICO_X1_PROBE_100MV  | Voltage range from -100 mV to 100 mV |
-    | 4     | PICO_X1_PROBE_200MV  | Voltage range from -200 mV to 200 mV |
-    | 5     | PICO_X1_PROBE_500MV  | Voltage range from -500 mV to 500 mV |
-    | 6     | PICO_X1_PROBE_1V     | Voltage range from -1 V to 1 V       |
-    | 7     | PICO_X1_PROBE_2V     | Voltage range from -2 V to 2 V       |
-    | 8     | PICO_X1_PROBE_5V     | Voltage range from -5 V to 5 V       |
-    | 9     | PICO_X1_PROBE_10V    | Voltage range from -10 V to 10 V     |
-    | 10    | PICO_X1_PROBE_20V    | Voltage range from -20 V to 20 V     |
-    | 11    | PICO_X1_PROBE_50V    | Voltage range from -50 V to 50 V     |
-    | 12    | PICO_X1_PROBE_100V   | Voltage range from -100 V to 100 V   |
-    | 13    | PICO_X1_PROBE_200V   | Voltage range from -200 V to 200 V   |
-    | 14    | PICO_X1_PROBE_500V   | Voltage range from -500 V to 500 V   |
-    | 15    | PICO_X1_PROBE_1KV    | Voltage range from -1000 V to 1000 V |
+    | VAL   | Enum    | Description                         |
+    |-------|---------|-----------------------------------|
+    | 0     |  10MV   | Voltage range from -10 mV to 10 mV  |
+    | 1     |  20MV   | Voltage range from -20 mV to 20 mV  |
+    | 2     |  50MV   | Voltage range from -50 mV to 50 mV  |
+    | 3     |  100MV  | Voltage range from -100 mV to 100 mV |
+    | 4     |  200MV  | Voltage range from -200 mV to 200 mV |
+    | 5     |  500MV  | Voltage range from -500 mV to 500 mV |
+    | 6     |  1V     | Voltage range from -1 V to 1 V       |
+    | 7     |  2V     | Voltage range from -2 V to 2 V       |
+    | 8     |  5V     | Voltage range from -5 V to 5 V       |
+    | 9     |  10V    | Voltage range from -10 V to 10 V     |
+    | 10    |  20V    | Voltage range from -20 V to 20 V     |
+    | 11    |  50V    | Voltage range from -50 V to 50 V     |
+    | 12    |  100V   | Voltage range from -100 V to 100 V   |
+    | 13    |  200V   | Voltage range from -200 V to 200 V   |
+    | 14    |  500V   | Voltage range from -500 V to 500 V   |
+    | 15    |  1KV    | Voltage range from -1000 V to 1000 V |
 - **Example**:
   ```bash
     # Set voltage range to -/+20V by number 
@@ -556,11 +587,10 @@ This document provides detailed information about the EPICS driver for the Picos
 - **Description**: The bandwith Oscilloscope start acquiring PV with current configuration(set by other PVs).
 - **Fields**:
   - `VAL`: Trigger to start getting the waveform.
-    | VAL   | Enum             | Description              |
-    |-------|------------------|--------------------------|
-    | 0     | PICO_BW_FULL     | Full bandwith (defualt)  |
-    | 1     | PICO_BW_20MHZ    | Bandwith of 20 MHZ       |
-    | 2     | PICO_BW_200MHZ   | Bandwith of 200 MHZ      |
+    | VAL   | Enum        | Description              |
+    |-------|-------------|--------------------------|
+    | 0     | BW_FULL     | Full bandwith (defualt)  |
+    | 1     | BW_20MHZ    | Bandwith of 20 MHZ       |
 - **Example**:
   ```bash
     # Set bandwith to full bandwith by number
@@ -665,4 +695,41 @@ This document provides detailed information about the EPICS driver for the Picos
     - **Raw Waveform Value**: $`8129`$
     - **Voltage Range (in Scale Units)**: $`\pm 32,512`$.
       $$\text{Actual Voltage} = 20 \text{V} \times \frac{8192}{32512} = 5.04 \text{V}$$
-      
+
+### OSCNAME:num_subwaveforms:fbk
+- **Type**: `ai`
+- **Description**: This PV represents the number of subwaveforms that compose a single waveform.
+- **Fields**:
+  - `VAL`: Number of subwaveforms.
+- **Example**:
+  ```bash
+    $ caget OSC1234-01:num_subwaveforms:fbk
+  ```
+
+## Threading Hierarchy
+
+- **acquisition_thread_function**: *Drives acquisition, updates EPICS PVs.*
+  - **run_block_capture**: *Captures single-shot block data (times/div < 100 ms/div).*
+  - **run_stream_capture**: *Manages streaming, spawns per-channel threads.*
+    - **channel_streaming_thread_function**: *Processes one channel’s streaming data, updates PVs.*
+
+## Control Logic
+
+- **Main Acquisition Thread**:
+  - *Lifecycle*: Runs indefinitely (immortal) unless an error occurs.
+  - *Start*: Waits for `acquisitionStartEvent` to begin acquisition.
+  - *Stop*: Sets `dataAcquisitionFlag` to `FALSE` to halt looping and wait on `acquisitionStartEvent`.
+  - *Mode*: Selects block (`subwaveform_num == 0`) or streaming (`subwaveform_num > 0`) mode.
+
+- **Channel Streaming Thread**:
+  - *Lifecycle*: Runs until all subwaveforms for one waveform are collected.
+  - *Behavior*: Processes channel data, updates waveform PVs per subwaveform.
+  - *Stop*: Exits if `dataAcquisitionFlag` is `FALSE`, signals completion.
+
+- **Block Capture**:
+  - *Behavior*: Captures one-time block data for all enabled channels, returns data for PV updates.
+  - *Stop*: Halts on errors or if `dataAcquisitionFlag` is `FALSE`.
+
+- **Stream Capture**:
+  - *Behavior*: Starts streaming, spawns channel threads, waits for thread completion.
+  - *Stop*: Halts on errors or if `dataAcquisitionFlag` is `FALSE`.

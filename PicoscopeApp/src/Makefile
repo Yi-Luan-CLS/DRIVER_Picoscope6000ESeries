@@ -25,7 +25,13 @@ Picoscope_DBD += Picoscope_support.dbd
 
 # Picoscope_registerRecordDeviceDriver.cpp derives from Picoscope.dbd
 Picoscope_SRCS += Picoscope_registerRecordDeviceDriver.cpp
-Picoscope_SRCS += devPicoscope.c
+Picoscope_SRCS += devPicoscopeCommon.c
+Picoscope_SRCS += devPicoscopeAio.c
+Picoscope_SRCS += devPicoscopeMbbio.c
+Picoscope_SRCS += devPicoscopeBio.c
+Picoscope_SRCS += devPicoscopeStringio.c
+Picoscope_SRCS += devPicoscopeWaveform.c
+
 Picoscope_SRCS += drvPicoscope.c
 
 # Build the main IOC entry point on workstation OSs.
@@ -35,15 +41,17 @@ Picoscope_SRCS_vxWorks += -nil-
 # Add support from base/src/vxWorks if needed
 #Picoscope_OBJS_vxWorks += $(EPICS_BASE_BIN)/vxComLibrary
 
+SNCSEQ=$(TOP)/PicoscopeApp/picoscopeSupport
 # Finally link to the EPICS Base libraries
 Picoscope_LIBS += $(EPICS_BASE_IOC_LIBS)
-USR_SYS_LIBS += ps6000a
+Picoscope_LIBS += ps6000a
+ps6000a_DIR += $(SNCSEQ)/lib
+
 #===========================
 
 include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD RULES AFTER THIS LINE
-SNCSEQ=$(TOP)/PicoscopeApp/src/picoscope
-USR_CPPFLAGS += -I$(SNCSEQ)/include/libps6000a
-USR_LDFLAGS +=  -L$(SNCSEQ)/lib
+USR_CPPFLAGS += -Ofast -I$(SNCSEQ)/include/libps6000a
+# USR_LDFLAGS +=  -L$(SNCSEQ)/lib
 USR_CPPFLAGS += -DUSE_TYPED_RSET 

@@ -1,3 +1,5 @@
+device(bi, INST_IO, devPicoscopeBi, "Picoscope")
+device(bo, INST_IO, devPicoscopeBo, "Picoscope")
 device(ai, INST_IO, devPicoscopeAi, "Picoscope")
 device(ao, INST_IO, devPicoscopeAo, "Picoscope")
 device(waveform, INST_IO, devPicoscopeWaveform, "Picoscope")
@@ -5,4 +7,4 @@ device(stringin, INST_IO, devPicoscopeStringin, "Picoscope")
 device(mbbo, INST_IO, devPicoscopeMbbo, "Picoscope")
 device(mbbi, INST_IO, devPicoscopeMbbi, "Picoscope")
 
-
+registrar(registerPS6000A)
