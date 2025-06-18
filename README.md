@@ -4,7 +4,7 @@
 This document provides detailed information about the EPICS driver for PicoTech's [Picoscope 6000E Series](https://www.picotech.com/oscilloscope/picoscope-6000e-series-3-ghz-5gss-deep-memory-mso-usb-oscilloscope) oscilloscope. The driver allows control and monitoring of the oscilloscope through EPICS Process Variables (PVs).
 
 >[!Important] 
->When setting up the application on a new IOC host, run `sudo ./udev_install.sh` to add the proper udev rule for the device. 
+>When setting up the application on a new IOC host, run `sudo ./udev_install.sh` to add required udev rule. 
 
 ---
 ## Usage
