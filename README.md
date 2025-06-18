@@ -1,9 +1,7 @@
 # DRIVER_Picoscope6000ESeries
->[!CAUTION]
->This repository has been archived. Please use the require module found here -> https://github.lightsource.ca/epics-modules/Picoscope6000ESeries
 
 ## Overview
-This document provides detailed information about the EPICS driver for the Picoscope 6000E Series oscilloscope. The driver allows control and monitoring of the oscilloscope through EPICS Process Variables (PVs).
+This document provides detailed information about the EPICS driver for PicoTech's [Picoscope 6000E Series](https://www.picotech.com/oscilloscope/picoscope-6000e-series-3-ghz-5gss-deep-memory-mso-usb-oscilloscope) oscilloscope. The driver allows control and monitoring of the oscilloscope through EPICS Process Variables (PVs).
 
 ---
 ## Usage
