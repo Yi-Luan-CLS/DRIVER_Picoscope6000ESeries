@@ -1124,8 +1124,8 @@ void ps6000aBlockReadyCallback(int16_t handle, PICO_STATUS status, PICO_POINTER 
     BlockReadyCallbackParams *state = (BlockReadyCallbackParams *)pParameter;
     state->callbackStatus = status;
 
-    print_time("ps6000aBlockReadyCallback Trigger Captured");
-    printf("-------------------\n");
+    // print_time("ps6000aBlockReadyCallback Trigger Captured");
+    // printf("-------------------\n");
     if (status == PICO_CANCELLED)
     {
         state->dataReady = 0;
@@ -1179,7 +1179,7 @@ inline PICO_STATUS start_block_capture(struct PS6000AModule* mp, double* time_in
             }
         }
     } while (ps6000aRunBlockStatus == PICO_HARDWARE_CAPTURING_CALL_STOP);
-    print_time("ps6000aRunBlock Trigger Captured");
+    // print_time("ps6000aRunBlock Trigger Captured");
     epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     if (ps6000aRunBlockStatus != PICO_OK) {
