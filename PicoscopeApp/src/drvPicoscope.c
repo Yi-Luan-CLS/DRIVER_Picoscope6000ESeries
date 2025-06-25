@@ -1384,6 +1384,7 @@ acquisition_thread_function(void *arg) {
         epicsEventWait((epicsEventId)mp->acquisitionStartEvent);
         *mp = *(struct PS6000AModule *)arg;
         epicsMutexLock(mp->epics_acquisition_thread_mutex);
+        mp->trigger_timing_info.prev_trigger_time = 0; // wipe previous trigger data  
         epicsThreadId id = epicsThreadGetIdSelf();
         printf("Start ID is %ld\n", id->tid);
         // Setup Picoscope
@@ -1474,7 +1475,7 @@ PS6000AGetModule(char* serial_num){
             return PS6000AModuleList[i];
         }
     }
-    log_error("PS6000AGetModule. Device does not exist.", PICO_NOT_FOUND, __FILE__, __LINE__);
+    // log_error("PS6000AGetModule. Device does not exist.", PICO_NOT_FOUND, __FILE__, __LINE__);
     return NULL;
 }
 
