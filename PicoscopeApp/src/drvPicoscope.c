@@ -496,8 +496,8 @@ double calculate_sample_interval(double secs_per_div, double samples_per_div){
     return secs_per_div / samples_per_div;    
 }
 
-double calculate_sample_rate(double secs_per_div, double samples_per_div) {
-    return samples_per_div / secs_per_div; 
+double calculate_sample_rate(double available_sample_interval) {
+    return 1 / available_sample_interval; 
 }
 
 uint16_t calculate_subwaveform_num(double secs_per_div){
@@ -577,7 +577,7 @@ PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_
         );
     }
 
-    *sample_rate = calculate_sample_rate(secs_per_div, samples_per_division); 
+    *sample_rate = calculate_sample_rate(available_sample_interval);
     *sample_interval = available_sample_interval; 
     *timebase = available_timebase;
 
