@@ -581,7 +581,6 @@ static long write_ao (struct aoRecord *pao)
                 pao->val = 0; 
                 break;
             }
-
             int16_t upper_scaled; 
             result = calculate_scaled_value(
                 pao->val, 

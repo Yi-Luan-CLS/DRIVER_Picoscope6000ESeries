@@ -177,7 +177,13 @@ static long read_waveform(struct waveformRecord *pwaveform) {
         case START_RETRIEVE_WAVEFORM:
             printf("Start Retrieving\n");
             epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
-            if (*vdp->mp->dataAcquisitionFlag) {
+            if (vdp->mp->status == 0){
+                //when picoscope disconnected/OFF
+                fprintf(stderr, "Picoscope is disconnected/OFF\n");
+                epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
+                return -1;
+            }
+            if (*vdp->mp->dataAcquisitionFlag == 1) {
                 fprintf(stderr, "Data acquisition already started\n");
                 epicsMutexUnlock(vdp->mp->epics_acquisition_flag_mutex);
                 return -1;
@@ -200,7 +206,7 @@ static long read_waveform(struct waveformRecord *pwaveform) {
             break;
 
         case STOP_RETRIEVE_WAVEFORM:
-            if (*vdp->mp->dataAcquisitionFlag == 0)
+            if (*vdp->mp->dataAcquisitionFlag == 0 || vdp->mp->status == 0)
             {
                 break;
             }

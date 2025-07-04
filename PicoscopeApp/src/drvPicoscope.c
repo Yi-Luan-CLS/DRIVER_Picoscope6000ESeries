@@ -33,15 +33,17 @@ void log_error(char* function_name, uint32_t status, const char* FILE, int LINE)
  * 
  * @return           PICO_STATUS Return 0 if the device is successfully closed, or a non-zero error code. 
 */
-PICO_STATUS open_picoscope(int16_t resolution, char* serial_num, int16_t* handle){
+PICO_STATUS open_picoscope(struct PS6000AModule* mp, int16_t* handle){
 
     int16_t handle_buffer; 
-    PICO_STATUS status = ps6000aOpenUnit(&handle_buffer, (int8_t*) serial_num, resolution);
+    PICO_STATUS status = ps6000aOpenUnit(&handle_buffer, (int8_t*) mp->serial_num, mp->resolution);
     if (status != PICO_OK) 
     { 
+        mp->status = 0;
         log_error("ps6000aOpenUnit", status, __FILE__, __LINE__); 
         return status;  
     }
+    mp->status = 1;
     epics_ps6000a_call_mutex = epicsMutexCreate();
     *handle = handle_buffer;
     return PICO_OK;
@@ -54,17 +56,18 @@ PICO_STATUS open_picoscope(int16_t resolution, char* serial_num, int16_t* handle
  * 
  * @return        PICO_STATUS Return 0 if the device is successfully closed, or a non-zero error code. 
 */
-PICO_STATUS close_picoscope(int16_t handle){ 
+PICO_STATUS close_picoscope(struct PS6000AModule* mp){ 
     epicsMutexLock(epics_ps6000a_call_mutex);
-    PICO_STATUS status = ps6000aCloseUnit(handle);
+    PICO_STATUS status = ps6000aCloseUnit(mp->handle);
     epicsMutexUnlock(epics_ps6000a_call_mutex);
     if (status != PICO_OK) 
     { 
+        mp->status = 0;
         log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
         return status;  
     } 
     //epicsMutexDestroy(epics_ps6000a_call_mutex);
-
+    mp->status = 1;
     return PICO_OK;
 }
 
@@ -75,19 +78,22 @@ PICO_STATUS close_picoscope(int16_t handle){
  * 
  * @return       PICO_STATUS Return 0 if device is connect, otherwise a non-zero error code.
 */
-PICO_STATUS ping_picoscope(int16_t handle){ 
+PICO_STATUS ping_picoscope(struct PS6000AModule* mp){ 
     epicsMutexLock(epics_ps6000a_call_mutex);
-    PICO_STATUS status = ps6000aPingUnit(handle);
+    PICO_STATUS status = ps6000aPingUnit(mp->handle);
     epicsMutexUnlock(epics_ps6000a_call_mutex);
 
     // If driver call in progress, return connected. 
     if (status == PICO_DRIVER_FUNCTION) {
-        return 0;    
+        mp->status = 1;
+        return PICO_OK;    
     }
     if (status != PICO_OK) {
         log_error("ps6000aPingUnit. Cannot ping device.", status, __FILE__, __LINE__);
+        mp->status = 0;
         return status; 
     }
+    mp->status = 1;
     return PICO_OK;
 }
 
@@ -1415,8 +1421,8 @@ acquisition_thread_function(void *arg) {
             *mp->dataAcquisitionFlag = 0;
             epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
             epicsMutexUnlock(mp->epics_acquisition_thread_mutex);
-            free(mp);
-            return;
+            // free(mp);
+            continue;
         }
         uint16_t subwaveform_num = mp->subwaveform_num;
         printf("subwaveform_num %d, subwaveform_num_samples %ld\n\n", subwaveform_num, mp->sample_config.subwaveform_num_samples);

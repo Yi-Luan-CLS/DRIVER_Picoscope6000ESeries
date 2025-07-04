@@ -146,10 +146,10 @@ init_record_bo (struct boRecord *pbo)
         case OPEN_PICOSCOPE: 
             // On initialization open picoscope with default resolution. 
             int16_t handle = 0; 
-            int16_t result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
+            int16_t result = open_picoscope(vdp->mp, &handle);
             while (result!=0)
             {
-                result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
+                result = open_picoscope(vdp->mp, &handle);
                 sleep(2);
             }
             
@@ -197,7 +197,7 @@ write_bo (struct boRecord *pbo)
             
             if (pv_value == 1){
                 int16_t handle; 
-                result = open_picoscope(vdp->mp->resolution, vdp->serial_num, &handle);
+                result = open_picoscope(vdp->mp, &handle);
                 if (result != 0) {
                     sprintf(message, "Error opening picoscope with serial number %s.", vdp->serial_num);
                     log_message(vdp->mp, pbo->name, message, result);
@@ -206,7 +206,16 @@ write_bo (struct boRecord *pbo)
                 }  
                 vdp->mp->handle = handle; // Update
             } else {
-                result = close_picoscope(vdp->mp->handle); 
+                if (*vdp->mp->dataAcquisitionFlag == 1) {
+                    dbProcess((struct dbCommon *)vdp->mp->pWaveformStopPtr);
+
+                    // this is to make sure the capureting thread is actually stopped
+                    epicsMutexLock(vdp->mp->epics_acquisition_thread_mutex);
+                    epicsMutexUnlock(vdp->mp->epics_acquisition_thread_mutex);
+                    printf("Data acquisition stopped\n");
+                }
+                printf("Data acquisition stopped %d\n",*vdp->mp->dataAcquisitionFlag);
+                result = close_picoscope(vdp->mp); 
                 if (result != 0) {
                     sprintf(message, "Error closing picoscope with serial number %s.", vdp->serial_num);
                     log_message(vdp->mp, pbo->name, message, result);
@@ -363,7 +372,7 @@ static long read_bi (struct biRecord *pbi)
 	switch (vdp->ioType)
 		{
         case GET_DEVICE_STATUS:
-            uint32_t result = ping_picoscope(vdp->mp->handle); 
+            uint32_t result = ping_picoscope(vdp->mp); 
             if ( result != 0 ) {
                 log_message(vdp->mp, pbi->name, "Cannot ping device.", result);
                 pbi->val = 0;

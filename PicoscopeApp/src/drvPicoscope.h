@@ -11,6 +11,7 @@ typedef struct PS6000AModule
 {
     char* serial_num;
     int16_t handle;
+    int8_t status;
     int16_t resolution; 
 
 
@@ -69,15 +70,15 @@ PS6000AModule* PS6000AGetModule(char* serial_num);
 
 uint32_t get_device_info(int8_t** device_info, int16_t handle);
 
-uint32_t open_picoscope(int16_t resolution, char* serial_num, int16_t* handle); 
+uint32_t open_picoscope(struct PS6000AModule* mp, int16_t* handle); 
 
-uint32_t ping_picoscope(int16_t handle);
+uint32_t ping_picoscope(struct PS6000AModule* mp);
 
 uint32_t set_resolution(int16_t resolution, int16_t handle);
 
 uint32_t get_resolution(int16_t* resolution, int16_t handle);
 
-uint32_t close_picoscope(int16_t handle);
+uint32_t close_picoscope(struct PS6000AModule* mp);
 
 uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledChannelFlags* channel_status);
 
