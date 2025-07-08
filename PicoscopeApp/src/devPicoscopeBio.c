@@ -268,7 +268,7 @@ write_bo (struct boRecord *pbo)
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
             vdp->mp->sample_config.timebase_configs.timebase = timebase;
             vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
-
+            re_acquire_waveform(vdp->mp);
             break;
 
 		
