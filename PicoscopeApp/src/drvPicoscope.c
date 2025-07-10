@@ -515,16 +515,6 @@ double calculate_sample_rate(double available_sample_interval) {
     return 1 / available_sample_interval; 
 }
 
-// uint16_t calculate_subwaveform_num(double secs_per_div){
-//     uint16_t subwaveform_num = 0;
-//     if (secs_per_div >= 0.1)
-//     {
-//         subwaveform_num = (uint16_t)(secs_per_div * 10);
-//     }
-    
-//     return subwaveform_num;
-// }
-
 double calculate_num_samples(double secs_per_div, int16_t num_divisions, double time_interval_secs) {
     if (time_interval_secs == 0){
         printf("ERROR: calculate_num_samples time_interval_secs is 0\n");
@@ -551,7 +541,6 @@ PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_
         mp->sample_config.timebase_configs.time_per_division, 
         mp->sample_config.timebase_configs.time_per_division_unit
     );
-    // mp->subwaveform_num = calculate_subwaveform_num(secs_per_div);
     mp->sample_config.num_samples = mp->sample_config.unadjust_num_samples; 
 
 
