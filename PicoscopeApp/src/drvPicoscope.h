@@ -21,7 +21,7 @@ typedef struct PS6000AModule
     struct waveformRecord* pRecordUpdateWaveform[NUM_CHANNELS];
     struct waveformRecord* pLog;
     uint16_t subwaveform_num;
-
+    uint64_t waveform_size;
 
     epicsEventId triggerReadyEvent;
     epicsEventId acquisitionStartEvent;

@@ -214,7 +214,6 @@ write_bo (struct boRecord *pbo)
                     epicsMutexUnlock(vdp->mp->epics_acquisition_thread_mutex);
                     printf("Data acquisition stopped\n");
                 }
-                printf("Data acquisition stopped %d\n",*vdp->mp->dataAcquisitionFlag);
                 result = close_picoscope(vdp->mp); 
                 if (result != 0) {
                     sprintf(message, "Error closing picoscope with serial number %s.", vdp->serial_num);

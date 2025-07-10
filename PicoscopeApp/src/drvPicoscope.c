@@ -495,27 +495,40 @@ double convert_to_seconds(double time, enum UnitPerDiv unit) {
 }
 
 double calculate_samples_per_division(uint64_t num_samples, int16_t num_division) {
-    return (double) num_samples / num_division;       
+    if (num_division == 0){
+        printf("ERROR: calculate_samples_per_division num_division is 0\n");
+    }
+    return (double) (num_samples / num_division);
 }
 
 double calculate_sample_interval(double secs_per_div, double samples_per_div){ 
+    if (samples_per_div == 0){
+        printf("ERROR: calculate_sample_interval samples_per_div is 0\n");
+    }
     return secs_per_div / samples_per_div;    
 }
 
 double calculate_sample_rate(double available_sample_interval) {
+    if (available_sample_interval == 0){
+        printf("ERROR: calculate_sample_rate available_sample_interval is 0\n");
+    }
     return 1 / available_sample_interval; 
 }
 
-uint16_t calculate_subwaveform_num(double secs_per_div){
-    uint16_t subwaveform_num = 0;
-    if (secs_per_div >= 0.1)
-    {
-        subwaveform_num = (uint16_t)(secs_per_div * 10);
-    }
-    return subwaveform_num;
-}
+// uint16_t calculate_subwaveform_num(double secs_per_div){
+//     uint16_t subwaveform_num = 0;
+//     if (secs_per_div >= 0.1)
+//     {
+//         subwaveform_num = (uint16_t)(secs_per_div * 10);
+//     }
+    
+//     return subwaveform_num;
+// }
 
 double calculate_num_samples(double secs_per_div, int16_t num_divisions, double time_interval_secs) {
+    if (time_interval_secs == 0){
+        printf("ERROR: calculate_num_samples time_interval_secs is 0\n");
+    }
     return secs_per_div * num_divisions /  time_interval_secs;
 }
 
@@ -538,7 +551,7 @@ PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_
         mp->sample_config.timebase_configs.time_per_division, 
         mp->sample_config.timebase_configs.time_per_division_unit
     );
-    mp->subwaveform_num = calculate_subwaveform_num(secs_per_div);
+    // mp->subwaveform_num = calculate_subwaveform_num(secs_per_div);
     mp->sample_config.num_samples = mp->sample_config.unadjust_num_samples; 
 
 
@@ -582,7 +595,16 @@ PICO_STATUS get_valid_timebase_configs(struct PS6000AModule* mp, double* sample_
             mp->sample_config.timebase_configs.num_divisions
         );
     }
+    if (mp->sample_config.num_samples > mp->waveform_size){
+        mp->subwaveform_num = (mp->sample_config.num_samples + mp->waveform_size - 1) / mp->waveform_size;
+        mp->sample_config.subwaveform_samples_num = mp->waveform_size;
+        mp->sample_config.original_subwaveform_samples_num = mp->waveform_size;
+    }else{
+        mp->subwaveform_num = 0;
+        mp->sample_config.subwaveform_samples_num = 0;
+        mp->sample_config.original_subwaveform_samples_num = 0;
 
+    }
     *sample_rate = calculate_sample_rate(available_sample_interval);
     *sample_interval = available_sample_interval; 
     *timebase = available_timebase;
@@ -866,17 +888,16 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
 
     if (mp->subwaveform_num > 0)
     {
-        if (mp->sample_config.down_sample_ratio_mode == RATIO_MODE_AVERAGE)
-        {
-            mp->sample_config.subwaveform_num_samples = mp->sample_config.num_samples / mp->subwaveform_num / mp->sample_config.down_sample_ratio;
-        }else{
-            mp->sample_config.subwaveform_num_samples = mp->sample_config.num_samples / mp->subwaveform_num;
+        mp->sample_config.subwaveform_samples_num = mp->sample_config.original_subwaveform_samples_num;
+
+        if (mp->sample_config.down_sample_ratio_mode == RATIO_MODE_AVERAGE) {
+            mp->sample_config.subwaveform_samples_num /= mp->sample_config.down_sample_ratio;
         }
 
         for (size_t i = 0; i < NUM_CHANNELS; i++){
 		    mp->streamWaveformBuffers[i] = (int16_t**)calloc(mp->subwaveform_num, sizeof(int16_t*));
             for (int j = 0; j < mp->subwaveform_num; j++) {
-		        mp->streamWaveformBuffers[i][j] = (int16_t*)calloc(mp->sample_config.subwaveform_num_samples, sizeof(int16_t));
+		        mp->streamWaveformBuffers[i][j] = (int16_t*)calloc(mp->sample_config.subwaveform_samples_num, sizeof(int16_t));
 	        }
             if (get_channel_status(i, mp->channel_status)){
                 epicsMutexLock(epics_ps6000a_call_mutex);
@@ -884,7 +905,7 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
                     mp->handle,
                     mp->channel_configs[i].channel,
                     mp->streamWaveformBuffers[i][0],
-                    mp->sample_config.subwaveform_num_samples,
+                    mp->sample_config.subwaveform_samples_num,
                     PICO_INT16_T,
                     0,
                     mp->sample_config.down_sample_ratio_mode, 
@@ -948,6 +969,7 @@ void channel_streaming_thread_function(void *arg){
     streamData.startIndex_ = 0;
     streamData.type_ = PICO_INT16_T;
     uint16_t subwaveform_num = mp->subwaveform_num;
+    uint64_t subwaveform_samples_num = mp->sample_config.subwaveform_samples_num;
     if (mp->trigger_config.triggerType == NO_TRIGGER){ 
         triggered_flag = 1;
     } 
@@ -961,7 +983,7 @@ void channel_streaming_thread_function(void *arg){
         }
         epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
 
-        if (streamData.startIndex_ + streamData.noOfSamples_ == mp->sample_config.subwaveform_num_samples){
+        if (streamData.startIndex_ + streamData.noOfSamples_ == subwaveform_samples_num){
             do
             {
                 epicsMutexLock(epics_ps6000a_call_mutex);
@@ -969,7 +991,7 @@ void channel_streaming_thread_function(void *arg){
                     mp->handle,
                     channel_index,
                     mp->streamWaveformBuffers[channel_index][buffer_index],
-                    mp->sample_config.subwaveform_num_samples,
+                    subwaveform_samples_num,
                     PICO_INT16_T,
                     0,
                     mp->sample_config.down_sample_ratio_mode,
@@ -984,6 +1006,7 @@ void channel_streaming_thread_function(void *arg){
                 return;
             }
         }
+
         usleep(5000);       // Sleep to give Picoscope device time to collect data
         epicsMutexLock(epics_ps6000a_call_mutex);
         status = ps6000aGetStreamingLatestValues(mp->handle, &streamData, 1, &streamTrigger); // Get the latest values
@@ -991,9 +1014,8 @@ void channel_streaming_thread_function(void *arg){
         //     /* code */
         // printf("CH %d, valid buffer %d, status %d, numSamples %ld, startIdx %d, sampleCollected %d, total buffer %ld, triggered %d, subwaveform_num: %d\n",
         //         channel_index, buffer_index, status,
-        //         mp->sample_config.subwaveform_num_samples, streamData.startIndex_, streamData.noOfSamples_,
+        //         subwaveform_samples_num, streamData.startIndex_, streamData.noOfSamples_,
         //         streamData.bufferIndex_, triggered_flag, subwaveform_num);
-        
 
         if (triggered_flag == 0 && streamTrigger.triggered_ == 0 )
         {
@@ -1001,15 +1023,23 @@ void channel_streaming_thread_function(void *arg){
         }else{
             triggered_flag =  1;
         }
-        if (streamData.startIndex_ + streamData.noOfSamples_ == mp->sample_config.subwaveform_num_samples){
+        if (streamData.startIndex_ + streamData.noOfSamples_ == subwaveform_samples_num){
         
             if(triggered_flag== 0 && streamTrigger.triggered_== 0){
                 // Do not use the data if it is not triggered
                 continue;
             }
+
             // If buffers full move to next buffer
-            mp->waveform[channel_index] = mp->streamWaveformBuffers[channel_index][buffer_index];
-            *mp->sample_collected = mp->sample_config.subwaveform_num_samples;
+            *mp->sample_collected = subwaveform_samples_num;
+            int16_t* src = mp->streamWaveformBuffers[channel_index][buffer_index];
+            int16_t* dst = mp->waveform[channel_index];
+
+            if (src && dst) {
+                memcpy(dst, src, *mp->sample_collected * sizeof(uint16_t));
+            }
+    
+
             dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[channel_index]);
             buffer_index++;
             continue;
@@ -1038,7 +1068,7 @@ PICO_STATUS run_stream_capture(struct PS6000AModule* mp){
         &time,
         PICO_S,
         0,
-        mp->sample_config.subwaveform_num_samples,
+        mp->sample_config.subwaveform_samples_num,
         0,
         mp->sample_config.down_sample_ratio,
         mp->sample_config.down_sample_ratio_mode
@@ -1060,6 +1090,7 @@ PICO_STATUS run_stream_capture(struct PS6000AModule* mp){
                 thread_count ++;
             }
         }
+
 	}else{
         log_error("run_stream_capture", status, __FILE__, __LINE__);
         return status;
@@ -1425,28 +1456,26 @@ acquisition_thread_function(void *arg) {
             continue;
         }
         uint16_t subwaveform_num = mp->subwaveform_num;
-        printf("subwaveform_num %d, subwaveform_num_samples %ld\n\n", subwaveform_num, mp->sample_config.subwaveform_num_samples);
+        printf("subwaveform_num %d, subwaveform_samples_num %ld\n\n", subwaveform_num, mp->sample_config.subwaveform_samples_num);
         printf("------------ Capture Configurations OVER--------------\n");
 
         while (*mp->dataAcquisitionFlag == 1) {
             double time_indisposed_ms = 0;
             if (do_Blocking(mp)){
-
                 *mp->sample_collected = mp->sample_config.num_samples;
                 status = run_block_capture(mp, &time_indisposed_ms);
                 if (status != PICO_OK) {
                     printf("Error capturing block data.");
                     break;
                 }
-
                 // Process the UPDATE_WAVEFORM subroutine to update waveform
                 for (size_t i = 0; i < NUM_CHANNELS; i++) {
                     if (get_channel_status(mp->channel_configs[i].channel, mp->channel_status) && mp->pRecordUpdateWaveform[i]) {
                         dbProcess((struct dbCommon *)mp->pRecordUpdateWaveform[i]);
                     }
                 }
-            }else{
 
+            }else{
                 set_data_buffer(mp);
                 status = run_stream_capture(mp);
                 if (status != PICO_OK) {

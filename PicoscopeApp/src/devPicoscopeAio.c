@@ -495,7 +495,17 @@ static long write_ao (struct aoRecord *pao)
                 vdp->mp->sample_config.unadjust_num_samples = (int) pao->val; 
                 break; 
             }
+            if (vdp->mp->sample_config.num_samples > vdp->mp->waveform_size){
+                vdp->mp->subwaveform_num = (vdp->mp->sample_config.num_samples + vdp->mp->waveform_size - 1) / vdp->mp->waveform_size;
+                vdp->mp->sample_config.subwaveform_samples_num = vdp->mp->waveform_size;
+                vdp->mp->sample_config.original_subwaveform_samples_num = vdp->mp->waveform_size;
 
+            }else{
+                vdp->mp->subwaveform_num = 0;
+                vdp->mp->sample_config.subwaveform_samples_num = 0;
+                vdp->mp->sample_config.original_subwaveform_samples_num = vdp->mp->waveform_size;
+
+            }
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
             vdp->mp->sample_config.timebase_configs.timebase = timebase;
             vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;

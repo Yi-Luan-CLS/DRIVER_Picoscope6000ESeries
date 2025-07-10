@@ -102,8 +102,9 @@ struct ChannelConfigs{
 /** Structure for data capture configurations*/
 struct SampleConfigs{ 
     uint64_t num_samples;
-    uint64_t subwaveform_num_samples;
     uint64_t unadjust_num_samples;
+    uint64_t subwaveform_samples_num;
+    uint64_t original_subwaveform_samples_num;
     float trigger_position_ratio;
     uint64_t down_sample_ratio;
     enum RatioMode down_sample_ratio_mode; 

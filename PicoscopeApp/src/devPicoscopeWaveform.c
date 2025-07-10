@@ -153,7 +153,9 @@ static long init_record_waveform(struct waveformRecord * pwaveform)
             int channel_index = find_channel_index_from_record(pwaveform->name, vdp->mp->channel_configs); 
             vdp->mp->pRecordUpdateWaveform[channel_index] = pwaveform;
             vdp->mp->waveform[channel_index] = calloc(pwaveform->nelm, sizeof(int16_t));
+            vdp->mp->waveform_size = pwaveform->nelm;
             if (!vdp->mp->waveform[channel_index]) {
+                vdp->mp->waveform_size = 0;
                 errlogPrintf("%s: Waveform memory allocation failed\n", pwaveform->name);
                 return -1;
             }
@@ -199,6 +201,9 @@ static long read_waveform(struct waveformRecord *pwaveform) {
             int channel_index = find_channel_index_from_record(pwaveform->name, vdp->mp->channel_configs); 
             epicsMutexLock(vdp->mp->epics_acquisition_flag_mutex);
             if (*vdp->mp->dataAcquisitionFlag == 1) {
+                if (*vdp->mp->sample_collected > vdp->mp->waveform_size){
+                    *vdp->mp->sample_collected = vdp->mp->waveform_size;
+                }
                 memcpy(pwaveform->bptr, vdp->mp->waveform[channel_index], *vdp->mp->sample_collected * sizeof(int16_t));
                 pwaveform->nord = *vdp->mp->sample_collected;
             }
