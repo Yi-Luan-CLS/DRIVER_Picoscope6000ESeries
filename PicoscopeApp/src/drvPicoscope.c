@@ -57,15 +57,29 @@ PICO_STATUS open_picoscope(struct PS6000AModule* mp, int16_t* handle){
  * @return        PICO_STATUS Return 0 if the device is successfully closed, or a non-zero error code. 
 */
 PICO_STATUS close_picoscope(struct PS6000AModule* mp){ 
+    PICO_STATUS status;
+    for(size_t channel_index = 0; channel_index < NUM_CHANNELS; channel_index++){
+        status = set_channel_off(
+            mp->channel_configs[channel_index].channel, 
+            mp->handle,
+            &mp->channel_status
+        );
+        if (status != PICO_OK) 
+        { 
+            mp->status = 0;
+            log_error("ps6000aCloseUnit set_channel_off", status, __FILE__, __LINE__);
+            return status;  
+        }
+    }
     epicsMutexLock(epics_ps6000a_call_mutex);
-    PICO_STATUS status = ps6000aCloseUnit(mp->handle);
+    status = ps6000aCloseUnit(mp->handle);
     epicsMutexUnlock(epics_ps6000a_call_mutex);
     if (status != PICO_OK) 
     { 
         mp->status = 0;
         log_error("ps6000aCloseUnit", status, __FILE__, __LINE__);
         return status;  
-    } 
+    }
     //epicsMutexDestroy(epics_ps6000a_call_mutex);
     mp->status = 1;
     return PICO_OK;
@@ -878,9 +892,15 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
     if (mp->subwaveform_num > 0)
     {
         mp->sample_config.subwaveform_samples_num = mp->sample_config.original_subwaveform_samples_num;
-
-        if (mp->sample_config.down_sample_ratio_mode == RATIO_MODE_AVERAGE) {
-            mp->sample_config.subwaveform_samples_num /= mp->sample_config.down_sample_ratio;
+        switch (mp->sample_config.down_sample_ratio_mode) {
+            case RATIO_MODE_AVERAGE:
+                mp->sample_config.subwaveform_samples_num /= mp->sample_config.down_sample_ratio;
+                break;
+            case RATIO_MODE_DECIMATE:
+                mp->sample_config.subwaveform_samples_num /= mp->sample_config.down_sample_ratio;
+                break;
+            case default:
+                break;
         }
 
         for (size_t i = 0; i < NUM_CHANNELS; i++){
@@ -1082,6 +1102,9 @@ PICO_STATUS run_stream_capture(struct PS6000AModule* mp){
 
 	}else{
         log_error("run_stream_capture", status, __FILE__, __LINE__);
+        if (status = PICO_BUFFERS_NOT_SET){
+            printf("No Channel Opened\n");
+        }
         return status;
     }
 
