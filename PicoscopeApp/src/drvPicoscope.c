@@ -899,7 +899,7 @@ PICO_STATUS set_data_buffer(struct PS6000AModule* mp) {
             case RATIO_MODE_DECIMATE:
                 mp->sample_config.subwaveform_samples_num /= mp->sample_config.down_sample_ratio;
                 break;
-            case default:
+            default:
                 break;
         }
 
@@ -1102,7 +1102,7 @@ PICO_STATUS run_stream_capture(struct PS6000AModule* mp){
 
 	}else{
         log_error("run_stream_capture", status, __FILE__, __LINE__);
-        if (status = PICO_BUFFERS_NOT_SET){
+        if (status == PICO_BUFFERS_NOT_SET){
             printf("No Channel Opened\n");
         }
         return status;
