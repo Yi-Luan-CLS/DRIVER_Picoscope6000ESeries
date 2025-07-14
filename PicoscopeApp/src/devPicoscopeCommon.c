@@ -1,3 +1,15 @@
+/*
+ * ---------------------------------------------------------------------
+ * Copyright 2025 Canadian Light Source, Inc. All rights reserved
+ *     - see LICENSE.md for limitations on use.
+ * 
+ * Description:
+ *     Common utility functions for EPICS device support of Picoscope 
+ *     PS6000A modules. Includes parameter parsing, channel indexing,
+ *     waveform reacquisition, logging, and enum field updates for
+ *     bi/bo and mbbi/mbbo records.
+ * ---------------------------------------------------------------------
+*/
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>

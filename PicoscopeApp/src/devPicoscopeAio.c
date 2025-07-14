@@ -1,3 +1,14 @@
+/*
+ * ---------------------------------------------------------------------
+ * Copyright 2025 Canadian Light Source, Inc. All rights reserved
+ *     - see LICENSE.md for limitations on use.
+ * 
+ * Description:
+ *     Device support for EPICS ai and ao records for Picoscope PS6000A 
+ *     module. Provides input/output processing for waveform configuration, 
+ *     trigger control, and analog offset settings via INST_IO.
+ * ---------------------------------------------------------------------
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -335,7 +346,7 @@ struct
 epicsExportAddress(dset, devPicoscopeAo);
 
 static long init_record_ao (struct aoRecord *pao)
-{    
+{   
     struct instio  *pinst;
     struct PicoscopeAioData *vdp;
 

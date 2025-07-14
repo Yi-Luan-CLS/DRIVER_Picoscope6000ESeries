@@ -1,3 +1,15 @@
+/*
+ * ---------------------------------------------------------------------
+ * Copyright 2025 Canadian Light Source, Inc. All rights reserved
+ *     - see LICENSE.md for limitations on use.
+ * 
+ * Description:
+ *     Device support for EPICS waveform records for Picoscope PS6000A 
+ *     module. Enables acquisition control and data retrieval via 
+ *     waveform records. Supports start/stop acquisition, updating 
+ *     waveform data .
+ * ---------------------------------------------------------------------
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

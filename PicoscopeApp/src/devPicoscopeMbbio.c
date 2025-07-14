@@ -1,3 +1,15 @@
+/*
+ * ---------------------------------------------------------------------
+ * Copyright 2025 Canadian Light Source, Inc. All rights reserved
+ *     - see LICENSE.md for limitations on use.
+ * 
+ * Description:
+ *     Device support for EPICS mbbo and mbbi records for Picoscope 
+ *     PS6000A module. Provides control and status interfaces for 
+ *     resolution, timebase, trigger configuration, channel settings, 
+ *     and acquisition parameters using multi-bit binary records.
+ * ---------------------------------------------------------------------
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -1,3 +1,14 @@
+/*
+ * ---------------------------------------------------------------------
+ * Copyright 2025 Canadian Light Source, Inc. All rights reserved
+ *     - see LICENSE.md for limitations on use.
+ * 
+ * Description:
+ *     Device support for EPICS stringin records for Picoscope PS6000A 
+ *     module. Provides access to device information such as model name,
+ *     and serial number.
+ * ---------------------------------------------------------------------
+ */
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

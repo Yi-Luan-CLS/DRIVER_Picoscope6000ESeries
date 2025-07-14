@@ -1,3 +1,14 @@
+/*
+ * ---------------------------------------------------------------------
+ * Copyright 2025 Canadian Light Source, Inc. All rights reserved
+ *     - see LICENSE.md for limitations on use.
+ * 
+ * Description:
+ *     Device support for EPICS bi and bo records for Picoscope PS6000A 
+ *     module. Supports status monitoring and control operations such as 
+ *     device opening, channel toggling, and connectivity checks.
+ * ---------------------------------------------------------------------
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -190,7 +201,6 @@ write_bo (struct boRecord *pbo)
     uint32_t result;
 
 	switch (vdp->ioType){
-        
         case OPEN_PICOSCOPE: 
             int pv_value = (int)pbo->val; 
             char message[100]; 
@@ -326,7 +336,7 @@ static long init_bi(int pass)
 }
 
 static long init_record_bi(struct biRecord *pbi)
-{
+{   
     struct instio  *pinst;
 	struct PicoscopeBioData *vdp;
 

@@ -1,3 +1,13 @@
+/*
+ * ---------------------------------------------------------------------
+ * Copyright 2025 Canadian Light Source, Inc. All rights reserved
+ *     - see LICENSE.md for limitations on use.
+ * 
+ * Description:
+ *     EPICS driver for Picoscope PS6000A. Bridges waveform records 
+ *     with internal acquisition logic and API calls.
+ * ---------------------------------------------------------------------
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
