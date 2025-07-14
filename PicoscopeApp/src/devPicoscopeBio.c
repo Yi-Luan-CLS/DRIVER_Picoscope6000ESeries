@@ -158,12 +158,7 @@ init_record_bo (struct boRecord *pbo)
             // On initialization open picoscope with default resolution. 
             int16_t handle = 0; 
             int16_t result = open_picoscope(vdp->mp, &handle);
-            while (result!=0)
-            {
-                result = open_picoscope(vdp->mp, &handle);
-                sleep(2);
-            }
-            
+
             vdp->mp->handle = handle; 
             break;
 

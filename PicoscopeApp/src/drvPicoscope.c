@@ -45,6 +45,9 @@ void log_error(char* function_name, uint32_t status, const char* FILE, int LINE)
 */
 PICO_STATUS open_picoscope(struct PS6000AModule* mp, int16_t* handle){
 
+    if(!epics_ps6000a_call_mutex){
+        epics_ps6000a_call_mutex = epicsMutexCreate();
+    }
     int16_t handle_buffer; 
     PICO_STATUS status = ps6000aOpenUnit(&handle_buffer, (int8_t*) mp->serial_num, mp->resolution);
     if (status != PICO_OK) 
@@ -54,7 +57,6 @@ PICO_STATUS open_picoscope(struct PS6000AModule* mp, int16_t* handle){
         return status;  
     }
     mp->status = 1;
-    epics_ps6000a_call_mutex = epicsMutexCreate();
     *handle = handle_buffer;
     return PICO_OK;
 }
