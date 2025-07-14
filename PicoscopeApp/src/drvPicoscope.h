@@ -1,3 +1,14 @@
+/*
+ * ---------------------------------------------------------------------
+ * Copyright 2025 Canadian Light Source, Inc. All rights reserved
+ *     - see LICENSE.md for limitations on use.
+ * File:
+ *     drvPicoscope.h
+ * Description:
+ *     Driver interface for Picoscope PS6000A. Includes internal state 
+ *     struct and API for EPICS integration.
+ * ---------------------------------------------------------------------
+ */
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
 

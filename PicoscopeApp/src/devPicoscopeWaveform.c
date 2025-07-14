@@ -2,7 +2,8 @@
  * ---------------------------------------------------------------------
  * Copyright 2025 Canadian Light Source, Inc. All rights reserved
  *     - see LICENSE.md for limitations on use.
- * 
+ * File:
+ *     devPicoscopeWaveform.c
  * Description:
  *     Device support for EPICS waveform records for Picoscope PS6000A 
  *     module. Enables acquisition control and data retrieval via 

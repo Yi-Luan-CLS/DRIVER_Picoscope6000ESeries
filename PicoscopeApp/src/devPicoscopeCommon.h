@@ -1,3 +1,15 @@
+/*
+ * ---------------------------------------------------------------------
+ * Copyright 2025 Canadian Light Source, Inc. All rights reserved.
+ *     - See LICENSE.md for terms of use.
+ * 
+ * File: devPicoscopeCommon.h
+ * Description:
+ *     Common utilities for EPICS device support of Picoscope PS6000A.
+ *     Provides functions for enum handling, record parsing, logging, 
+ *     and waveform re-acquisition.
+ * ---------------------------------------------------------------------
+ */
 #ifndef DEV_PICOSCOPE
 #define DEV_PICOSCOPE
 

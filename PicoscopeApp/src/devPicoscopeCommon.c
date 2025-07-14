@@ -2,7 +2,8 @@
  * ---------------------------------------------------------------------
  * Copyright 2025 Canadian Light Source, Inc. All rights reserved
  *     - see LICENSE.md for limitations on use.
- * 
+ * File:
+ *     devPicoscopeCommon.c
  * Description:
  *     Common utility functions for EPICS device support of Picoscope 
  *     PS6000A modules. Includes parameter parsing, channel indexing,

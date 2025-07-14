@@ -2,7 +2,8 @@
  * ---------------------------------------------------------------------
  * Copyright 2025 Canadian Light Source, Inc. All rights reserved
  *     - see LICENSE.md for limitations on use.
- * 
+ * File:
+ *     devPicoscopeMbbio.c
  * Description:
  *     Device support for EPICS mbbo and mbbi records for Picoscope 
  *     PS6000A module. Provides control and status interfaces for 

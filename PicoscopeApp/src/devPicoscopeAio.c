@@ -2,7 +2,8 @@
  * ---------------------------------------------------------------------
  * Copyright 2025 Canadian Light Source, Inc. All rights reserved
  *     - see LICENSE.md for limitations on use.
- * 
+ * File:
+ *     devPicoscopeAio.c
  * Description:
  *     Device support for EPICS ai and ao records for Picoscope PS6000A 
  *     module. Provides input/output processing for waveform configuration, 

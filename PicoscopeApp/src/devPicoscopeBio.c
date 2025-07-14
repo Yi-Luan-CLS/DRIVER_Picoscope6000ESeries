@@ -2,7 +2,8 @@
  * ---------------------------------------------------------------------
  * Copyright 2025 Canadian Light Source, Inc. All rights reserved
  *     - see LICENSE.md for limitations on use.
- * 
+ * File:
+ *     devPicoscopeBio.c
  * Description:
  *     Device support for EPICS bi and bo records for Picoscope PS6000A 
  *     module. Supports status monitoring and control operations such as 
