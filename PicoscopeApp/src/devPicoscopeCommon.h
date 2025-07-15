@@ -4,6 +4,8 @@
 #include "drvPicoscope.h"
 #include <waveformRecord.h>
 
+#define LOG_MESSAGE_LENGTH 500
+
 typedef struct MultiBitBinaryEnums {
     char* zrst; int zrvl; 
     char* onst; int onvl; 
