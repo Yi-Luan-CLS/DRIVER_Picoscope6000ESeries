@@ -254,7 +254,7 @@ write_mbbo (struct mbboRecord *pmbbo)
     int channel_index; 
     uint32_t timebase = 0; 
     double sample_interval, sample_rate = 0; 
-    char log_message[128] = {0};
+    char log_message[LOG_MESSAGE_LENGTH] = {0};
     uint32_t result = 0; 
 
     struct PicoscopeMbbioData *vdp = (struct PicoscopeMbbioData *)pmbbo->dpvt;
@@ -268,6 +268,7 @@ write_mbbo (struct mbboRecord *pmbbo)
             result = set_resolution(resolution, vdp->mp->handle); 
             if (result !=0) {
                 update_log_pvs(vdp->mp, "Failed to set resolution", result);
+                break;
             } 
         
             vdp->mp->resolution = resolution; 
@@ -748,7 +749,7 @@ static long read_mbbi(struct mbbiRecord *pmbbi){
             int16_t resolution;
             uint32_t result = get_resolution(&resolution, vdp->mp->handle);
             if (result != 0) {
-                update_log_pvs(vdp->mp, "Error setting the number of divisions.", result);
+                update_log_pvs(vdp->mp, "Error getting device resolution.", result);
             } else {
                 pmbbi->rval = resolution; 
                 update_log_pvs(vdp->mp, NULL, result);

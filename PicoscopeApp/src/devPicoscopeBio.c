@@ -194,7 +194,7 @@ write_bo (struct boRecord *pbo)
     int returnStatus = -1; 
     int rbv = 1; 
     uint32_t result = 0;
-    char log_message[128] = {0}; 
+    char log_message[LOG_MESSAGE_LENGTH] = {0}; 
 
 
 	switch (vdp->ioType){

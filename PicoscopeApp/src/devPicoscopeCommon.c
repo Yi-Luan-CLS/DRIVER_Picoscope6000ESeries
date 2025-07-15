@@ -90,6 +90,7 @@ inline int find_channel_index_from_record(const char* record_name, struct Channe
     return -1;
 }
 
+#define LOG_MESSAGE_LENGTH 500
 /**
  * A function to update the log PV with the latest error message. Causes the 
  * waveform PV pLog to process. 
