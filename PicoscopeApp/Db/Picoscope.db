@@ -1,11 +1,18 @@
 ################################################################
-# Copyright 2025 Canadian Light Source, Inc. All rights reserved.
-#     - see LICENSE.md for terms of use.
-#
 # File:        Picoscope.db
 # Description: EPICS PV database for Picoscope PS6000A. Includes 
 #              channel setup, trigger configuration, timebase, 
 #              waveform control, and logging PVs.
+#
+# Copyright (c) 2025 Canadian Light Source Inc.
+#
+# This file is part of DRIVER_Picoscope6000ESeries.
+#
+# It is licensed under the GNU General Public License v3.0.
+# See the LICENSE.md file in the project root, or visit:
+# https://www.gnu.org/licenses/gpl-3.0.html
+#
+# This software is provided WITHOUT WARRANTY of any kind.
 ################################################################
 
 record(waveform, "$(OSC):log"){ 

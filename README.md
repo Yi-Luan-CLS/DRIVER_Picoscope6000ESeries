@@ -1,55 +1,106 @@
-# DRIVER_Picoscope6000ESeries
+# EPICS Driver for PicoScope 6000E Series
 
 ## Overview
 This document provides detailed information about the EPICS driver for PicoTech's [Picoscope 6000E Series](https://www.picotech.com/oscilloscope/picoscope-6000e-series-3-ghz-5gss-deep-memory-mso-usb-oscilloscope) oscilloscope. The driver allows control and monitoring of the oscilloscope through EPICS Process Variables (PVs).
 
 >[!Important] 
 >Before running the application on a new IOC host, run `sudo ./udev_install.sh` to add required udev rule. 
+>
+> This script installs a udev rule to allow non-root access to the PicoScope USB device.
 
----
+## Project Layout
+
+```bash
+DRIVER_Picoscope6000ESeries
+├── README.md                 # This documentation
+├── udev_install.sh          # Adds udev rules for PicoScope USB
+
+├── PicoscopeApp/
+│   ├── Db/                  # Database and template files (Picoscope.db, Picoscope.template)
+│   ├── picoscopeSupport/
+│   │   ├── include/libps6000a/  # Copy Pico SDK headers here
+│   │   └── lib/                # Copy Pico SDK shared libraries here
+│   └── src/                  # All driver source files (.c/.cpp/.h)
+
+├── iocBoot/
+│   └── ioc<hostname>/       # st.cmd and IOC boot files
+```
+## Requirements
+- EPICS Base (tested with 7.0.7 and 7.0.9). Make sure to update the `EPICS_BASE` path in `configure/RELEASE` to your local EPICS installation.
+- GNU Make, g++ (Linux x86_64)
+- PicoScope SDK for Linux (See below)
+
+## Setup
+
+> **Supported Platform:** Linux (x86_64 only)
+
+### 1. Download the SDK
+> ⚠️ This project requires SDK libraries from Pico Technology Ltd., which are **not GPL-licensed**.
+> Please install them via the Pico Technology website. See the License section below for details.
+
+Download and install the **PicoScope 7 for Linux** package from the [PicoScope 7 for Linux package](https://www.picotech.com/downloads/linux).  
+This will install the required SDK (`libps6000a`) under `/opt/picoscope`.
+
+### 2. Copy Required Files
+
+After installing the SDK, copy the following files:
+
+- **Header Files:**  
+  From:  
+  `/opt/picoscope/include/libps6000a/`  
+  To:  
+  `DRIVER_Picoscope6000ESeries/PicoscopeApp/picoscopeSupport/include/libps6000a/`
+
+- **Shared Libraries:**  
+  From:  
+  `/opt/picoscope/lib/lib/`  
+  - Files:
+    - `libps6000a.so`  
+    - `libps6000a.so.2`  
+    - `libps6000a.so.2.0.0`  
+  
+  To:  
+  `DRIVER_Picoscope6000ESeries/PicoscopeApp/picoscopeSupport/lib/`
+
 ## Usage
-- The picoscope to open is identified by the SERIAL_NUM macro in the st.cmd file. This macro must equal the serial number of the PicoScope you wish to connect to. 
+- The PicoScope to open is selected using the `SERIAL_NUM` macro defined in the `st.cmd` startup script. This must match the serial number of the connected device exactly.
 - It is expected that a PicoScope is connected at application start-up. If a PicoScope is connected after the application has started, setting `<OSCNAME>:ON` to `1` or `ON` will open the scope.  
 
 - The following Process Variables (PVs) are used to configure a channel:  
-  - `<OSCNAME>:CH[A-D]:coupling`  
-  - `<OSCNAME>:CH[A-D]:range`  
-  - `<OSCNAME>:CH[A-D]:bandwidth`  
-  - `<OSCNAME>:CH[A-D]:analog_offset`    
->[!Note] 
+  - **\<OSCNAME>:CH[A-D]:coupling**  
+  - **\<OSCNAME>:CH[A-D]:range**  
+  - **\<OSCNAME>:CH[A-D]:bandwidth**  
+  - **\<OSCNAME>:CH[A-D]:analog_offset**    
+>**Note:** 
 >Changes to the above PVs will apply immediately and can be verified by checking the :fbk PVs.  
 >To ensure a channel is ON, verify the status with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
 
 - **Simple usage example walkthrough:**
 
-  The driver for PicoScope 6000E Series devices (libps6000a), from Pico Technology (https://www.picotech.com/downloads), is included in this repository. 
-
-  This is a case using Channel B with a signal voltage within ±20V.
+  The following example demonstrates capturing a waveform on Channel B, using a ±20 V range.
 
   ```bash
-  git clone git@github.lightsource.ca:cid/DRIVER_Picoscope6000ESeries.git
-  cd DRIVER_Picoscope6000ESeries/
-  make clean all
-  cd iocBoot/iocOPI2027-002/
-  ./st.cmd
+   git clone git@github.lightsource.ca:cid/DRIVER_Picoscope6000ESeries.git
+   cd DRIVER_Picoscope6000ESeries/
+   make clean all
+   cd iocBoot/iocOPI2027-002/
+   ./st.cmd
 
-  # On another terminal
-  caput OSC1022-01:CHB:range 10       # Set the voltage range for Channel B to +/-20V
-  caget OSC1022-01:CHB:ON:fbk         # Check if Channel B is ON. If not, try: caput OSC1022-01:CHB:ON ON.
-  caput OSC1022-01:CHB:waveform:start 1 # Start the waveform capturing (Use external triggering)
-  caget OSC1022-01:CHB:waveform         # when waveform is ready, get the waveform. The waveform has a maximum size of 1,000,000 elements. Only the first 10,000 elements will contain data; the rest will be zeros.
+   # On another terminal
+   caput OSC1022-01:CHB:range 10          # Set the voltage range for Channel B to +/- 20V
+   caget OSC1022-01:CHB:ON:fbk            # Check if Channel B is ON. If not, try:  caput OSC1022-01:CHB:ON ON.
+   caput OSC1022-01:CHB:waveform:start 1  # Begin waveform acquisition (external trigger assumed)
+   caget OSC1022-01:CHB:waveform          # when waveform is ready, get the waveform.
   ```
-  All details of other configurations can be found in this document.
+  *See below for complete details on channel and trigger configuration options.*
 
   **The waveform data is a scaled value. The calculation is located at the bottom.**
   - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
   - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:start` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
   - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
 
->[!Note] 
+>**Note:** 
 >Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:CH[A-D]:waveform:start`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
-
----
 
 ## PVs
 ### OSCNAME:log 
@@ -84,13 +135,13 @@ This document provides detailed information about the EPICS driver for PicoTech'
     | 1     | ON            | Connect the Picoscope.    |  
 - **Example**:
   ```bash
-    # Connect the Picoscope by number
-    $ caput OSC1234-01:ON 1
-    # Disconnect the Picoscope by string 
-    $ caput OSC1234-01:ON OFF
+  # Connect the Picoscope by number
+  $ caput OSC1234-01:ON 1
+  # Disconnect the Picoscope by string 
+  $ caput OSC1234-01:ON OFF
 
-    # Get connection status
-    $ caget OSC1234-01:ON
+  # Get connection status
+  $ caget OSC1234-01:ON
   ```
 ### OSCNAME:ON:fbk 
 - **Type**: `bi` 
@@ -100,26 +151,37 @@ This document provides detailed information about the EPICS driver for PicoTech'
   - `VAL`: See `OSCNAME:ON`.
 
 
-### OSCNAME:resolution
-- **Type**: `mbbo`
-- **Description**: The resolution of the sampling hardware in the Picoscope, providing varying levels of signal precision. Applied to all channels.
-- **Fields**:
-  - `VAL`: The resolution mode and corresponding levels.  
-    | VAL   | Enum          | Description                          |  
-    |-------|---------------|--------------------------------------|  
-    | 0     | PICO_DR_8BIT  | 8-bit resolution (256 levels).        |  
-    | 1     | PICO_DR_10BIT | 10-bit resolution (1024 levels).      |  
-    | 2     | PICO_DR_12BIT | 12-bit resolution (4096 levels).      |
-- **Example**:
-  ```bash
-    # Set resolution to PICO_DR_10BIT by number 
-    $ caput OSC1234-01:resolution 1
-    # Set resolution to PICO_DR_8BIT by enum 
-    $ caput OSC1234-01:resolution PICO_DR_8BIT
 
-    # Get resolution
-    $ caget OSC1234-01:resolution
-  ```
+### OSCNAME:resolution
+- **Type**: `mbbo`  
+- **Description**: Sets the resolution of the ADC (analog-to-digital converter), affecting signal precision. Applies globally to all active channels.
+
+| VAL | Enum           | Description                     |
+|-----|----------------|---------------------------------|
+| 0   | PICO_DR_8BIT   | 8-bit resolution (256 levels)   |
+| 1   | PICO_DR_10BIT  | 10-bit resolution (1024 levels) |
+| 2   | PICO_DR_12BIT  | 12-bit resolution (4096 levels) |
+
+> **Note**  
+> Due to hardware constraints, **12-bit resolution** only supports single or the following dual-channel combinations:
+
+| Valid 12-bit Channel Pairs |
+|----------------------------|
+| A + C                      |
+| A + D                      |
+| B + C                      |
+| B + D                      |
+
+
+**Example**:
+```bash
+# Set resolution to 10-bit
+caput OSC1234-01:resolution PICO_DR_10BIT
+
+# Check current resolution
+caget OSC1234-01:resolution
+```
+
 ### OSCNAME:resolution:fbk 
 - **Type:** `mbbi`
 - **Description:** The actual value of the resolution set to the device. 
@@ -140,8 +202,8 @@ This document provides detailed information about the EPICS driver for PicoTech'
     | 0    | AGGREGATE              |  Reduces every block of n values to just two values: a minimum and a maximum. The minimum and maximum values are returned in two separate buffers.                     |  
     | 1    | DECIMATE               |  Reduces every block of n values to a single value representing the average (arithmetic mean) of all the values.                   |  
     | 2    | AVERAGE                |  Reduces every block of n values to just the first value in the block, discarding all the other values                   |
-    | 3    | TRIG_DATA_FOR_TIME_CALC|  In overlapped mode only, causes trigger data to be retrieved from the scope to calculate the trigger time without requiring a user buffer to be set for this data.
-    | 4    | TRIGGER                |  Gets 20 samples either side of the trigger point. When using trigger delay, this is the original event causing the trigger and not the delayed point. This data is available even when the original trigger point falls outside the main preTrigger + postTrigger data. Trigger data must be retrieved before attempting to get the trigger time.
+    | 3    | TRIG_DATA_FOR_TIME_CALC (*NOT IMPLEMENTED*)|  In overlapped mode only, causes trigger data to be retrieved from the scope to calculate the trigger time without requiring a user buffer to be set for this data.
+    | 4    | TRIGGER (*NOT IMPLEMENTED*) |  Gets 20 samples either side of the trigger point. When using trigger delay, this is the original event causing the trigger and not the delayed point. This data is available even when the original trigger point falls outside the main preTrigger + postTrigger data. Trigger data must be retrieved before attempting to get the trigger time.
     | 5    | RAW                    |  No downsampling. Returns raw data values|
 - **Example**:
   ```bash
@@ -178,7 +240,7 @@ This document provides detailed information about the EPICS driver for PicoTech'
 
 ### OSCNAME:down_sample_ratio:fbk 
 - **Type**: `ai`
-- **Description**: The downsampling facter that has been applied to the raw data of the last waveform acquired. 
+- **Description**: The downsampling factor that has been applied to the raw data of the last waveform acquired. 
   - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:down_sample_ratio`. 
@@ -190,12 +252,12 @@ This document provides detailed information about the EPICS driver for PicoTech'
   - `VAL`: The number of samples in integer.
   
     Maximum sample size
-    |                   | 8 BIT      | 10 BIT     |  
-    |-------------------|------------|------------|  
-    | ONE Channel       | 4294966784 | 2147483392 |  
-    | TWO Channels      | 2147483392 | 1073741696 |  
-    | THREE Channels    | 1073741696 | N/A        |  
-    | FOUR Channels     | 1073741696 | N/A        |
+    |                    | 8 BIT      | 10 BIT     |  
+    |--------------------|------------|------------|  
+    | ONE Channel ON     | 4294966784 | 2147483392 |  
+    | TWO Channels ON    | 2147483392 | 1073741696 |  
+    | THREE Channels ON  | 1073741696 | N/A        |  
+    | FOUR Channels ON   | 1073741696 | N/A        |
 - **Example**:
   ```bash
     # Collect 100000000 samples 
@@ -241,7 +303,7 @@ This document provides detailed information about the EPICS driver for PicoTech'
   - `VAL`: See `OSCNAME:trigger_position_ratio`.
 
 ### OSCNAME:auto_trigger_us 
-- **Type**: `ai` 
+- **Type**: `ao` 
 - **Description**: The time in microseconds for which the scope will wait before collecting data if no trigger event occurs. If set to zero, the scope will wait indefinitely for a trigger. 
  
 ### OSCNAME:trigger:channel
@@ -258,6 +320,9 @@ This document provides detailed information about the EPICS driver for PicoTech'
     | 4       | TRIGGER_AUX | Use Auxiliary trigger input as the triggering source, with a fixed threshold of 1.25 V (nominal) to suit 2.5 V CMOS|
     | 10       | NONE        | No trigger set |
 
+>**Note:**
+>AUX trigger input requires pulse width >50 ns for detection. 
+>Shorter pulses may not be reliably captured.
 
 - **Example**:
   ```bash
@@ -274,16 +339,6 @@ This document provides detailed information about the EPICS driver for PicoTech'
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger:channel`. 
 
-### OSCNAME:trigger:mode:fbk
-- **Type**: `mbbo`
-- **Description**: The mode of triggering, determined by `OSC:trigger:type`. 
-- **Fields**:
-  - `VAL`: The mode of triggering.
-    |VAL      |Enum         |Description                   | Threshold  |
-    |---------|-------------|------------------------------|------------|  
-    | 0       | LEVEL       | Will only use one threshold  | Upper      | 
-    | 1       | WINDOW      | Will use two thresholds      | Lower      |
-
 ### OSCNAME:trigger:type 
 - **Type**: `mbbo`
 - **Description**: The type of trigger set. 
@@ -296,6 +351,16 @@ This document provides detailed information about the EPICS driver for PicoTech'
 | 1   | SIMPLE EDGE    | Simple trigger, monitors incoming signal and waits for the voltage to rise above (or fall below) a set threshold.  | Upper       |
 | 2   | WINDOW         | Detects the moment when the waveform enters or leaves a voltage range.                                             | Upper/Lower |
 | 3   | ADVANCED EDGE  | Provides rising, falling, and dual edge conditions, as well as adjustable hysteresis.                              | Upper       |
+
+### OSCNAME:trigger:mode:fbk
+- **Type**: `mbbi`
+- **Description**: The mode of triggering, determined by `OSC:trigger:type`. 
+- **Fields**:
+  - `VAL`: The mode of triggering.
+    |VAL      |Enum         |Description                   | Threshold  |
+    |---------|-------------|------------------------------|------------|  
+    | 0       | LEVEL       | Will only use one threshold  | Upper      | 
+    | 1       | WINDOW      | Will use two thresholds      | Lower      |
 
 ### OSCNAME:trigger:direction
 - **Type**: `mbbo`
@@ -539,9 +604,9 @@ This document provides detailed information about the EPICS driver for PicoTech'
 ### OSCNAME:CH[A-D]:coupling:fbk
 - **Type**: `mbbi`
 - **Description**: The actual impedance and coupling type set to a channel. 
-  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+  - **Note**: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:CH[A-B]:coupling` 
+  - `VAL`: See `OSCNAME:CH[A-D]:coupling` 
 
 ### OSCNAME:CH[A-D]:range
 - **Type**: `mbbo`
@@ -579,36 +644,36 @@ This document provides detailed information about the EPICS driver for PicoTech'
 ### OSCNAME:CH[A-D]:range:fbk
 - **Type**: `mbbi`
 - **Description**: The actual value of the voltage range set to a channel.  
-  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+  - **Note**: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:CH[A-B]:range` 
+  - `VAL`: See `OSCNAME:CH[A-D]:range` 
 
 ### OSCNAME:CH[A-D]:bandwidth
 - **Type**: `mbbo`
-- **Description**: The bandwith Oscilloscope start acquiring PV with current configuration(set by other PVs).
+- **Description**: Controls the analog bandwidth of the channel. Set before initiating waveform acquisition.
 - **Fields**:
   - `VAL`: Trigger to start getting the waveform.
     | VAL   | Enum        | Description              |
     |-------|-------------|--------------------------|
-    | 0     | BW_FULL     | Full bandwith (defualt)  |
-    | 1     | BW_20MHZ    | Bandwith of 20 MHZ       |
+    | 0     | BW_FULL     | Full bandwidth (default)  |
+    | 1     | BW_20MHZ    | Bandwidth of 20 MHZ       |
 - **Example**:
   ```bash
-    # Set bandwith to full bandwith by number
-    $ caput OSC1234-01:CHA:bandwith 0
-    # Set bandwith to 20 MHZ bandwith by enum
-    $ caput OSC1234-01:CHA:bandwith PICO_BW_20MHZ
+    # Set bandwidth to full bandwidth by number
+    $ caput OSC1234-01:CHA:bandwidth 0
+    # Set bandwidth to 20 MHz using enum
+    $ caput OSC1234-01:CHA:bandwidth PICO_BW_20MHZ
 
-    # Get bandwith
-    $ caget OSC1234-01:CHA:bandwith
+    # Get bandwidth
+    $ caget OSC1234-01:CHA:bandwidth
   ```
 
-### OSCNAME:CH[A-D]:bandwith:fbk
+### OSCNAME:CH[A-D]:bandwidth:fbk
 - **Type**: `mbbi`
 - **Description**: The actual value of the voltage range set to a channel.  
   - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:CH[A-B]:bandwith` 
+  - `VAL`: See `OSCNAME:CH[A-D]:bandwidth` 
 
 ### OSCNAME:CH[A-D]:analog_offset
 - **Type**: `ao`
@@ -618,34 +683,34 @@ This document provides detailed information about the EPICS driver for PicoTech'
 - **Example**:
   ```bash
     # Set offset to 1V
-    $ caput OSC1234-01:CHA:analogoffset 1
+    $ caput OSC1234-01:CHA:analog_offset 1
     # Set offset to 10V
-    $ caput OSC1234-01:CHA:analogoffset 10
+    $ caput OSC1234-01:CHA:analog_offset 10
 
     # Get offset
-    $ caput OSC1234-01:CHA:analogoffset
+    $ caput OSC1234-01:CHA:analog_offset
   ```
 ### OSCNAME:CH[A-D]:analog_offset:fbk
 - **Type**: `ai`
-- **Description**: The actual voltage to added to the input channel before digitization. The analog offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analog_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
-  - NOTE: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
+- **Description**: The actual voltage added to the input channel before digitization. The analog offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analog_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
+  - **Note**: This value is only true when `OSCNAME:CH[A-D]:ON:fbk` reports ON. 
 - **Fields**: 
-  - `VAL`: See `OSCNAME:CH[A-B]:analog_offset` 
+  - `VAL`: See `OSCNAME:CH[A-D]:analog_offset` 
 
 ### OSCNAME:CH[A-D]:analog_offset:max 
 - **Type**: `ai`
-- **Description**: The maximun allowed analog offset voltage allowed for the range. 
-  - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
+- **Description**: The maximum allowed analog offset voltage allowed for the range. 
+  - Updated when the value of `OSCNAME:CH[A-D]:range` or `OSCNAME:CH[A-D]:coupling` are changed. 
 
 ### OSCNAME:CH[A-D]:analog_offset:min
 - **Type**: `ai`
 - **Description**: The minimum allowed analog offset voltage allowed for the range. 
-  - Updated when the value of `OSCNAME:CH[A-B]:range` or `OSCNAME:CH[A-B]:coupling` are changed. 
+  - Updated when the value of `OSCNAME:CH[A-D]:range` or `OSCNAME:CH[A-D]:coupling` are changed. 
 
 
 ### OSCNAME:CH[A-D]:waveform:start
 - **Type**: `bo`
-- **Description**: The PV to ask Oscilloscope start acquiring wavefrom with current configuration(set by other PVs).
+- **Description**: Starts waveform acquisition using the current configuration (as set by other PVs).
 - **Fields**:
   - `VAL`: Start getting the waveform.
     | VAL   | Description      |
@@ -659,7 +724,7 @@ This document provides detailed information about the EPICS driver for PicoTech'
 
 ### OSCNAME:CH[A-D]:waveform:stop
 - **Type**: `bo`
-- **Description**: The PV to ask Oscilloscope stop acquiring.
+- **Description**: Stops waveform acquisition in progress.
 - **Fields**:
   - `VAL`: Start getting the waveform.
     | VAL   | Description      |
@@ -706,6 +771,14 @@ This document provides detailed information about the EPICS driver for PicoTech'
   ```bash
     $ caget OSC1234-01:num_subwaveforms:fbk
   ```
+## Troubleshooting
+
+- **Problem**: No waveform data appears after `waveform:start`.
+  - **Solution**: Check that `CH[A-D]:ON` is ON and trigger settings are valid.
+
+- **Problem**: Cannot connect to PicoScope.
+  - **Solution**: Ensure `udev_install.sh` was run and the device is connected before IOC startup.
+
 
 ## Threading Hierarchy
 
@@ -717,20 +790,34 @@ This document provides detailed information about the EPICS driver for PicoTech'
 ## Control Logic
 
 - **Main Acquisition Thread**:
-  - *Lifecycle*: Runs indefinitely (immortal) unless an error occurs.
-  - *Start*: Waits for `acquisitionStartEvent` to begin acquisition.
-  - *Stop*: Sets `dataAcquisitionFlag` to `FALSE` to halt looping and wait on `acquisitionStartEvent`.
-  - *Mode*: Selects block (`subwaveform_num == 0`) or streaming (`subwaveform_num > 0`) mode.
+  - Internally, OSCNAME:CHX:waveform:start signals the acquisition thread to begin capture. This thread determines whether to use block or streaming mode based on waveform size
+  - **Lifecycle**: Runs indefinitely (immortal).
+  - **Start**: Waits for `acquisitionStartEvent` to begin acquisition.
+  - **Stop**: Sets `dataAcquisitionFlag` to `FALSE` to halt looping and wait on `acquisitionStartEvent`.
+  - **Mode**: Selects block (`subwaveform_num == 0`) or streaming (`subwaveform_num > 0`) mode.
 
-- **Channel Streaming Thread**:
-  - *Lifecycle*: Runs until all subwaveforms for one waveform are collected.
-  - *Behavior*: Processes channel data, updates waveform PVs per subwaveform.
-  - *Stop*: Exits if `dataAcquisitionFlag` is `FALSE`, signals completion.
+- **Channel Streaming Threads**:
+  - Create a new thread for **each** channel opened.
+  - **Lifecycle**: Runs until all subwaveforms for one waveform are collected on all open channels.
+  - **Behavior**: Processes channel data, updates waveform PVs per subwaveform.
+  - **Stop**: Exits if `dataAcquisitionFlag` is `FALSE`, signals completion.
 
 - **Block Capture**:
-  - *Behavior*: Captures one-time block data for all enabled channels, returns data for PV updates.
-  - *Stop*: Halts on errors or if `dataAcquisitionFlag` is `FALSE`.
+  - **Behavior**: Captures one-time block data for all enabled channels, returns data for PV updates.
+  - **Stop**: Halts on errors or if `dataAcquisitionFlag` is `FALSE`.
 
 - **Stream Capture**:
-  - *Behavior*: Starts streaming, spawns channel threads, waits for thread completion.
-  - *Stop*: Halts on errors or if `dataAcquisitionFlag` is `FALSE`.
+  - **Behavior**: Starts streaming, spawns channel threads, waits for thread completion.
+  - **Stop**: Halts on errors or if `dataAcquisitionFlag` is `FALSE`.
+
+## License
+
+This project is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).  
+You may use, modify, and distribute it under the terms of the GPLv3.
+
+See the full license text in the [LICENSE](https://github.com/Canadian-Light-Source/DRIVER_Picoscope6000ESeries/blob/main/LICENSE) file.
+
+> ⚠️ **Third-Party Dependency Notice**  
+> This project depends on SDK files (`libps6000a`, header files such as `ps6000aApi.h`) provided by Pico Technology Ltd.  
+> These files are **not licensed under the GPL** and are not redistributed with this project.  
+> You must install them separately via the [PicoScope 7 for Linux package](https://www.picotech.com/downloads/linux).
