@@ -12,18 +12,18 @@ This document provides detailed information about the EPICS driver for PicoTech'
 
 ```bash
 DRIVER_Picoscope6000ESeries
-├── README.md                 # This documentation
-├── udev_install.sh          # Adds udev rules for PicoScope USB
+├── README.md                    # This documentation
+├── udev_install.sh              # Adds udev rules for PicoScope USB
 
 ├── PicoscopeApp/
-│   ├── Db/                  # Database and template files (Picoscope.db, Picoscope.template)
+│   ├── Db/                      # Database and template files (Picoscope.db, Picoscope.template)
 │   ├── picoscopeSupport/
 │   │   ├── include/libps6000a/  # Copy Pico SDK headers here
-│   │   └── lib/                # Copy Pico SDK shared libraries here
-│   └── src/                  # All driver source files (.c/.cpp/.h)
+│   │   └── lib/                 # Copy Pico SDK shared libraries here
+│   └── src/                     # All driver source files (.c/.cpp/.h)
 
 ├── iocBoot/
-│   └── ioc<hostname>/       # st.cmd and IOC boot files
+│   └── ioc<hostname>/           # st.cmd and IOC boot files
 ```
 ## Requirements
 - EPICS Base (tested with 7.0.7 and 7.0.9). Make sure to update the `EPICS_BASE` path in `configure/RELEASE` to your local EPICS installation.
@@ -779,7 +779,8 @@ caget OSC1234-01:resolution
 - **Problem**: Cannot connect to PicoScope.
   - **Solution**: Ensure `udev_install.sh` was run and the device is connected before IOC startup.
 
-
+---
+# For Developer
 ## Threading Hierarchy
 
 - **acquisition_thread_function**: *Drives acquisition, updates EPICS PVs.*
