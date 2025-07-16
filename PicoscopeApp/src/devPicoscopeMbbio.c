@@ -381,8 +381,7 @@ write_mbbo (struct mbboRecord *pmbbo)
             
             if (result != 0) {
                 snprintf(log_message, sizeof(log_message), "Error setting time per division to %d", (int)pmbbo->rval);
-                vdp->mp->sample_config.timebase_configs.time_per_division = previous_time_per_division; 
-                break; 
+                vdp->mp->sample_config.timebase_configs.time_per_division = previous_time_per_division;  
             } else {
                 vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
                 vdp->mp->sample_config.timebase_configs.timebase = timebase;

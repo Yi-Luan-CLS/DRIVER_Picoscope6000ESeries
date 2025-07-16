@@ -226,7 +226,7 @@ write_bo (struct boRecord *pbo)
                         "Error closing picoscope with serial number %s.", vdp->serial_num);
                 }   
             }
-            update_log_pvs(vdp->mp, (log_message[0] == '\0') ? NULL : log_message, result);
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break;
 
         case SET_CHANNEL_ON:    
@@ -254,7 +254,7 @@ write_bo (struct boRecord *pbo)
                 strcpy(log_message, pv_value == 1 ? "Error setting channel on." : "Error setting channel off.");
                 pbo->val = 0; // Default to channel OFF when error occurs 
             }
-            update_log_pvs(vdp->mp, (log_message[0] == '\0') ? NULL : log_message, result);
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
 
             // Update timebase configs that are affected by the number of channels on. 
             result = get_valid_timebase_configs(

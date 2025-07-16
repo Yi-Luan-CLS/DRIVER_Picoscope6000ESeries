@@ -487,7 +487,6 @@ static long write_ao (struct aoRecord *pao)
             if (result != 0) {
                 snprintf(log_message, sizeof(log_message), "Error setting the number of divisions to %d", (int)pao->val);
                 vdp->mp->sample_config.timebase_configs.num_divisions = previous_num_divisions; 
-                break; 
             } 
 
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
@@ -510,10 +509,12 @@ static long write_ao (struct aoRecord *pao)
 
             if (result != 0) {
                 snprintf(log_message, sizeof(log_message), "Error setting the number of samples to %d", (int) pao->val); 
+                update_log_pvs(vdp->mp, log_message, result);
                 vdp->mp->sample_config.num_samples = previous_num_samples;
                 vdp->mp->sample_config.unadjust_num_samples = (int) pao->val; 
                 break;
             } 
+
             if (vdp->mp->sample_config.num_samples > vdp->mp->waveform_size){
                 vdp->mp->subwaveform_num = (vdp->mp->sample_config.num_samples + vdp->mp->waveform_size - 1) / vdp->mp->waveform_size;
                 vdp->mp->sample_config.subwaveform_samples_num = vdp->mp->waveform_size;
@@ -528,7 +529,7 @@ static long write_ao (struct aoRecord *pao)
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
             vdp->mp->sample_config.timebase_configs.timebase = timebase;
             vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;
-            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
+            update_log_pvs(vdp->mp, NULL, result);
             break;  
 
         case SET_TRIGGER_PULSE_WIDTH:
@@ -542,11 +543,11 @@ static long write_ao (struct aoRecord *pao)
             if (result != 0) {
                 snprintf(log_message, sizeof(log_message), "Error setting the width of trigger signal to %d.", (int) pao->val); 
                 vdp->mp->sample_config.unadjust_num_samples = (int) pao->val; 
+            } else {
+                vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+                vdp->mp->sample_config.timebase_configs.timebase = timebase;
+                vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;
             }
-
-            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
-            vdp->mp->sample_config.timebase_configs.timebase = timebase;
-            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;
             update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break;
 
