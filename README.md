@@ -145,15 +145,15 @@ To prepare the IOC for your system:
 | [OSCNAME:waveform:start](#oscnamewaveformstart) | Start waveform acquisition |
 | [OSCNAME:waveform:stop](#oscnamewaveformstop) | Stop acquisition |
 | [OSCNAME:num_subwaveforms:fbk](#oscnamenum_subwaveformsfbk) | Number of sub-waveforms |
-| [OSCNAME:CH[A-D]:waveform](#oscnamecha-dwaveform) | Captured waveform |
+| [OSCNAME:CH[A-D]:waveform](#oscnamecha-dwaveform) | Captured waveform/sub-waveform |
 
 ### [Timing and Scaling](#timing-and-scaling-1)
 | PV | Description |
 |----|-------------|
 | [OSCNAME:time_per_division:unit](#oscnametime_per_divisionunit) | Time/div unit (e.g., ms) |
 | [OSCNAME:time_per_division:unit:fbk](#oscnametime_per_divisionunitfbk) | Feedback: unit |
-| [OSCNAME:num_divisions](#oscnamenum_divisions) | Horizontal divisions |
-| [OSCNAME:num_divisions:fbk](#oscnamenum_divisionsfbk) | Feedback: horizontal divisions |
+| [OSCNAME:num_divisions](#oscnamenum_divisions) | The number of divisions |
+| [OSCNAME:num_divisions:fbk](#oscnamenum_divisionsfbk) | Feedback: The number of divisions |
 | [OSCNAME:time_per_division](#oscnametime_per_division) | Time per division |
 | [OSCNAME:time_per_division:fbk](#oscnametime_per_divisionfbk) | Feedback: actual value |
 | [OSCNAME:sample_interval:fbk](#oscnamesample_intervalfbk) | Sample interval |
@@ -177,7 +177,7 @@ To prepare the IOC for your system:
 | [OSCNAME:trigger:lower:threshold:fbk](#oscnametriggerlowerthresholdfbk) | Feedback: lower threshold |
 | [OSCNAME:trigger:lower:threshold:hysteresis](#oscnametriggerlowerthresholdhysteresis) | Lower hysteresis |
 | [OSCNAME:trigger:lower:threshold:hysteresis:fbk](#oscnametriggerlowerthresholdhysteresisfbk) | Feedback: lower hysteresis |
-| [OSCNAME:trigger:interval](#oscnametriggerinterval) | Trigger polling interval |
+| [OSCNAME:trigger:interval](#oscnametriggerinterval) | Trigger frequency in seconds |
 | [OSCNAME:trigger:missed](#oscnametriggermissed) | Number of missed triggers |
 | [OSCNAME:trigger_pulse_width](#oscnametrigger_pulse_width) | Pulse width in µs |
 | [OSCNAME:trigger_pulse_width:fbk](#oscnametrigger_pulse_widthfbk) | Feedback: pulse width |
@@ -185,13 +185,13 @@ To prepare the IOC for your system:
 ### [Channel Configuration](#channel-configuration-1)
 | PV | Description |
 |----|-------------|
-| [OSCNAME:CH[A-D]:ON](#oscnamecha-don) | Enable input channel |
+| [OSCNAME:CH[A-D]:ON](#oscnamecha-don) | Enable output channel |
 | [OSCNAME:CH[A-D]:ON:fbk](#oscnamecha-donfbk) | Feedback: channel enabled |
-| [OSCNAME:CH[A-D]:coupling](#oscnamecha-dcoupling) | Input coupling (AC/DC) |
+| [OSCNAME:CH[A-D]:coupling](#oscnamecha-dcoupling) | Coupling (AC/DC) |
 | [OSCNAME:CH[A-D]:coupling:fbk](#oscnamecha-dcouplingfbk) | Feedback: coupling |
-| [OSCNAME:CH[A-D]:range](#oscnamecha-drange) | Voltage range |
+| [OSCNAME:CH[A-D]:range](#oscnamecha-drange) | Voltage range in volts |
 | [OSCNAME:CH[A-D]:range:fbk](#oscnamecha-drangefbk) | Feedback: range |
-| [OSCNAME:CH[A-D]:bandwidth](#oscnamecha-dbandwidth) | Bandwidth limiter |
+| [OSCNAME:CH[A-D]:bandwidth](#oscnamecha-dbandwidth) | Bandwidth |
 | [OSCNAME:CH[A-D]:bandwidth:fbk](#oscnamecha-dbandwidthfbk) | Feedback: bandwidth |
 | [OSCNAME:CH[A-D]:analog_offset](#oscnamecha-danalog_offset) | Analog offset voltage |
 | [OSCNAME:CH[A-D]:analog_offset:fbk](#oscnamecha-danalog_offsetfbk) | Feedback: analog offset |
