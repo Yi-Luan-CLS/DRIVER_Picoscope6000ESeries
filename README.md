@@ -24,6 +24,8 @@ DRIVER_Picoscope6000ESeries
 
 ├── iocBoot/
 │   └── ioc<hostname>/           # st.cmd and IOC boot files
+│       └── st.cmd/              # st.cmd start script
+
 ```
 ## Requirements
 - EPICS Base (tested with 7.0.7 and 7.0.9). Make sure to update the `EPICS_BASE` path in `configure/RELEASE` to your local EPICS installation.
@@ -62,19 +64,35 @@ After installing the SDK, copy the following files:
   To:  
   `DRIVER_Picoscope6000ESeries/PicoscopeApp/picoscopeSupport/lib/`
 
+### 3. Update IOC Folder and Startup Script
+
+To prepare the IOC for your system:
+
+- **Rename the IOC directory**  
+  Rename the folder `iocBoot/iocXXXX-XXX/` to match your actual IOC host name.  
+  For example, if your host is `IOC0000-000`, rename the directory:
+  ```bash
+  mv iocBoot/iocXXXX-XXX/ iocBoot/iocIOC0000-000/
+  ```
+
+- **Edit the IOC startup script**  
+  Open the `st.cmd` file inside the renamed IOC folder and update the following macros:
+
+  - Replace `OSC=OSCXXXX-XX` with your desired PV name prefix (e.g., `OSC1234-01`)
+  - Replace `SERIAL_NUM=XXXX/XXXX` with the actual serial number of your PicoScope (e.g., `JR000/1234`)
+
+  Example line after editing:
+  ```tcl
+  dbLoadRecords("PicoscopeApp/Db/Picoscope.db", "OSC=OSC1234-01,SERIAL_NUM=JR000/1234")
+  ```
+
+  > 💡 The `OSC` prefix determines the root of your PV names (e.g., `OSC1234-01:ON`, `OSC1234-01:CHB:waveform`).  
+  > The `SERIAL_NUM` must exactly match the value printed on the back 
+
+
 ## Usage
 - The driver connects to (opens) the Picoscope identified by the serial number supplied in the `SERIAL_NUM` macro defined in the `st.cmd` startup script. This must match the serial number of the connected device exactly.
 - It is expected that a PicoScope is connected at application start-up. If a PicoScope is connected after the application has started, setting `<OSCNAME>:ON` to `1` or `ON` will open the scope.  
-
-- The following Process Variables (PVs) are used to configure a channel:  
-  - **\<OSCNAME>:CH[A-D]:coupling**  
-  - **\<OSCNAME>:CH[A-D]:range**  
-  - **\<OSCNAME>:CH[A-D]:bandwidth**  
-  - **\<OSCNAME>:CH[A-D]:analog_offset**    
->**Note:** 
->Changes to the above PVs will apply immediately and can be verified by checking the :fbk PVs.  
->To ensure a channel is ON, verify the status with the feedback PV: `<OSCNAME>:CH[A-D]:ON:fbk`.
-
 - **Simple usage example walkthrough:**
 
   The following example demonstrates capturing a waveform on Channel B, using a ±20 V range.
@@ -82,20 +100,20 @@ After installing the SDK, copy the following files:
   ```bash
    cd DRIVER_Picoscope6000ESeries/
    make clean all
-   cd iocBoot/iocOPI2027-002/
+   cd iocBoot/iocIOC0000-000/
    ./st.cmd
 
    # On another terminal
-   caput OSC1022-01:CHB:range 20V         # Set the voltage range for Channel B to +/- 20V
-   caget OSC1022-01:CHB:ON:fbk            # Check if Channel B is ON. If not, try:  caput OSC1022-01:CHB:ON ON.
-   caput OSC1022-01:CHB:waveform:start 1  # Begin waveform acquisition (external trigger assumed)
-   caget OSC1022-01:CHB:waveform          # Once waveform is ready, get the waveform.
+   caput OSC1234-01:CHB:range 20V         # Set the voltage range for Channel B to +/- 20V
+   caget OSC1234-01:CHB:ON:fbk            # Check if Channel B is ON. If not, try:  caput OSC1234-01:CHB:ON ON.
+   caput OSC1234-01:CHB:waveform:start 1  # Begin waveform acquisition (external trigger assumed)
+   caget OSC1234-01:CHB:waveform          # Once waveform is ready, get the waveform.
   ```
   *See below for complete details on [device](#device-configurations), [channel](#channel-configurations), [data capture](#data-capture-configurations) configuration options.*
 
   **The waveform data is a scaled value. The calculation is located at the bottom.**
   - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
-  - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:waveform:start` will fail if `OSC1021-01:ON` is set to OFF. 
+  - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1234-01:waveform:start` will fail if `OSC1234-01:ON` is set to OFF. 
   - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
 
 >**Note:** 
