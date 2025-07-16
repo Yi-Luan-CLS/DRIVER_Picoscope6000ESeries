@@ -6,3 +6,6 @@
 envPaths
 .vscode
 templates/*
+Pico*.h
+ps6000a*.h
+libps6000a.so*
