@@ -35,6 +35,7 @@
 enum ioType
     {
     UNKNOWN_IOTYPE, // default case, must be 0 
+    GET_STATUS_CODE,
     SET_NUM_SAMPLES,
     GET_NUM_SAMPLES,
     SET_TRIGGER_PULSE_WIDTH,
@@ -80,6 +81,7 @@ static struct aioType
         char *cmdp;
     } AioType[] =
     {
+        {"get_status_code", isInput, GET_STATUS_CODE, ""},
         {"set_num_samples", isOutput, SET_NUM_SAMPLES, ""},
         {"get_num_samples", isInput, GET_NUM_SAMPLES, ""},
         {"set_trigger_pulse_width", isOutput, SET_TRIGGER_PULSE_WIDTH, ""},
@@ -201,6 +203,10 @@ static long init_record_ai (struct aiRecord *pai)
 
     switch(vdp->ioType)
     {
+        case GET_STATUS_CODE: 
+            vdp->mp->pStatusCode = pai;
+            break; 
+
         case GET_TRIGGER_UPPER:
             vdp->mp->pTriggerThresholdFbk[0] = pai;
             break;
@@ -468,6 +474,7 @@ static long write_ao (struct aoRecord *pao)
     char* record_name; 
     int channel_index; 
     uint32_t result;
+    char log_message[LOG_MESSAGE_LENGTH] = {0};
 
     struct PicoscopeAioData *vdp;
     vdp = (struct PicoscopeAioData *)pao->dpvt;
@@ -486,14 +493,14 @@ static long write_ao (struct aoRecord *pao)
             );
 
             if (result != 0) {
-                log_message(vdp->mp, pao->name, "Error setting the number of divisions.", result);
+                snprintf(log_message, sizeof(log_message), "Error setting the number of divisions to %d", (int)pao->val);
                 vdp->mp->sample_config.timebase_configs.num_divisions = previous_num_divisions; 
-                break; 
-            }
+            } 
 
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
             vdp->mp->sample_config.timebase_configs.timebase = timebase;
             vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break; 
 
         case SET_NUM_SAMPLES:
@@ -509,11 +516,13 @@ static long write_ao (struct aoRecord *pao)
             ); 
 
             if (result != 0) {
-                log_message(vdp->mp, pao->name, "Error setting the number of samples.", result);
+                snprintf(log_message, sizeof(log_message), "Error setting the number of samples to %d", (int) pao->val); 
+                update_log_pvs(vdp->mp, log_message, result);
                 vdp->mp->sample_config.num_samples = previous_num_samples;
                 vdp->mp->sample_config.unadjust_num_samples = (int) pao->val; 
-                break; 
-            }
+                break;
+            } 
+
             if (vdp->mp->sample_config.num_samples > vdp->mp->waveform_size){
                 vdp->mp->subwaveform_num = (vdp->mp->sample_config.num_samples + vdp->mp->waveform_size - 1) / vdp->mp->waveform_size;
                 vdp->mp->sample_config.subwaveform_samples_num = vdp->mp->waveform_size;
@@ -528,6 +537,7 @@ static long write_ao (struct aoRecord *pao)
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
             vdp->mp->sample_config.timebase_configs.timebase = timebase;
             vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;
+            update_log_pvs(vdp->mp, NULL, result);
             break;  
 
         case SET_TRIGGER_PULSE_WIDTH:
@@ -539,14 +549,14 @@ static long write_ao (struct aoRecord *pao)
                 &sample_rate
             );
             if (result != 0) {
-                log_message(vdp->mp, pao->name, "Error setting the width of trigger signal.", result);
+                snprintf(log_message, sizeof(log_message), "Error setting the width of trigger signal to %d.", (int) pao->val); 
                 vdp->mp->sample_config.unadjust_num_samples = (int) pao->val; 
-                break; 
+            } else {
+                vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+                vdp->mp->sample_config.timebase_configs.timebase = timebase;
+                vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;
             }
-
-            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
-            vdp->mp->sample_config.timebase_configs.timebase = timebase;
-            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break;
 
         case SET_DOWN_SAMPLE_RATIO: 
@@ -572,35 +582,36 @@ static long write_ao (struct aoRecord *pao)
                 &min_analog_offset
             );
             if (result != 0) {
-                log_message(vdp->mp, pao->name, "Error getting analog offset limits.", result);
-            }
+                snprintf(log_message, sizeof(log_message), "Error setting analog offset limits to %d.", (int) pao->val); 
+            } else {
+                pao->drvh = max_analog_offset; 
+                pao->drvl = min_analog_offset;
 
-            pao->drvh = max_analog_offset; 
-            pao->drvl = min_analog_offset;
+                if (pao->val > max_analog_offset) {
+                    vdp->mp->channel_configs[channel_index].analog_offset = max_analog_offset;
+                }
+                else if (pao->val < min_analog_offset) { 
+                    vdp->mp->channel_configs[channel_index].analog_offset = min_analog_offset;
+                }
+                else {
+                    vdp->mp->channel_configs[channel_index].analog_offset = pao->val; 
+                }  
 
-            if (pao->val > max_analog_offset) {
-                vdp->mp->channel_configs[channel_index].analog_offset = max_analog_offset;
-            }
-            else if (pao->val < min_analog_offset) { 
-                vdp->mp->channel_configs[channel_index].analog_offset = min_analog_offset;
-            }
-            else {
-                vdp->mp->channel_configs[channel_index].analog_offset = pao->val; 
-            }  
-
-            channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
-            if (channel_status == 1) {
-                result = set_channel_on(
-                    vdp->mp->channel_configs[channel_index], 
-                    vdp->mp->handle, 
-                    &vdp->mp->channel_status
-                );               
-                // If channel is not succesfully set on, return to previous value 
-                if (result != 0) {
-                    log_message(vdp->mp, pao->name, "Error setting analog offset.", result);
-                    vdp->mp->channel_configs[channel_index].analog_offset = previous_analog_offset;
+                channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
+                if (channel_status == 1) {
+                    result = set_channel_on(
+                        vdp->mp->channel_configs[channel_index], 
+                        vdp->mp->handle, 
+                        &vdp->mp->channel_status
+                    );               
+                    // If channel is not succesfully set on, return to previous value 
+                    if (result != 0) {
+                        snprintf(log_message, sizeof(log_message), "Error setting analog offset limits to %d.", (int) pao->val); 
+                        vdp->mp->channel_configs[channel_index].analog_offset = previous_analog_offset;
+                    }
                 }
             }
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break;
         
         case SET_TRIGGER_UPPER:
@@ -618,7 +629,7 @@ static long write_ao (struct aoRecord *pao)
                 vdp->mp->handle
             );
             if (result != 0) { 
-                log_message(vdp->mp, pao->name, "Threshold requested is outside of the trigger channel range.", result); 
+                snprintf(log_message, sizeof(log_message), "Upper threshold of %d is outside of the trigger channel range.", (int) pao->val); 
                 vdp->mp->trigger_config.thresholdUpper = 0; 
                 vdp->mp->trigger_config.thresholdUpperVolts = 0; 
                 pao->val = 0; 
@@ -626,6 +637,7 @@ static long write_ao (struct aoRecord *pao)
                 vdp->mp->trigger_config.thresholdUpperVolts = pao->val;
                 vdp->mp->trigger_config.thresholdUpper = upper_scaled;
             }
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result); 
             break;
 
         case SET_TRIGGER_UPPER_HYSTERESIS: 
@@ -651,7 +663,7 @@ static long write_ao (struct aoRecord *pao)
                 vdp->mp->handle
             );
             if (result != 0){ 
-                log_message(vdp->mp, pao->name, "Threshold requested is outside of the trigger channel range.", result); 
+                snprintf(log_message, sizeof(log_message), "Lower threshold of %d is outside of the trigger channel range.", (int) pao->val); 
                 vdp->mp->trigger_config.thresholdLower = 0; 
                 vdp->mp->trigger_config.thresholdLowerVolts = 0; 
                 pao->val = 0; 
@@ -659,6 +671,8 @@ static long write_ao (struct aoRecord *pao)
                 vdp->mp->trigger_config.thresholdLowerVolts = pao->val;            
                 vdp->mp->trigger_config.thresholdLower = lower_scaled;
             }
+            
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result); 
             break;
 
         case SET_TRIGGER_LOWER_HYSTERESIS: 

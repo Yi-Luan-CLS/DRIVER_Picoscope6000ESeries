@@ -37,7 +37,10 @@ typedef struct PS6000AModule
     struct waveformRecord* pWaveformStartPtr;
     struct waveformRecord* pWaveformStopPtr;
     struct waveformRecord* pRecordUpdateWaveform[NUM_CHANNELS];
+    
     struct waveformRecord* pLog;
+    struct aiRecord* pStatusCode; 
+    
     uint16_t subwaveform_num;
     uint64_t waveform_size;
 

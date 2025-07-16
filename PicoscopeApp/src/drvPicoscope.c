@@ -35,6 +35,7 @@
 #include <dbAccess.h>
 
 #include "drvPicoscope.h"
+#include "devPicoscopeCommon.h"
 #define MAX_PICO 10
 static PS6000AModule *PS6000AModuleList[MAX_PICO] = {NULL};
 epicsMutexId epics_ps6000a_call_mutex;
@@ -120,7 +121,7 @@ PICO_STATUS ping_picoscope(struct PS6000AModule* mp){
     epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aPingUnit(mp->handle);
     epicsMutexUnlock(epics_ps6000a_call_mutex);
-
+    
     // If driver call in progress, return connected. 
     if (status == PICO_DRIVER_FUNCTION) {
         mp->status = 1;
@@ -153,7 +154,7 @@ PICO_STATUS set_resolution(int16_t resolution, int16_t handle){
     epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aSetDeviceResolution(handle, resolution); 
     epicsMutexUnlock(epics_ps6000a_call_mutex);
-
+    
     if (status != PICO_OK){ 
         log_error("ps6000aSetDeviceResolution", status, __FILE__, __LINE__);
         return status;
@@ -177,7 +178,7 @@ PICO_STATUS get_resolution(int16_t* resolution, int16_t handle) {
     epicsMutexLock(epics_ps6000a_call_mutex);
     PICO_STATUS status = ps6000aGetDeviceResolution(handle, &device_resolution); 
     epicsMutexUnlock(epics_ps6000a_call_mutex);
-
+    
     if(status != PICO_OK) {
         log_error("ps6000aGetDeviceResolution", status, __FILE__, __LINE__);
         return status;
@@ -1484,6 +1485,7 @@ acquisition_thread_function(void *arg) {
         PICO_STATUS status = setup_picoscope(mp);
         if (status != 0) {
             log_error("Error configuring picoscope for data capture.", status, __FILE__, __LINE__);
+            update_log_pvs(mp, "Error configuring picoscope for data capture.", status);
             epicsMutexLock(mp->epics_acquisition_flag_mutex);
             *mp->dataAcquisitionFlag = 0;
             epicsMutexUnlock(mp->epics_acquisition_flag_mutex);
@@ -1501,7 +1503,8 @@ acquisition_thread_function(void *arg) {
                 *mp->sample_collected = mp->sample_config.num_samples;
                 status = run_block_capture(mp, &time_indisposed_ms);
                 if (status != PICO_OK) {
-                    printf("Error capturing block data.");
+                    log_error("Error capturing block data.", status, __FILE__, __LINE__);
+                    update_log_pvs(mp, "Error capturing block data.", status);
                     break;
                 }
                 // Process the UPDATE_WAVEFORM subroutine to update waveform
@@ -1515,7 +1518,8 @@ acquisition_thread_function(void *arg) {
                 set_data_buffer(mp);
                 status = run_stream_capture(mp);
                 if (status != PICO_OK) {
-                    printf("Error capturing stream data.\n");
+                    log_error("Error capturing steam data.", status, __FILE__, __LINE__);
+                    update_log_pvs(mp, "Error capturing stream data.", status);
                     break;
                 }
             }

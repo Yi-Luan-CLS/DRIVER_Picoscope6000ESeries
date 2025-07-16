@@ -201,38 +201,40 @@ write_bo (struct boRecord *pbo)
     struct PicoscopeBioData *vdp = (struct PicoscopeBioData *)pbo->dpvt;
     int returnStatus = -1; 
     int rbv = 1; 
-    uint32_t result;
+    uint32_t result = 0;
+    char log_message[LOG_MESSAGE_LENGTH] = {0}; 
+
 
 	switch (vdp->ioType){
         case OPEN_PICOSCOPE: 
             int pv_value = (int)pbo->val; 
-            char message[100]; 
             
             if (pv_value == 1){
                 int16_t handle; 
                 result = open_picoscope(vdp->mp, &handle);
                 if (result != 0) {
-                    sprintf(message, "Error opening picoscope with serial number %s.", vdp->serial_num);
-                    log_message(vdp->mp, pbo->name, message, result);
+                    snprintf(log_message, sizeof(log_message), 
+                        "Error opening picoscope with serial number %s.", vdp->serial_num);
                     rbv = 0; 
-                    break;
-                }  
-                vdp->mp->handle = handle; // Update
+                } else {
+                    vdp->mp->handle = handle; // Update device handle if successful
+                }
             } else {
                 if (*vdp->mp->dataAcquisitionFlag == 1) {
                     dbProcess((struct dbCommon *)vdp->mp->pWaveformStopPtr);
 
-                    // this is to make sure the capureting thread is actually stopped
+                    // this is to make sure the capturing thread is actually stopped
                     epicsMutexLock(vdp->mp->epics_acquisition_thread_mutex);
                     epicsMutexUnlock(vdp->mp->epics_acquisition_thread_mutex);
                     printf("Data acquisition stopped\n");
                 }
                 result = close_picoscope(vdp->mp); 
                 if (result != 0) {
-                    sprintf(message, "Error closing picoscope with serial number %s.", vdp->serial_num);
-                    log_message(vdp->mp, pbo->name, message, result);
+                    snprintf(log_message, sizeof(log_message), 
+                        "Error closing picoscope with serial number %s.", vdp->serial_num);
                 }   
             }
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break;
 
         case SET_CHANNEL_ON:    
@@ -247,11 +249,6 @@ write_bo (struct boRecord *pbo)
                     vdp->mp->handle, 
                     &vdp->mp->channel_status
                 );
-                if (result != 0) {
-                    log_message(vdp->mp, pbo->name, "Error setting channel on.", result);
-                    pbo->val = 0; 
-                    rbv = 0; 
-                }
             } 
             else if (pv_value == 0) {
                 result = set_channel_off(
@@ -259,11 +256,13 @@ write_bo (struct boRecord *pbo)
                     vdp->mp->handle,
                     &vdp->mp->channel_status
                 );
-                if (result != 0) {
-                    log_message(vdp->mp, pbo->name, "Error setting channel off.", result);
-                    pbo->val = 0; 
-                }
             }    
+
+            if (result != 0) {
+                strcpy(log_message, pv_value == 1 ? "Error setting channel on." : "Error setting channel off.");
+                pbo->val = 0; // Default to channel OFF when error occurs 
+            }
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
 
             // Update timebase configs that are affected by the number of channels on. 
             result = get_valid_timebase_configs(
@@ -274,7 +273,7 @@ write_bo (struct boRecord *pbo)
             );                     
             
             if (result != 0){
-                log_message(vdp->mp, pbo->name, "Error setting timebase configurations.", result);
+                update_log_pvs(vdp->mp, "Error setting timebase configurations.", result);
             }
 
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
@@ -386,13 +385,12 @@ static long read_bi (struct biRecord *pbi)
         case GET_DEVICE_STATUS:
             uint32_t result = ping_picoscope(vdp->mp); 
             if ( result != 0 ) {
-                log_message(vdp->mp, pbi->name, "Cannot ping device.", result);
+                update_log_pvs(vdp->mp, "Cannot ping device.", result);
                 pbi->val = 0;
                 break;
-            }
+            } 
             pbi->val = 1; 
             pbi->rval = 1; 
-
             break;
 
         case GET_CHANNEL_STATUS: 
@@ -400,9 +398,6 @@ static long read_bi (struct biRecord *pbi)
             int channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
             int16_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
-            if (channel_status == -1) {
-                log_message(vdp->mp, pbi->name, "Cannot get channel status.", channel_status);
-            }
             pbi->val = channel_status;
             pbi->rval = channel_status;
             

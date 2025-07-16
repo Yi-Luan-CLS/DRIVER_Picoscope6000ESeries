@@ -179,7 +179,7 @@ static long read_stringin (struct stringinRecord *pstringin){
             memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
             
             if (result != 0){
-                log_message(vdp->mp, pstringin->name, "Error getting device information.", result);
+                update_log_pvs(vdp->mp, "Error getting device information.", result);
             } 
             else {
                 free(device_info); 
