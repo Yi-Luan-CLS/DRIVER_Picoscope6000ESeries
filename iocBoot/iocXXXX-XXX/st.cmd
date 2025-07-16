@@ -12,8 +12,8 @@ Picoscope_registerRecordDeviceDriver pdbbase
 ## Device Configuration
 ##
 ## 1. Set your oscilloscope serial number and instance name below:
-##    - SERIAL_NUM:  As printed on the back of your Picoscope (e.g., JR624/0023)
-##    - OSC:         A short name prefix used for PVs (e.g., OSCJR624)
+##    - SERIAL_NUM:  As printed on the back of your Picoscope (e.g., JR000/1234)
+##    - OSC:         A short name prefix used for PVs (e.g., OSC1234-01)
 ##
 ## 2. Replace all occurrences of OSC=OSCXXXX-XX and SERIAL_NUM=XXXX/XXXX
 ##    with your actual values.
