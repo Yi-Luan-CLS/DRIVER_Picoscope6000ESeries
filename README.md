@@ -55,7 +55,7 @@ After installing the SDK, copy the following files:
 
 - **Shared Libraries:**  
   From:  
-  `/opt/picoscope/lib/lib/`  
+  `/opt/picoscope/lib/`  
   - Files:
     - `libps6000a.so`  
     - `libps6000a.so.2`  
