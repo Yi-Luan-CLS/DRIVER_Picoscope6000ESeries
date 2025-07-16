@@ -123,12 +123,12 @@ To prepare the IOC for your system:
 ### [Device Control](#device-control-1)
 | PV | Description |
 |----|-------------|
-| [OSCNAME:device_info](#oscnamedevice_info) | Read-only device metadata |
-| [OSCNAME:ON](#oscnameon) | Power control |
-| [OSCNAME:ON:fbk](#oscnameonfbk) | Power state feedback |
-| [OSCNAME:log](#oscnamelog) | Driver log level |
-| [OSCNAME:resolution](#oscnameresolution) | ADC resolution setting |
-| [OSCNAME:resolution:fbk](#oscnameresolutionfbk) | Current ADC resolution |
+| [OSCNAME:device_info](#oscnamedevice_info) | Device model and serial number |
+| [OSCNAME:ON](#oscnameon) | Device connection |
+| [OSCNAME:ON:fbk](#oscnameonfbk) | Device connection feedback |
+| [OSCNAME:log](#oscnamelog) | Driver log message |
+| [OSCNAME:resolution](#oscnameresolution) | Waveform resolution setting |
+| [OSCNAME:resolution:fbk](#oscnameresolutionfbk) | Current waveform resolution |
 
 ### [Data Capture](#data-capture-1)
 | PV | Description |
@@ -144,7 +144,7 @@ To prepare the IOC for your system:
 | [OSCNAME:auto_trigger_us](#oscnameauto_trigger_us) | Auto-trigger timeout (µs) |
 | [OSCNAME:waveform:start](#oscnamewaveformstart) | Start waveform acquisition |
 | [OSCNAME:waveform:stop](#oscnamewaveformstop) | Stop acquisition |
-| [OSCNAME:num_subwaveforms:fbk](#oscnamenum_subwaveformsfbk) | Number of waveforms per trigger |
+| [OSCNAME:num_subwaveforms:fbk](#oscnamenum_subwaveformsfbk) | Number of sub-waveforms |
 | [OSCNAME:CH[A-D]:waveform](#oscnamecha-dwaveform) | Captured waveform |
 
 ### [Timing and Scaling](#timing-and-scaling-1)
