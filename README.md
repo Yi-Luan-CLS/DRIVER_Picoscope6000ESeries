@@ -119,17 +119,88 @@ To prepare the IOC for your system:
 >**Note:** 
 >Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:waveform:start`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
 
-## PVs
-### OSCNAME:log 
-- **Type**: `waveform`
-- **Description**: A waveform PV that reports a message when an error occurs in the driver.
-- **Example**:
-  ```bash
-  # To monitor log messages:
-  $ camonitor OSC1234-01:log -S
-  ```
+## PV Index Table
+### [Device Control](#device-control-1)
+| PV | Description |
+|----|-------------|
+| [OSCNAME:device_info](#oscnamedevice_info) | Read-only device metadata |
+| [OSCNAME:ON](#oscnameon) | Power control |
+| [OSCNAME:ON:fbk](#oscnameonfbk) | Power state feedback |
+| [OSCNAME:log](#oscnamelog) | Driver log level |
+| [OSCNAME:resolution](#oscnameresolution) | ADC resolution setting |
+| [OSCNAME:resolution:fbk](#oscnameresolutionfbk) | Current ADC resolution |
 
-#### **_Device configurations:_**
+### [Data Capture](#data-capture-1)
+| PV | Description |
+|----|-------------|
+| [OSCNAME:down_sample_ratio_mode](#oscnamedown_sample_ratio_mode) | Downsampling mode |
+| [OSCNAME:down_sample_ratio_mode:fbk](#oscnamedown_sample_ratio_modefbk) | Downsampling mode feedback |
+| [OSCNAME:down_sample_ratio](#oscnamedown_sample_ratio) | Manual downsampling ratio |
+| [OSCNAME:down_sample_ratio:fbk](#oscnamedown_sample_ratiofbk) | Feedback of current downsampling ratio |
+| [OSCNAME:num_samples](#oscnamenum_samples) | Total samples to capture |
+| [OSCNAME:num_samples:fbk](#oscnamenum_samplesfbk) | Feedback: actual sample count |
+| [OSCNAME:trigger_position_ratio](#oscnametrigger_position_ratio) | Trigger position (0–1) |
+| [OSCNAME:trigger_position_ratio:fbk](#oscnametrigger_position_ratiofbk) | Feedback: actual trigger position |
+| [OSCNAME:auto_trigger_us](#oscnameauto_trigger_us) | Auto-trigger timeout (µs) |
+| [OSCNAME:waveform:start](#oscnamewaveformstart) | Start waveform acquisition |
+| [OSCNAME:waveform:stop](#oscnamewaveformstop) | Stop acquisition |
+| [OSCNAME:num_subwaveforms:fbk](#oscnamenum_subwaveformsfbk) | Number of waveforms per trigger |
+| [OSCNAME:CH[A-D]:waveform](#oscnamecha-dwaveform) | Captured waveform |
+
+### [Timing and Scaling](#timing-and-scaling-1)
+| PV | Description |
+|----|-------------|
+| [OSCNAME:time_per_division:unit](#oscnametime_per_divisionunit) | Time/div unit (e.g., ms) |
+| [OSCNAME:time_per_division:unit:fbk](#oscnametime_per_divisionunitfbk) | Feedback: unit |
+| [OSCNAME:num_divisions](#oscnamenum_divisions) | Horizontal divisions |
+| [OSCNAME:num_divisions:fbk](#oscnamenum_divisionsfbk) | Feedback: horizontal divisions |
+| [OSCNAME:time_per_division](#oscnametime_per_division) | Time per division |
+| [OSCNAME:time_per_division:fbk](#oscnametime_per_divisionfbk) | Feedback: actual value |
+| [OSCNAME:sample_interval:fbk](#oscnamesample_intervalfbk) | Sample interval |
+| [OSCNAME:sample_rate:fbk](#oscnamesample_ratefbk) | Sampling rate |
+| [OSCNAME:timebase:fbk](#oscnametimebasefbk) | Internal timebase code |
+
+### [Trigger Configuration](#trigger-configuration-1)
+| PV | Description |
+|----|-------------|
+| [OSCNAME:trigger:channel](#oscnametriggerchannel) | Trigger source channel |
+| [OSCNAME:trigger:channel:fbk](#oscnametriggerchannelfbk) | Feedback: trigger channel |
+| [OSCNAME:trigger:type](#oscnametriggertype) | Trigger type (edge, window...) |
+| [OSCNAME:trigger:direction](#oscnametriggerdirection) | Trigger edge direction |
+| [OSCNAME:trigger:direction:fbk](#oscnametriggerdirectionfbk) | Feedback: trigger direction |
+| [OSCNAME:trigger:mode:fbk](#oscnametriggermodefbk) | Feedback: trigger mode |
+| [OSCNAME:trigger:upper:threshold](#oscnametriggerupperthreshold) | Upper level threshold |
+| [OSCNAME:trigger:upper:threshold:fbk](#oscnametriggerupperthresholdfbk) | Feedback: upper threshold |
+| [OSCNAME:trigger:upper:threshold:hysteresis](#oscnametriggerupperthresholdhysteresis) | Upper hysteresis |
+| [OSCNAME:trigger:upper:threshold:hysteresis:fbk](#oscnametriggerupperthresholdhysteresisfbk) | Feedback: upper hysteresis |
+| [OSCNAME:trigger:lower:threshold](#oscnametriggerlowerthreshold) | Lower level threshold |
+| [OSCNAME:trigger:lower:threshold:fbk](#oscnametriggerlowerthresholdfbk) | Feedback: lower threshold |
+| [OSCNAME:trigger:lower:threshold:hysteresis](#oscnametriggerlowerthresholdhysteresis) | Lower hysteresis |
+| [OSCNAME:trigger:lower:threshold:hysteresis:fbk](#oscnametriggerlowerthresholdhysteresisfbk) | Feedback: lower hysteresis |
+| [OSCNAME:trigger:interval](#oscnametriggerinterval) | Trigger polling interval |
+| [OSCNAME:trigger:missed](#oscnametriggermissed) | Number of missed triggers |
+| [OSCNAME:trigger_pulse_width](#oscnametrigger_pulse_width) | Pulse width in µs |
+| [OSCNAME:trigger_pulse_width:fbk](#oscnametrigger_pulse_widthfbk) | Feedback: pulse width |
+
+### [Channel Configuration](#channel-configuration-1)
+| PV | Description |
+|----|-------------|
+| [OSCNAME:CH[A-D]:ON](#oscnamecha-don) | Enable input channel |
+| [OSCNAME:CH[A-D]:ON:fbk](#oscnamecha-donfbk) | Feedback: channel enabled |
+| [OSCNAME:CH[A-D]:coupling](#oscnamecha-dcoupling) | Input coupling (AC/DC) |
+| [OSCNAME:CH[A-D]:coupling:fbk](#oscnamecha-dcouplingfbk) | Feedback: coupling |
+| [OSCNAME:CH[A-D]:range](#oscnamecha-drange) | Voltage range |
+| [OSCNAME:CH[A-D]:range:fbk](#oscnamecha-drangefbk) | Feedback: range |
+| [OSCNAME:CH[A-D]:bandwidth](#oscnamecha-dbandwidth) | Bandwidth limiter |
+| [OSCNAME:CH[A-D]:bandwidth:fbk](#oscnamecha-dbandwidthfbk) | Feedback: bandwidth |
+| [OSCNAME:CH[A-D]:analog_offset](#oscnamecha-danalog_offset) | Analog offset voltage |
+| [OSCNAME:CH[A-D]:analog_offset:fbk](#oscnamecha-danalog_offsetfbk) | Feedback: analog offset |
+| [OSCNAME:CH[A-D]:analog_offset:max](#oscnamecha-danalog_offsetmax) | Max allowed offset |
+| [OSCNAME:CH[A-D]:analog_offset:min](#oscnamecha-danalog_offsetmin) | Min allowed offset |
+---
+---
+## PVs
+### Device Control
 ### OSCNAME:device_info
 - **Type**: `stringin`
 - **Description**: Retrieves the model and serial number of the connected picoscope. 
@@ -160,6 +231,7 @@ To prepare the IOC for your system:
   # Get connection status
   $ caget OSC1234-01:ON
   ```
+
 ### OSCNAME:ON:fbk 
 - **Type**: `bi` 
 - **Description**: The actual state of the device.
@@ -167,6 +239,14 @@ To prepare the IOC for your system:
 - **Fields**: 
   - `VAL`: See `OSCNAME:ON`.
 
+### OSCNAME:log 
+- **Type**: `waveform`
+- **Description**: A waveform PV that reports a message when an error occurs in the driver.
+- **Example**:
+  ```bash
+  # To monitor log messages:
+  $ camonitor OSC1234-01:log -S
+  ```
 
 
 ### OSCNAME:resolution
@@ -208,7 +288,7 @@ caget OSC1234-01:resolution
 
 ---
 
-#### **_Data capture configurations:_**
+### Data Capture
 ### OSCNAME:down_sample_ratio_mode
 - **Type**: `mbbo`
 - **Description**: The methods of data reduction, or downsampling.
@@ -322,7 +402,163 @@ caget OSC1234-01:resolution
 ### OSCNAME:auto_trigger_us 
 - **Type**: `ao` 
 - **Description**: The time in microseconds for which the scope will wait before collecting data if no trigger event occurs. If set to zero, the scope will wait indefinitely for a trigger. 
- 
+
+### OSCNAME:waveform:start
+- **Type**: `bo`
+- **Description**: Starts waveform acquisition using the current configuration (as set by other PVs).
+- **Fields**:
+  - `VAL`: Start getting the waveform.
+    | VAL   | Description      |
+    |-------|------------------|
+    | 1     | Start acquiring waveform   |
+- **Example**:
+  ```bash
+    # Start acquiring waveform
+    $ caput OSC1234-01:CHA:waveform:start 1
+  ```
+
+### OSCNAME:waveform:stop
+- **Type**: `bo`
+- **Description**: Stops waveform acquisition in progress.
+- **Fields**:
+  - `VAL`: Start getting the waveform.
+    | VAL   | Description      |
+    |-------|------------------|
+    | 1     | Stop acquiring waveform   |
+- **Example**:
+  ```bash
+    # Stop acquiring waveform
+    $ caput OSC1234-01:CHA:waveform:stop 1
+  ```
+
+### OSCNAME:num_subwaveforms:fbk
+- **Type**: `ai`
+- **Description**: This PV represents the number of subwaveforms that compose a single waveform.
+- **Fields**:
+  - `VAL`: Number of subwaveforms.
+- **Example**:
+  ```bash
+    $ caget OSC1234-01:num_subwaveforms:fbk
+  ```
+
+### OSCNAME:CH[A-D]:waveform
+- **Type**: `waveform`
+- **Description**: Waveform will be available after `OSCNAME:waveform:start` PV is invoked.
+- **Fields**:
+  - `VAL`: Waveform result acquired
+- **Example**:
+  ```bash
+    # Get waveform result
+    $ caget OSC1234-01:CHA:waveform
+  ```
+- **Note**: The raw value from the waveform is a scaled value. To interpret the waveform:
+    | **Resolution**          | 8 BIT         | 10 BIT        | 12 BIT        |
+    |-------------------------|---------------|---------------|---------------|
+    | **Voltage Range Scale** | $\pm 32,512$  | $\pm 32,704$  | $\pm 32,736$  |
+
+  - **Calculation**:
+    - The actual voltage is calculated as:
+      $$\text{Actual Voltage} = \text{Voltage Range (in Volts)} \times \frac{\text{Raw Waveform Value}}{\text{Voltage Range (in Scale Units)}}$$
+
+  - **Example**:
+    - **Resolution**: $`8 \text{Bits}`$
+    - **Voltage Range (in Volts)**: $`\pm 20  \text{V}`$
+    - **Raw Waveform Value**: $`8129`$
+    - **Voltage Range (in Scale Units)**: $`\pm 32,512`$.
+      $$\text{Actual Voltage} = 20 \text{V} \times \frac{8192}{32512} = 5.04 \text{V}$$
+
+---
+### Timing and Scaling
+### OSCNAME:time_per_division:unit 
+- **Type**: `mbbo` 
+- **Description**: The time unit used per division. 
+- **Fields**:
+  - `VAL`
+    | VAL   | Description |
+    |-------|-------------|
+    | 0     | ns/div      |
+    | 1     | us/div      |
+    | 2     | ms/div      | 
+    | 3     | s/div       |
+
+### OSCNAME:time_per_division:unit:fbk
+- **Type**: `mbbi` 
+- **Description**: The currently set time unit used per division. 
+- **Fields**:
+  - `VAL`: See `OSCNAME:time_per_division:unit`
+
+### OSCNAME:num_divisions 
+- **Type**: `ao` 
+- **Description**: The number of divisions. Defaults to 10 divisions.
+
+### OSCNAME:num_divisions:fbk
+- **Type**: `ai` 
+- **Description**: The currently set number of divisions.
+
+### OSCNAME:time_per_division
+- **Type**: `mbbo` 
+- **Description**: The time per division. 
+- **Fields**:
+- If `OSC:time_per_division:unit` = s/div:
+    | VAL   | Enum  | Description    |
+    |-------|-------|----------------|
+    | 0     |   1   | 1    time/div  |
+    | 1     |   2   | 2    time/div  | 
+    | 2     |   5   | 5    time/div  |  
+    | 3     |   10  | 10   time/div  | 
+- Otherwise, 
+    | VAL   | Enum  | Description    |
+    |-------|-------|----------------|
+    | 0     |  1    | 1    time/div  |
+    | 1     |  2    | 2    time/div  | 
+    | 2     |  5    | 5    time/div  |  
+    | 3     |  10   | 10   time/div  | 
+    | 4     |  20   | 20   time/div  | 
+    | 5     |  50   | 50   time/div  | 
+    | 6     |  100  | 100  time/div  | 
+    | 7     |  200  | 200  time/div  | 
+    | 8     |  500  | 500  time/div  | 
+    | 9     |  1000 | 1000 time/div  | 
+    | 10    |  2000 | 2000 time/div  | 
+    | 11    |  5000 | 5000 time/div  |
+
+### OSCNAME:time_per_division:fbk
+- **Type**: `mbbi` 
+- **Description**: The currently set time per division. 
+- **Fields**:
+  - `VAL`: See `OSCNAME:time_per_division`
+
+### OSCNAME:sample_interval:fbk
+- **Type**: `ai`
+- **Description**: The sample interval in seconds that will be applied when capturing data.
+  - The value returned is calculated from `OSCNAME:num_samples`,  `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
+- **Fields**: 
+  - `VAL`: The actual sample interval applied in seconds.
+
+### OSCNAME:sample_rate:fbk 
+- **Type**: `ai`
+- **Description**: The sample rate in samples/second (S/s).
+  - The value returned is based on the value of `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`.
+
+### OSCNAME:timebase:fbk
+- **Type**: `ai`
+- **Description**: The time scale used to determine time per division when capturing data. 
+  - The value returned is based on the value of `OSCNAME:time_per_division:fbk` and     `OSCNAME:time_per_division:unit:fbk`. 
+- **Fields**:
+  - `VAL`: Timebase - *from PicoScope 6000 Series (A API) Programmer's Guide*
+  ![image](https://github.lightsource.ca/cid/DRIVER_Picoscope6000ESeries/assets/209/a348ee4f-d014-44ec-a948-070051ce5d46)
+
+    _Minimum Timebase:_
+    |                   | 8 BIT      | 10 BIT     |  
+    |-------------------|------------|------------|  
+    | One Channel       | 0 (200 ps) | 2 (800 ps) |  
+    | Two Channels      | 0 (200 ps) | 2 (800 ps) |  
+    | Three Channels    | 1 (400 ps) | N/A        |  
+    | Four Channels     | 1 (400 ps) | N/A        |
+
+
+---
+### Trigger Configuration
 ### OSCNAME:trigger:channel
 - **Type**: `mbbo`
 - **Description**: The source channel of triggering.
@@ -369,16 +605,6 @@ caget OSC1234-01:resolution
 | 2   | WINDOW         | Detects the moment when the waveform enters or leaves a voltage range.                                             | Upper/Lower |
 | 3   | ADVANCED EDGE  | Provides rising, falling, and dual edge conditions, as well as adjustable hysteresis.                              | Upper       |
 
-### OSCNAME:trigger:mode:fbk
-- **Type**: `mbbi`
-- **Description**: The mode of triggering, determined by `OSC:trigger:type`. 
-- **Fields**:
-  - `VAL`: The mode of triggering.
-    |VAL      |Enum         |Description                   | Threshold  |
-    |---------|-------------|------------------------------|------------|  
-    | 0       | LEVEL       | Will only use one threshold  | Upper      | 
-    | 1       | WINDOW      | Will use two thresholds      | Lower      |
-
 ### OSCNAME:trigger:direction
 - **Type**: `mbbo`
 - **Description**: The direction of the trigger event.The directions available change based on the value set to `OSC:trigger:type`. 
@@ -407,12 +633,21 @@ caget OSC1234-01:resolution
       | 1   | FALLING           | Triggers when falling edge crosses upper threshold.          | Upper     |
       | 2   | RISING OR FALLING | Triggers when falling or rising edge crosses upper threshold | Upper     |
 
-
 ### OSCNAME:trigger:direction:fbk 
 - **Type**: `mbbi`
 - **Description**: The feedback PV of `OSCNAME:trigger:direction`
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger:direction`. 
+
+### OSCNAME:trigger:mode:fbk
+- **Type**: `mbbi`
+- **Description**: The mode of triggering, determined by `OSC:trigger:type`. 
+- **Fields**:
+  - `VAL`: The mode of triggering.
+    |VAL      |Enum         |Description                   | Threshold  |
+    |---------|-------------|------------------------------|------------|  
+    | 0       | LEVEL       | Will only use one threshold  | Upper      | 
+    | 1       | WINDOW      | Will use two thresholds      | Lower      |
 
 ### OSCNAME:trigger:upper:threshold
 - **Type**: `ao`
@@ -428,6 +663,7 @@ caget OSC1234-01:resolution
     # Get triggering upper threshold
     $ caget OSC1234-01:trigger:upper:threshold
   ```
+
 ### OSCNAME:trigger:upper:threshold:fbk 
 - **Type**: `ai`
 - **Description**: The feedback PV of `OSCNAME:trigger:upper:threshold`
@@ -476,94 +712,6 @@ caget OSC1234-01:resolution
 - **Fields**:
   - `VAL`: The duration of a trigger signal in seconds, when this value is set, allows the software to dynamically adjust the number of samples collected to ensure the time interval does not significantly exceed the trigger signal duration. When set to 0, the dynamic adjustment of the sample count is disabled. Default to 50 ns.
 
-### OSCNAME:time_per_division:unit 
-- **Type**: `mbbo` 
-- **Description**: The time unit used per division. 
-- **Fields**:
-  - `VAL`
-    | VAL   | Description |
-    |-------|-------------|
-    | 0     | ns/div      |
-    | 1     | us/div      |
-    | 2     | ms/div      | 
-    | 3     | s/div       |
-
-### OSCNAME:time_per_division:unit:fbk
-- **Type**: `mbbi` 
-- **Description**: The currently set time unit used per division. 
-- **Fields**:
-  - `VAL`: See `OSCNAME:time_per_division:unit`
-
-### OSCNAME:num_divisions 
-- **Type**: `ao` 
-- **Description**: The number of divisions. Defaults to 10 divisions. 
-
-### OSCNAME:time_per_division
-- **Type**: `mbbo` 
-- **Description**: The time per division. 
-- **Fields**:
-- If `OSC:time_per_division:unit` = s/div:
-    | VAL   | Enum  | Description    |
-    |-------|-------|----------------|
-    | 0     |   1   | 1    time/div  |
-    | 1     |   2   | 2    time/div  | 
-    | 2     |   5   | 5    time/div  |  
-    | 3     |   10  | 10   time/div  | 
-- Otherwise, 
-    | VAL   | Enum  | Description    |
-    |-------|-------|----------------|
-    | 0     |  1    | 1    time/div  |
-    | 1     |  2    | 2    time/div  | 
-    | 2     |  5    | 5    time/div  |  
-    | 3     |  10   | 10   time/div  | 
-    | 4     |  20   | 20   time/div  | 
-    | 5     |  50   | 50   time/div  | 
-    | 6     |  100  | 100  time/div  | 
-    | 7     |  200  | 200  time/div  | 
-    | 8     |  500  | 500  time/div  | 
-    | 9     |  1000 | 1000 time/div  | 
-    | 10    |  2000 | 2000 time/div  | 
-    | 11    |  5000 | 5000 time/div  | 
-
-
-### OSCNAME:time_per_division:fbk
-- **Type**: `mbbi` 
-- **Description**: The currently set time per division. 
-- **Fields**:
-  - `VAL`: See `OSCNAME:time_per_division`
-
-### OSCNAME:num_divisions:fbk
-- **Type**: `ai` 
-- **Description**: The currently set number of divisions. 
-
-### OSCNAME:sample_interval:fbk
-- **Type**: `ai`
-- **Description**: The sample interval in seconds that will be applied when capturing data.
-  - The value returned is calculated from `OSCNAME:num_samples`,  `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
-- **Fields**: 
-  - `VAL`: The actual sample interval applied in seconds. 
-
-### OSCNAME:sample_rate:fbk 
-- **Type**: `ai`
-- **Description**: The sample rate in samples/second (S/s).
-  - The value returned is based on the value of `OSCNAME:time_per_division:fbk`,      `OSCNAME:time_per_division:unit:fbk`, and `OSCNAME:num_divisions`. 
- 
-### OSCNAME:timebase:fbk
-- **Type**: `ai`
-- **Description**: The time scale used to determine time per division when capturing data. 
-  - The value returned is based on the value of `OSCNAME:time_per_division:fbk` and     `OSCNAME:time_per_division:unit:fbk`. 
-- **Fields**:
-  - `VAL`: Timebase - *from PicoScope 6000 Series (A API) Programmer's Guide*
-  ![image](https://github.lightsource.ca/cid/DRIVER_Picoscope6000ESeries/assets/209/a348ee4f-d014-44ec-a948-070051ce5d46)
-
-    _Minimum Timebase:_
-    |                   | 8 BIT      | 10 BIT     |  
-    |-------------------|------------|------------|  
-    | One Channel       | 0 (200 ps) | 2 (800 ps) |  
-    | Two Channels      | 0 (200 ps) | 2 (800 ps) |  
-    | Three Channels    | 1 (400 ps) | N/A        |  
-    | Four Channels     | 1 (400 ps) | N/A        | 
-
 ### OSCNAME:trigger_pulse_width:fbk:
 - **Type**: `ai` 
 - **Description**: The trigger signal pulse width set. 
@@ -571,7 +719,7 @@ caget OSC1234-01:resolution
   - `VAL`: The duration of a trigger signal in seconds, when this value is set, allows the software to dynamically adjust the number of samples collected to ensure the time interval does not significantly exceed the trigger signal duration. When set to 0, the dynamic adjustment of the sample count is disabled. Default to 50 ns.
 
 ---
-#### **_Channel configurations:_**
+### Channel Configuration
 ### OSCNAME:CH[A-D]:ON
 - **Type**: `bo`
 - **Description**: Switches a specific Picoscope channel on and off
@@ -618,6 +766,7 @@ caget OSC1234-01:resolution
     # Get coupling type
     $ caget OSC1234-01:CHA:coupling
   ```
+
 ### OSCNAME:CH[A-D]:coupling:fbk
 - **Type**: `mbbi`
 - **Description**: The actual impedance and coupling type set to a channel. 
@@ -658,6 +807,7 @@ caget OSC1234-01:resolution
     # Get voltage range
     $ caget OSC1234-01:CHA:range
   ```
+
 ### OSCNAME:CH[A-D]:range:fbk
 - **Type**: `mbbi`
 - **Description**: The actual value of the voltage range set to a channel.  
@@ -707,6 +857,7 @@ caget OSC1234-01:resolution
     # Get offset
     $ caput OSC1234-01:CHA:analog_offset
   ```
+
 ### OSCNAME:CH[A-D]:analog_offset:fbk
 - **Type**: `ai`
 - **Description**: The actual voltage added to the input channel before digitization. The analog offset voltage had limits which depend on the voltage range and coupling set to a channel. If the value put to `OSCNAME:CH[A-D]:analog_offset` is outside of the limits, the max or min value will be used and will be reported by this PV. 
@@ -724,78 +875,7 @@ caget OSC1234-01:resolution
 - **Description**: The minimum allowed analog offset voltage allowed for the range. 
   - Updated when the value of `OSCNAME:CH[A-D]:range` or `OSCNAME:CH[A-D]:coupling` are changed. 
 
-
-### OSCNAME:waveform:start
-- **Type**: `bo`
-- **Description**: Starts waveform acquisition using the current configuration (as set by other PVs).
-- **Fields**:
-  - `VAL`: Start getting the waveform.
-    | VAL   | Description      |
-    |-------|------------------|
-    | 1     | Start acquiring waveform   |
-- **Example**:
-  ```bash
-    # Start acquiring waveform
-    $ caput OSC1234-01:CHA:waveform:start 1
-  ```
-
-### OSCNAME:waveform:stop
-- **Type**: `bo`
-- **Description**: Stops waveform acquisition in progress.
-- **Fields**:
-  - `VAL`: Start getting the waveform.
-    | VAL   | Description      |
-    |-------|------------------|
-    | 1     | Stop acquiring waveform   |
-- **Example**:
-  ```bash
-    # Stop acquiring waveform
-    $ caput OSC1234-01:CHA:waveform:stop 1
-  ```
-
-### OSCNAME:CH[A-D]:waveform
-- **Type**: `waveform`
-- **Description**: Waveform will be available after `OSCNAME:waveform:start` PV is invoked.
-- **Fields**:
-  - `VAL`: Waveform result acquired
-- **Example**:
-  ```bash
-    # Get waveform result
-    $ caget OSC1234-01:CHA:waveform
-  ```
-- **Note**: The raw value from the waveform is a scaled value. To interpret the waveform:
-    | **Resolution**          | 8 BIT         | 10 BIT        | 12 BIT        |
-    |-------------------------|---------------|---------------|---------------|
-    | **Voltage Range Scale** | $\pm 32,512$  | $\pm 32,704$  | $\pm 32,736$  |
-
-  - **Calculation**:
-    - The actual voltage is calculated as:
-      $$\text{Actual Voltage} = \text{Voltage Range (in Volts)} \times \frac{\text{Raw Waveform Value}}{\text{Voltage Range (in Scale Units)}}$$
-
-  - **Example**:
-    - **Resolution**: $`8 \text{Bits}`$
-    - **Voltage Range (in Volts)**: $`\pm 20  \text{V}`$
-    - **Raw Waveform Value**: $`8129`$
-    - **Voltage Range (in Scale Units)**: $`\pm 32,512`$.
-      $$\text{Actual Voltage} = 20 \text{V} \times \frac{8192}{32512} = 5.04 \text{V}$$
-
-### OSCNAME:num_subwaveforms:fbk
-- **Type**: `ai`
-- **Description**: This PV represents the number of subwaveforms that compose a single waveform.
-- **Fields**:
-  - `VAL`: Number of subwaveforms.
-- **Example**:
-  ```bash
-    $ caget OSC1234-01:num_subwaveforms:fbk
-  ```
-## Troubleshooting
-
-- **Problem**: No waveform data appears after `waveform:start`.
-  - **Solution**: Check that `CH[A-D]:ON` is ON and trigger settings are valid.
-
-- **Problem**: Cannot connect to PicoScope.
-  - **Solution**: Ensure `udev_install.sh` was run and the device is connected before IOC startup.
-
+---
 ---
 # For Developer
 ## PicoScope 6000 Series (A API) Programmer's Guide - Pico Technology Ltd.
@@ -830,6 +910,14 @@ https://www.picotech.com/download/manuals/picoscope-6000-series-a-api-programmer
   - **Behavior**: Starts streaming, spawns channel threads, waits for thread completion.
   - **Stop**: Halts on errors or if `dataAcquisitionFlag` is `FALSE`.
 
+## Troubleshooting
+
+- **Problem**: No waveform data appears after `waveform:start`.
+  - **Solution**: Check that `CH[A-D]:ON` is ON and trigger settings are valid.
+
+- **Problem**: Cannot connect to PicoScope.
+  - Ensure `udev_install.sh` was run and the device is connected before IOC startup.
+  - Ensure `st.cmd` has the correct serial number.
 ## License
 
 This project is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html).  
