@@ -252,12 +252,12 @@ To prepare the IOC for your system:
 ### OSCNAME:resolution
 - **Type**: `mbbo`  
 - **Description**: Sets the resolution of the ADC (analog-to-digital converter), affecting signal precision. Applies globally to all active channels.
-
-| VAL | Enum           | Description                     |
-|-----|----------------|---------------------------------|
-| 0   | PICO_DR_8BIT   | 8-bit resolution (256 levels)   |
-| 1   | PICO_DR_10BIT  | 10-bit resolution (1024 levels) |
-| 2   | PICO_DR_12BIT  | 12-bit resolution (4096 levels) |
+  - `Val`: The resolution of the ADC
+    | VAL | Enum           | Description                     |
+    |-----|----------------|---------------------------------|
+    | 0   | PICO_DR_8BIT   | 8-bit resolution (256 levels)   |
+    | 1   | PICO_DR_10BIT  | 10-bit resolution (1024 levels) |
+    | 2   | PICO_DR_12BIT  | 12-bit resolution (4096 levels) |
 
 > **Note**  
 > Due to hardware constraints, **12-bit resolution** only supports single or the following dual-channel combinations:
