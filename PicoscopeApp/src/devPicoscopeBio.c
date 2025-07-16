@@ -176,8 +176,8 @@ init_record_bo (struct boRecord *pbo)
             
             // On initalization, set all channels off. 
             result = set_channel_off(
+                vdp->mp, 
                 vdp->mp->channel_configs[channel_index].channel, 
-                vdp->mp->handle, 
                 &vdp->mp->channel_status
             );
             if (result != 0) {
@@ -245,15 +245,15 @@ write_bo (struct boRecord *pbo)
             // If PV value is 1 (ON) set channel on 
             if (pv_value == 1) { 
                 result = set_channel_on(
+                    vdp->mp, 
                     vdp->mp->channel_configs[channel_index], 
-                    vdp->mp->handle, 
                     &vdp->mp->channel_status
                 );
             } 
             else if (pv_value == 0) {
                 result = set_channel_off(
+                    vdp->mp, 
                     vdp->mp->channel_configs[channel_index].channel, 
-                    vdp->mp->handle,
                     &vdp->mp->channel_status
                 );
             }    

@@ -1,22 +1,14 @@
 /*
  * ---------------------------------------------------------------------
- * File:
- *     devPicoscopeAio.c
+ * Copyright 2025 Canadian Light Source, Inc. All rights reserved
+ *     - see LICENSE.md for limitations on use.
+ * 
  * Description:
  *     Device support for EPICS ai and ao records for Picoscope PS6000A 
  *     module. Provides input/output processing for waveform configuration, 
  *     trigger control, and analog offset settings via INST_IO.
  * ---------------------------------------------------------------------
- * Copyright (c) 2025 Canadian Light Source Inc.
- *
- * This file is part of DRIVER_Picoscope6000ESeries.
- *
- * It is licensed under the GNU General Public License v3.0.
- * See the LICENSE.md file in the project root, or visit:
- * https://www.gnu.org/licenses/gpl-3.0.html
- *
- * This software is provided WITHOUT WARRANTY of any kind.
- */
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -576,8 +568,8 @@ static long write_ao (struct aoRecord *pao)
             double max_analog_offset = 0; 
             double min_analog_offset = 0; 
             result = get_analog_offset_limits(
+                vdp->mp,
                 vdp->mp->channel_configs[channel_index], 
-                vdp->mp->handle,
                 &max_analog_offset, 
                 &min_analog_offset
             );
@@ -600,8 +592,8 @@ static long write_ao (struct aoRecord *pao)
                 channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
                 if (channel_status == 1) {
                     result = set_channel_on(
+                        vdp->mp, 
                         vdp->mp->channel_configs[channel_index], 
-                        vdp->mp->handle, 
                         &vdp->mp->channel_status
                     );               
                     // If channel is not succesfully set on, return to previous value 
@@ -623,10 +615,10 @@ static long write_ao (struct aoRecord *pao)
             }
             int16_t upper_scaled; 
             result = calculate_scaled_value(
+                vdp->mp, 
                 pao->val, 
                 vdp->mp->channel_configs[vdp->mp->trigger_config.channel].range, 
-                &upper_scaled, 
-                vdp->mp->handle
+                &upper_scaled
             );
             if (result != 0) { 
                 snprintf(log_message, sizeof(log_message), "Upper threshold of %d is outside of the trigger channel range.", (int) pao->val); 
@@ -657,10 +649,10 @@ static long write_ao (struct aoRecord *pao)
 
             int16_t lower_scaled; 
             result = calculate_scaled_value(
+                vdp->mp, 
                 pao->val, 
                 vdp->mp->channel_configs[vdp->mp->trigger_config.channel].range, 
-                &lower_scaled, 
-                vdp->mp->handle
+                &lower_scaled
             );
             if (result != 0){ 
                 snprintf(log_message, sizeof(log_message), "Lower threshold of %d is outside of the trigger channel range.", (int) pao->val); 
