@@ -63,7 +63,7 @@ After installing the SDK, copy the following files:
   `DRIVER_Picoscope6000ESeries/PicoscopeApp/picoscopeSupport/lib/`
 
 ## Usage
-- The PicoScope to open is selected using the `SERIAL_NUM` macro defined in the `st.cmd` startup script. This must match the serial number of the connected device exactly.
+- The driver connects to (opens) the Picoscope identified by the serial number supplied in the `SERIAL_NUM` macro defined in the `st.cmd` startup script. This must match the serial number of the connected device exactly.
 - It is expected that a PicoScope is connected at application start-up. If a PicoScope is connected after the application has started, setting `<OSCNAME>:ON` to `1` or `ON` will open the scope.  
 
 - The following Process Variables (PVs) are used to configure a channel:  
@@ -80,27 +80,26 @@ After installing the SDK, copy the following files:
   The following example demonstrates capturing a waveform on Channel B, using a ±20 V range.
 
   ```bash
-   git clone git@github.lightsource.ca:cid/DRIVER_Picoscope6000ESeries.git
    cd DRIVER_Picoscope6000ESeries/
    make clean all
    cd iocBoot/iocOPI2027-002/
    ./st.cmd
 
    # On another terminal
-   caput OSC1022-01:CHB:range 10          # Set the voltage range for Channel B to +/- 20V
+   caput OSC1022-01:CHB:range 20V         # Set the voltage range for Channel B to +/- 20V
    caget OSC1022-01:CHB:ON:fbk            # Check if Channel B is ON. If not, try:  caput OSC1022-01:CHB:ON ON.
    caput OSC1022-01:CHB:waveform:start 1  # Begin waveform acquisition (external trigger assumed)
-   caget OSC1022-01:CHB:waveform          # when waveform is ready, get the waveform.
+   caget OSC1022-01:CHB:waveform          # Once waveform is ready, get the waveform.
   ```
-  *See below for complete details on channel and trigger configuration options.*
+  *See below for complete details on [device](#device-configurations), [channel](#channel-configurations), [data capture](#data-capture-configurations) configuration options.*
 
   **The waveform data is a scaled value. The calculation is located at the bottom.**
   - This will retrieve the waveform using the latest values of the data capture configuration PVs.    
-  - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:CHA:waveform:start` will fail if `OSC1021-01:CHA:ON` is set to OFF. 
+  - To acquire a waveform for a specific channel, the PV `<OSCNAME>:CH[A-D]:ON` must be set to ON. Requesting `OSC1021-01:waveform:start` will fail if `OSC1021-01:ON` is set to OFF. 
   - The waveform data will be returned in the PV `<OSCNAME>:CH[A-D]:waveform`. 
 
 >**Note:** 
->Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:CH[A-D]:waveform:start`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
+>Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:waveform:start`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
 
 ## PVs
 ### OSCNAME:log 
@@ -112,7 +111,7 @@ After installing the SDK, copy the following files:
   $ camonitor OSC1234-01:log -S
   ```
 
-**_Oscilloscope configurations:_**
+#### **_Device configurations:_**
 ### OSCNAME:device_info
 - **Type**: `stringin`
 - **Description**: Retrieves the model and serial number of the connected picoscope. 
@@ -191,7 +190,7 @@ caget OSC1234-01:resolution
 
 ---
 
-**_Data capture configurations:_**
+#### **_Data capture configurations:_**
 ### OSCNAME:down_sample_ratio_mode
 - **Type**: `mbbo`
 - **Description**: The methods of data reduction, or downsampling.
@@ -219,7 +218,7 @@ caget OSC1234-01:resolution
 ### OSCNAME:down_sample_ratio_mode:fbk 
 - **Type**: `mbbi`
 - **Description**: The method of data reduction applied to the last waveform acquired. 
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
+  - Updated at the time `OSCNAME:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:down_sample_ratio_mode`. 
 
@@ -241,7 +240,7 @@ caget OSC1234-01:resolution
 ### OSCNAME:down_sample_ratio:fbk 
 - **Type**: `ai`
 - **Description**: The downsampling factor that has been applied to the raw data of the last waveform acquired. 
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
+  - Updated at the time `OSCNAME:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:down_sample_ratio`. 
 
@@ -272,7 +271,7 @@ caget OSC1234-01:resolution
 ### OSCNAME:num_samples:fbk 
 - **Type**: `ai`
 - **Description**: The number of samples collected for the last waveform acquired. 
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
+  - Updated at the time `OSCNAME:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:num_samples`. 
 
@@ -298,7 +297,7 @@ caget OSC1234-01:resolution
 ### OSCNAME:trigger_position_ratio:fbk 
 - **Type**: `ai`
 - **Description**: The position of the trigger in the last acquired waveform.  
-  - Updated at the time `OSCNAME:CH[A-D]:waveform:start` is set to 1. 
+  - Updated at the time `OSCNAME:waveform:start` is set to 1. 
 - **Fields**: 
   - `VAL`: See `OSCNAME:trigger_position_ratio`.
 
@@ -536,7 +535,7 @@ caget OSC1234-01:resolution
 - **Description**: The time scale used to determine time per division when capturing data. 
   - The value returned is based on the value of `OSCNAME:time_per_division:fbk` and     `OSCNAME:time_per_division:unit:fbk`. 
 - **Fields**:
-  - `VAL`: Timebase
+  - `VAL`: Timebase - *from PicoScope 6000 Series (A API) Programmer's Guide*
   ![image](https://github.lightsource.ca/cid/DRIVER_Picoscope6000ESeries/assets/209/a348ee4f-d014-44ec-a948-070051ce5d46)
 
     _Minimum Timebase:_
@@ -554,7 +553,7 @@ caget OSC1234-01:resolution
   - `VAL`: The duration of a trigger signal in seconds, when this value is set, allows the software to dynamically adjust the number of samples collected to ensure the time interval does not significantly exceed the trigger signal duration. When set to 0, the dynamic adjustment of the sample count is disabled. Default to 50 ns.
 
 ---
-**_Channel configurations:_**
+#### **_Channel configurations:_**
 ### OSCNAME:CH[A-D]:ON
 - **Type**: `bo`
 - **Description**: Switches a specific Picoscope channel on and off
@@ -708,7 +707,7 @@ caget OSC1234-01:resolution
   - Updated when the value of `OSCNAME:CH[A-D]:range` or `OSCNAME:CH[A-D]:coupling` are changed. 
 
 
-### OSCNAME:CH[A-D]:waveform:start
+### OSCNAME:waveform:start
 - **Type**: `bo`
 - **Description**: Starts waveform acquisition using the current configuration (as set by other PVs).
 - **Fields**:
@@ -722,7 +721,7 @@ caget OSC1234-01:resolution
     $ caput OSC1234-01:CHA:waveform:start 1
   ```
 
-### OSCNAME:CH[A-D]:waveform:stop
+### OSCNAME:waveform:stop
 - **Type**: `bo`
 - **Description**: Stops waveform acquisition in progress.
 - **Fields**:
@@ -738,7 +737,7 @@ caget OSC1234-01:resolution
 
 ### OSCNAME:CH[A-D]:waveform
 - **Type**: `waveform`
-- **Description**: Waveform will be available after `OSCNAME:CH[A-D]:waveform:start` PV is invoked.
+- **Description**: Waveform will be available after `OSCNAME:waveform:start` PV is invoked.
 - **Fields**:
   - `VAL`: Waveform result acquired
 - **Example**:
@@ -781,6 +780,8 @@ caget OSC1234-01:resolution
 
 ---
 # For Developer
+## PicoScope 6000 Series (A API) Programmer's Guide - Pico Technology Ltd.
+https://www.picotech.com/download/manuals/picoscope-6000-series-a-api-programmers-guide.pdf
 ## Threading Hierarchy
 
 - **acquisition_thread_function**: *Drives acquisition, updates EPICS PVs.*
@@ -791,7 +792,7 @@ caget OSC1234-01:resolution
 ## Control Logic
 
 - **Main Acquisition Thread**:
-  - Internally, OSCNAME:CHX:waveform:start signals the acquisition thread to begin capture. This thread determines whether to use block or streaming mode based on waveform size
+  - Internally, OSCNAME:waveform:start signals the acquisition thread to begin capture. This thread determines whether to use block or streaming mode based on waveform size
   - **Lifecycle**: Runs indefinitely (immortal).
   - **Start**: Waits for `acquisitionStartEvent` to begin acquisition.
   - **Stop**: Sets `dataAcquisitionFlag` to `FALSE` to halt looping and wait on `acquisitionStartEvent`.
