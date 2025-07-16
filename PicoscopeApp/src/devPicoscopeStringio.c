@@ -147,7 +147,7 @@ static long init_record_stringin(struct stringinRecord * pstringin)
     {
         case GET_DEVICE_INFO:
             int8_t* device_info = (int8_t*)"No device detected";
-            uint32_t result = get_device_info(&device_info, vdp->mp->handle);
+            uint32_t result = get_device_info(vdp->mp, &device_info);
             
             memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
             
@@ -174,7 +174,7 @@ static long read_stringin (struct stringinRecord *pstringin){
     {
         case GET_DEVICE_INFO:
             int8_t* device_info = (int8_t*)"No device detected";
-            uint32_t result = get_device_info(&device_info, vdp->mp->handle);
+            uint32_t result = get_device_info(vdp->mp, &device_info);
             
             memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
             

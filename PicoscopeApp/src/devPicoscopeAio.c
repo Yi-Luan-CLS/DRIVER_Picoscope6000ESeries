@@ -17,6 +17,7 @@
  *
  * This software is provided WITHOUT WARRANTY of any kind.
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -576,8 +577,8 @@ static long write_ao (struct aoRecord *pao)
             double max_analog_offset = 0; 
             double min_analog_offset = 0; 
             result = get_analog_offset_limits(
+                vdp->mp,
                 vdp->mp->channel_configs[channel_index], 
-                vdp->mp->handle,
                 &max_analog_offset, 
                 &min_analog_offset
             );
@@ -600,8 +601,8 @@ static long write_ao (struct aoRecord *pao)
                 channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
                 if (channel_status == 1) {
                     result = set_channel_on(
+                        vdp->mp, 
                         vdp->mp->channel_configs[channel_index], 
-                        vdp->mp->handle, 
                         &vdp->mp->channel_status
                     );               
                     // If channel is not succesfully set on, return to previous value 
@@ -623,10 +624,10 @@ static long write_ao (struct aoRecord *pao)
             }
             int16_t upper_scaled; 
             result = calculate_scaled_value(
+                vdp->mp, 
                 pao->val, 
                 vdp->mp->channel_configs[vdp->mp->trigger_config.channel].range, 
-                &upper_scaled, 
-                vdp->mp->handle
+                &upper_scaled
             );
             if (result != 0) { 
                 snprintf(log_message, sizeof(log_message), "Upper threshold of %d is outside of the trigger channel range.", (int) pao->val); 
@@ -657,10 +658,10 @@ static long write_ao (struct aoRecord *pao)
 
             int16_t lower_scaled; 
             result = calculate_scaled_value(
+                vdp->mp, 
                 pao->val, 
                 vdp->mp->channel_configs[vdp->mp->trigger_config.channel].range, 
-                &lower_scaled, 
-                vdp->mp->handle
+                &lower_scaled
             );
             if (result != 0){ 
                 snprintf(log_message, sizeof(log_message), "Lower threshold of %d is outside of the trigger channel range.", (int) pao->val); 

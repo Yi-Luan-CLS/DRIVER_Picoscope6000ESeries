@@ -273,7 +273,7 @@ write_mbbo (struct mbboRecord *pmbbo)
 
         case SET_RESOLUTION: 
             int16_t resolution = (int)pmbbo->rval; 
-            result = set_resolution(resolution, vdp->mp->handle); 
+            result = set_resolution(vdp->mp, resolution); 
             if (result !=0) {
                 update_log_pvs(vdp->mp, "Failed to set resolution", result);
                 break;
@@ -303,8 +303,8 @@ write_mbbo (struct mbboRecord *pmbbo)
             uint32_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == 1) {
                 result = set_channel_on(
+                    vdp->mp,
                     vdp->mp->channel_configs[channel_index], 
-                    vdp->mp->handle, 
                     &vdp->mp->channel_status
                 );                
                 // If channel is not succesfully set on, return to previous value 
@@ -331,8 +331,8 @@ write_mbbo (struct mbboRecord *pmbbo)
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == 1){
                 result = set_channel_on(
+                    vdp->mp,
                     vdp->mp->channel_configs[channel_index], 
-                    vdp->mp->handle, 
                     &vdp->mp->channel_status
                 );     
                 // If channel is not succesfully set on, return to previous value 
@@ -362,8 +362,8 @@ write_mbbo (struct mbboRecord *pmbbo)
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == 1) {
                 result = set_channel_on(
+                    vdp->mp, 
                     vdp->mp->channel_configs[channel_index], 
-                    vdp->mp->handle, 
                     &vdp->mp->channel_status
                 );                
                 // If channel is not succesfully set on, return to previous value 
@@ -712,7 +712,7 @@ static long init_record_mbbi(struct mbbiRecord * pmbbi)
 
         case GET_RESOLUTION:
             int16_t resolution; 
-            get_resolution(&resolution, vdp->mp->handle);
+            get_resolution(vdp->mp, &resolution);
             pmbbi->val = resolution;  
             break; 
 
@@ -754,7 +754,7 @@ static long read_mbbi(struct mbbiRecord *pmbbi){
     {
         case GET_RESOLUTION: 
             int16_t resolution;
-            uint32_t result = get_resolution(&resolution, vdp->mp->handle);
+            uint32_t result = get_resolution(vdp->mp, &resolution);
             if (result != 0) {
                 update_log_pvs(vdp->mp, "Error getting device resolution.", result);
             } else {
