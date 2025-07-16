@@ -103,6 +103,15 @@ After installing the SDK, copy the following files:
 >Data capture configuration PVs have :fbk PVs. These are updated with a put to `OSCNAME:CH[A-D]:waveform:start`. The value of the :fbk PVs contain the settings used to capture the LAST waveform.
 
 ## PVs
+### OSCNAME:status_code 
+- **Type**: `ai`
+- **Description**: A PV that reports the status codes that result from calls to the Picoscope API. 
+     A non-zero value indicates an error has occurred, the number corresponds to status codes found in the PicoScope SDK header file `PicoStatus.h`. A value of zero means no error has occurred. 
+- **Example**:
+  ```bash
+  # To monitor the status:
+  $ camonitor OSC1234-01:status_code
+  ```
 ### OSCNAME:log 
 - **Type**: `waveform`
 - **Description**: A waveform PV that reports a message when an error occurs in the driver.
