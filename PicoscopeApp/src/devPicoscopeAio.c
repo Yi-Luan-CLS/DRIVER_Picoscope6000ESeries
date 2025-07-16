@@ -3,10 +3,9 @@
  * File:
  *     devPicoscopeAio.c
  * Description:
- *     Device support for EPICS ao and ai records for Picoscope 
- *     PS6000A module. Provides control and status interfaces for 
- *     resolution, timebase, trigger configuration, channel settings, 
- *     and acquisition parameters using multi-bit binary records.
+ *     Device support for EPICS ai and ao records for Picoscope PS6000A 
+ *     module. Provides input/output processing for waveform configuration, 
+ *     trigger control, and analog offset settings via INST_IO.
  * ---------------------------------------------------------------------
  * Copyright (c) 2025 Canadian Light Source Inc.
  *
