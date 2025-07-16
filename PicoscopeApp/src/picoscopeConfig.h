@@ -1,3 +1,22 @@
+/*
+ * ---------------------------------------------------------------------
+ * File:
+ *     picoscopeConfig.h
+ * Description:
+ *     Shared configuration and data structure definitions for 
+ *     Picoscope PS6000A EPICS driver. Includes channel, trigger, 
+ *     sampling, and timebase settings.
+ * ---------------------------------------------------------------------
+ * Copyright (c) 2025 Canadian Light Source Inc.
+ *
+ * This file is part of DRIVER_Picoscope6000ESeries.
+ *
+ * It is licensed under the GNU General Public License v3.0.
+ * See the LICENSE.md file in the project root, or visit:
+ * https://www.gnu.org/licenses/gpl-3.0.html
+ *
+ * This software is provided WITHOUT WARRANTY of any kind.
+ */
 #ifndef PICOSCOPE_CONFIG
 #define PICOSCOPE_CONFIG
 

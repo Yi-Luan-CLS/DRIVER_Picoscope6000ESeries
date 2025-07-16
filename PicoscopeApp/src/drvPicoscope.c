@@ -1,12 +1,24 @@
 /*
  * ---------------------------------------------------------------------
- * Copyright 2025 Canadian Light Source, Inc. All rights reserved
- *     - see LICENSE.md for limitations on use.
- * 
+ * File:
+ *     drvPicoscope.c
  * Description:
  *     EPICS driver for Picoscope PS6000A. Bridges waveform records 
  *     with internal acquisition logic and API calls.
  * ---------------------------------------------------------------------
+ * Copyright (c) 2025 Canadian Light Source Inc.
+ *
+ * This file is part of DRIVER_Picoscope6000ESeries.
+ *
+ * It is licensed under the GNU General Public License v3.0.
+ * See the LICENSE.md file in the project root, or visit:
+ * https://www.gnu.org/licenses/gpl-3.0.html
+ *
+ * This software is provided WITHOUT WARRANTY of any kind.
+ 
+ * Note: This file includes Pico Technology headers (e.g., ps6000aApi.h, PicoStatus.h)
+ * which are not covered by this license. Refer to Pico Technology's SDK
+ * for licensing and redistribution terms.
  */
 #include <stdio.h>
 #include <stdlib.h>

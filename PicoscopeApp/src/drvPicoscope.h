@@ -1,3 +1,21 @@
+/*
+ * ---------------------------------------------------------------------
+ * File:
+ *     drvPicoscope.h
+ * Description:
+ *     Driver interface for Picoscope PS6000A. Includes internal state 
+ *     struct and API for EPICS integration.
+ * ---------------------------------------------------------------------
+ * Copyright (c) 2025 Canadian Light Source Inc.
+ *
+ * This file is part of DRIVER_Picoscope6000ESeries.
+ *
+ * It is licensed under the GNU General Public License v3.0.
+ * See the LICENSE.md file in the project root, or visit:
+ * https://www.gnu.org/licenses/gpl-3.0.html
+ *
+ * This software is provided WITHOUT WARRANTY of any kind.
+ */
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
 

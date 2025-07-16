@@ -1,14 +1,22 @@
 /*
  * ---------------------------------------------------------------------
- * Copyright 2025 Canadian Light Source, Inc. All rights reserved
- *     - see LICENSE.md for limitations on use.
- * 
+ * File:
+ *     devPicoscopeWaveform.c
  * Description:
  *     Device support for EPICS waveform records for Picoscope PS6000A 
  *     module. Enables acquisition control and data retrieval via 
  *     waveform records. Supports start/stop acquisition, updating 
  *     waveform data .
  * ---------------------------------------------------------------------
+ * Copyright (c) 2025 Canadian Light Source Inc.
+ *
+ * This file is part of DRIVER_Picoscope6000ESeries.
+ *
+ * It is licensed under the GNU General Public License v3.0.
+ * See the LICENSE.md file in the project root, or visit:
+ * https://www.gnu.org/licenses/gpl-3.0.html
+ *
+ * This software is provided WITHOUT WARRANTY of any kind.
  */
 #include <stdio.h>
 #include <stdlib.h>
