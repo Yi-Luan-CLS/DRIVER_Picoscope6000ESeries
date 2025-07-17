@@ -12,11 +12,18 @@
  *
  * This file is part of DRIVER_Picoscope6000ESeries.
  *
- * It is licensed under the GNU General Public License v3.0.
- * See the LICENSE.md file in the project root, or visit:
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * DRIVER_Picoscope6000ESeries is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This software is provided WITHOUT WARRANTY of any kind.
+ * DRIVER_Picoscope6000ESeries is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 #include <ctype.h>
 #include <stdio.h>
@@ -98,29 +105,61 @@ inline int find_channel_index_from_record(const char* record_name, struct Channe
     return -1;
 }
 
-
 /**
  * A function to update the log PV with the latest error message. Causes the 
  * waveform PV pLog to process. 
  * 
- * @param pv_name The name of the PV processing when error occured. 
- *           error_message Message to go with error. 
- *           status_code The status code from Picoscope API. 
+ * @param mp PS6000AModule Pointer The PS6000AModule structure containing the PV
+ *            to be updated.  
+ *        error_message Message to go with error. 
+ *        status_code The status code returned by the Picoscope API. 
  */
-void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[], uint32_t status_code){
-    
-    int16_t max_log_message = mp->pLog->nelm; 
-    char log_message[max_log_message]; 
-    
-    int size = sprintf(log_message, "%s - %s Status code: 0x%08X", pv_name, error_message, status_code);
+void log_message(struct PS6000AModule* mp, char* error_message, uint32_t status_code){
+    char log_buffer[mp->pLog->nelm];
 
-    if (size >= 0) {
-        epicsMutexLock(mp->pLog->mlok);
-        memcpy(mp->pLog->bptr, log_message, strlen(log_message)+1);
-        mp->pLog->nord = strlen(log_message)+1;
-        dbProcess((struct dbCommon *) mp->pLog);
-        epicsMutexUnlock(mp->pLog->mlok);
+    epicsMutexLock(mp->pLog->mlok);
+    if (error_message) {
+        snprintf(log_buffer, sizeof(log_buffer), "%s Status code: 0x%08X", error_message, status_code);
+        memcpy(mp->pLog->bptr, log_buffer, strlen(log_buffer) + 1);
+        mp->pLog->nord = strlen(log_buffer) + 1;
+    } else {
+        mp->pLog->nord = 0;  // Make the log PV empty
     }
+    
+    dbProcess((struct dbCommon *) mp->pLog);
+    epicsMutexUnlock(mp->pLog->mlok);
+}
+
+#include <aiRecord.h>
+
+/**
+ * A function to update the status PV with the latest status code.
+ * Note: The pStatusCode PV is used to broadcast the status codes being returned 
+ *       by the PicoTech API. Therefore a 0 value means all is good, any other 
+ *       value corresponds to an error code from PicoStatus.h 
+ * 
+ * @param mp PS6000AModule Pointer The PS6000AModule structure containing the PV
+ *              to be updated. 
+ *        status_code The status code returned by the Picoscope API. 
+ * 
+ */
+inline void update_status_pv(struct PS6000AModule* mp, uint32_t status_code){
+    mp->pStatusCode->val = status_code;
+    dbProcess((struct dbCommon *) mp->pStatusCode);
+
+}
+
+/**
+ * A function to update the status and log PVs. 
+ * 
+ * @param mp PS6000AModule Pointer The PS6000AModule structure containing the PV 
+ *              to be updated. 
+ *        error_message The error message to be displayed in the log PV. 
+ *        status_code The status code returned by the Picoscope API.  
+ */
+void update_log_pvs(struct PS6000AModule* mp, char* error_message, uint32_t status_code){ 
+    log_message(mp, error_message, status_code); 
+    update_status_pv(mp, status_code); 
 }
 
 

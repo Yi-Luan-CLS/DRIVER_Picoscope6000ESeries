@@ -11,11 +11,18 @@
  *
  * This file is part of DRIVER_Picoscope6000ESeries.
  *
- * It is licensed under the GNU General Public License v3.0.
- * See the LICENSE.md file in the project root, or visit:
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * DRIVER_Picoscope6000ESeries is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This software is provided WITHOUT WARRANTY of any kind.
+ * DRIVER_Picoscope6000ESeries is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 #include <ctype.h>
 #include <stdio.h>
@@ -147,7 +154,7 @@ static long init_record_stringin(struct stringinRecord * pstringin)
     {
         case GET_DEVICE_INFO:
             int8_t* device_info = (int8_t*)"No device detected";
-            uint32_t result = get_device_info(&device_info, vdp->mp->handle);
+            uint32_t result = get_device_info(vdp->mp, &device_info);
             
             memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
             
@@ -174,12 +181,12 @@ static long read_stringin (struct stringinRecord *pstringin){
     {
         case GET_DEVICE_INFO:
             int8_t* device_info = (int8_t*)"No device detected";
-            uint32_t result = get_device_info(&device_info, vdp->mp->handle);
+            uint32_t result = get_device_info(vdp->mp, &device_info);
             
             memcpy(pstringin->val, device_info, strlen((char *)device_info) + 1);
             
             if (result != 0){
-                log_message(vdp->mp, pstringin->name, "Error getting device information.", result);
+                update_log_pvs(vdp->mp, "Error getting device information.", result);
             } 
             else {
                 free(device_info); 

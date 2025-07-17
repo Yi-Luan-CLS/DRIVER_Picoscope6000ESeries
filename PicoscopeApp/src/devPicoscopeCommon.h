@@ -11,17 +11,26 @@
  *
  * This file is part of DRIVER_Picoscope6000ESeries.
  *
- * It is licensed under the GNU General Public License v3.0.
- * See the LICENSE.md file in the project root, or visit:
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * DRIVER_Picoscope6000ESeries is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This software is provided WITHOUT WARRANTY of any kind.
+ * DRIVER_Picoscope6000ESeries is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 #ifndef DEV_PICOSCOPE
 #define DEV_PICOSCOPE
 
 #include "drvPicoscope.h"
 #include <waveformRecord.h>
+
+#define LOG_MESSAGE_LENGTH 500
 
 typedef struct MultiBitBinaryEnums {
     char* zrst; int zrvl; 
@@ -44,8 +53,8 @@ typedef struct MultiBitBinaryEnums {
 
 void update_enum_options(struct mbboRecord* pmbbo, struct mbbiRecord* pmbbi, MultiBitBinaryEnums options);
 int convertPicoscopeParams(char *string, char *paramName, char *serialNum);
-void log_message(struct PS6000AModule* mp, char pv_name[], char error_message[], uint32_t status_code);
 void re_acquire_waveform(struct PS6000AModule *mp);
 int find_channel_index_from_record(const char* record_name, struct ChannelConfigs channel_configs[NUM_CHANNELS]);
+void update_log_pvs(struct PS6000AModule* mp, char error_message[], uint32_t status_code); 
 
 #endif

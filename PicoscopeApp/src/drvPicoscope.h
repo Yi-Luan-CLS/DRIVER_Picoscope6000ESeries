@@ -10,11 +10,18 @@
  *
  * This file is part of DRIVER_Picoscope6000ESeries.
  *
- * It is licensed under the GNU General Public License v3.0.
- * See the LICENSE.md file in the project root, or visit:
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * DRIVER_Picoscope6000ESeries is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This software is provided WITHOUT WARRANTY of any kind.
+ * DRIVER_Picoscope6000ESeries is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 #ifndef DRV_PICOSCOPE
 #define DRV_PICOSCOPE
@@ -37,7 +44,10 @@ typedef struct PS6000AModule
     struct waveformRecord* pWaveformStartPtr;
     struct waveformRecord* pWaveformStopPtr;
     struct waveformRecord* pRecordUpdateWaveform[NUM_CHANNELS];
+    
     struct waveformRecord* pLog;
+    struct aiRecord* pStatusCode; 
+    
     uint16_t subwaveform_num;
     uint64_t waveform_size;
 
@@ -47,6 +57,8 @@ typedef struct PS6000AModule
     epicsMutexId epics_acquisition_flag_mutex;
     epicsMutexId epics_acquisition_thread_mutex;
     epicsMutexId epics_acquisition_restart_mutex;
+    epicsMutexId epics_ps6000a_call_mutex;
+
     epicsThreadId acquisition_thread_function;
     epicsThreadId channel_streaming_thread_function[4];
     int16_t* waveform[NUM_CHANNELS];
@@ -86,27 +98,27 @@ PS6000AModule* PS6000ACreateModule(char* serial_num);
 
 PS6000AModule* PS6000AGetModule(char* serial_num);
 
-uint32_t get_device_info(int8_t** device_info, int16_t handle);
+uint32_t get_device_info(struct PS6000AModule* mp, int8_t** device_info);
 
 uint32_t open_picoscope(struct PS6000AModule* mp, int16_t* handle); 
 
 uint32_t ping_picoscope(struct PS6000AModule* mp);
 
-uint32_t set_resolution(int16_t resolution, int16_t handle);
+uint32_t set_resolution(struct PS6000AModule* mp, int16_t resolution);
 
-uint32_t get_resolution(int16_t* resolution, int16_t handle);
+uint32_t get_resolution(struct PS6000AModule* mp, int16_t* resolution);
 
 uint32_t close_picoscope(struct PS6000AModule* mp);
 
-uint32_t set_channel_on(struct ChannelConfigs channel, int16_t handle, EnabledChannelFlags* channel_status);
+uint32_t set_channel_on(struct PS6000AModule* mp, struct ChannelConfigs channel, EnabledChannelFlags* channel_status);
 
-uint32_t set_channel_off(int channel, int16_t handle, EnabledChannelFlags* channel_status);
+uint32_t set_channel_off(struct PS6000AModule* mp, int channel, EnabledChannelFlags* channel_status);
 
 uint32_t get_channel_status(int16_t channel, EnabledChannelFlags channel_status);
 
-uint32_t calculate_scaled_value(double volts, int16_t voltage_range, int16_t* scaled_value, int16_t handle);
+uint32_t calculate_scaled_value(struct PS6000AModule* mp, double volts, int16_t voltage_range, int16_t* scaled_value);
 
-uint32_t get_adc_limits(int16_t* min_val, int16_t* max_val, int16_t handle);
+uint32_t get_adc_limits(struct PS6000AModule* mp, int16_t* min_val, int16_t* max_val);
 
 uint32_t get_valid_timebase_configs(
     struct PS6000AModule* mp,
@@ -116,18 +128,11 @@ uint32_t get_valid_timebase_configs(
     );  
 
 uint32_t get_analog_offset_limits(
+    struct PS6000AModule* mp, 
     struct ChannelConfigs channel, 
-    int16_t handle,
     double* max_analog_offset,
     double* min_analog_offset
     );
-
-
-// uint32_t setup_picoscope(
-//     struct PS6000AModule* mp
-//     );
-
-// uint32_t interrupt_block_capture();
 
 uint32_t run_block_capture(
     struct PS6000AModule* mp,
@@ -142,14 +147,13 @@ uint32_t get_analogue_offset_limits(
     );
 
 uint32_t validate_sample_interval(
+    struct PS6000AModule* mp, 
     double requested_time_interval, 
-    int16_t handle, 
-    EnabledChannelFlags channel_status,
     uint32_t* timebase, 
     double* available_time_interval
     );
 
-uint32_t stop_capturing(int16_t handle);
+uint32_t stop_capturing(struct PS6000AModule* mp);
 
 
 #endif

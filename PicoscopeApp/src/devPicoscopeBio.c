@@ -11,11 +11,18 @@
  *
  * This file is part of DRIVER_Picoscope6000ESeries.
  *
- * It is licensed under the GNU General Public License v3.0.
- * See the LICENSE.md file in the project root, or visit:
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * DRIVER_Picoscope6000ESeries is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This software is provided WITHOUT WARRANTY of any kind.
+ * DRIVER_Picoscope6000ESeries is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -176,8 +183,8 @@ init_record_bo (struct boRecord *pbo)
             
             // On initalization, set all channels off. 
             result = set_channel_off(
+                vdp->mp, 
                 vdp->mp->channel_configs[channel_index].channel, 
-                vdp->mp->handle, 
                 &vdp->mp->channel_status
             );
             if (result != 0) {
@@ -201,38 +208,40 @@ write_bo (struct boRecord *pbo)
     struct PicoscopeBioData *vdp = (struct PicoscopeBioData *)pbo->dpvt;
     int returnStatus = -1; 
     int rbv = 1; 
-    uint32_t result;
+    uint32_t result = 0;
+    char log_message[LOG_MESSAGE_LENGTH] = {0}; 
+
 
 	switch (vdp->ioType){
         case OPEN_PICOSCOPE: 
             int pv_value = (int)pbo->val; 
-            char message[100]; 
             
             if (pv_value == 1){
                 int16_t handle; 
                 result = open_picoscope(vdp->mp, &handle);
                 if (result != 0) {
-                    sprintf(message, "Error opening picoscope with serial number %s.", vdp->serial_num);
-                    log_message(vdp->mp, pbo->name, message, result);
+                    snprintf(log_message, sizeof(log_message), 
+                        "Error opening picoscope with serial number %s.", vdp->serial_num);
                     rbv = 0; 
-                    break;
-                }  
-                vdp->mp->handle = handle; // Update
+                } else {
+                    vdp->mp->handle = handle; // Update device handle if successful
+                }
             } else {
                 if (*vdp->mp->dataAcquisitionFlag == 1) {
                     dbProcess((struct dbCommon *)vdp->mp->pWaveformStopPtr);
 
-                    // this is to make sure the capureting thread is actually stopped
+                    // this is to make sure the capturing thread is actually stopped
                     epicsMutexLock(vdp->mp->epics_acquisition_thread_mutex);
                     epicsMutexUnlock(vdp->mp->epics_acquisition_thread_mutex);
                     printf("Data acquisition stopped\n");
                 }
                 result = close_picoscope(vdp->mp); 
                 if (result != 0) {
-                    sprintf(message, "Error closing picoscope with serial number %s.", vdp->serial_num);
-                    log_message(vdp->mp, pbo->name, message, result);
+                    snprintf(log_message, sizeof(log_message), 
+                        "Error closing picoscope with serial number %s.", vdp->serial_num);
                 }   
             }
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break;
 
         case SET_CHANNEL_ON:    
@@ -243,27 +252,24 @@ write_bo (struct boRecord *pbo)
             // If PV value is 1 (ON) set channel on 
             if (pv_value == 1) { 
                 result = set_channel_on(
+                    vdp->mp, 
                     vdp->mp->channel_configs[channel_index], 
-                    vdp->mp->handle, 
                     &vdp->mp->channel_status
                 );
-                if (result != 0) {
-                    log_message(vdp->mp, pbo->name, "Error setting channel on.", result);
-                    pbo->val = 0; 
-                    rbv = 0; 
-                }
             } 
             else if (pv_value == 0) {
                 result = set_channel_off(
+                    vdp->mp, 
                     vdp->mp->channel_configs[channel_index].channel, 
-                    vdp->mp->handle,
                     &vdp->mp->channel_status
                 );
-                if (result != 0) {
-                    log_message(vdp->mp, pbo->name, "Error setting channel off.", result);
-                    pbo->val = 0; 
-                }
             }    
+
+            if (result != 0) {
+                strcpy(log_message, pv_value == 1 ? "Error setting channel on." : "Error setting channel off.");
+                pbo->val = 0; // Default to channel OFF when error occurs 
+            }
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
 
             // Update timebase configs that are affected by the number of channels on. 
             result = get_valid_timebase_configs(
@@ -274,7 +280,7 @@ write_bo (struct boRecord *pbo)
             );                     
             
             if (result != 0){
-                log_message(vdp->mp, pbo->name, "Error setting timebase configurations.", result);
+                update_log_pvs(vdp->mp, "Error setting timebase configurations.", result);
             }
 
             vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
@@ -386,13 +392,12 @@ static long read_bi (struct biRecord *pbi)
         case GET_DEVICE_STATUS:
             uint32_t result = ping_picoscope(vdp->mp); 
             if ( result != 0 ) {
-                log_message(vdp->mp, pbi->name, "Cannot ping device.", result);
+                update_log_pvs(vdp->mp, "Cannot ping device.", result);
                 pbi->val = 0;
                 break;
-            }
+            } 
             pbi->val = 1; 
             pbi->rval = 1; 
-
             break;
 
         case GET_CHANNEL_STATUS: 
@@ -400,9 +405,6 @@ static long read_bi (struct biRecord *pbi)
             int channel_index = find_channel_index_from_record(record_name, vdp->mp->channel_configs); 
 
             int16_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
-            if (channel_status == -1) {
-                log_message(vdp->mp, pbi->name, "Cannot get channel status.", channel_status);
-            }
             pbi->val = channel_status;
             pbi->rval = channel_status;
             

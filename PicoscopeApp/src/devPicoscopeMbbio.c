@@ -12,11 +12,18 @@
  *
  * This file is part of DRIVER_Picoscope6000ESeries.
  *
- * It is licensed under the GNU General Public License v3.0.
- * See the LICENSE.md file in the project root, or visit:
- * https://www.gnu.org/licenses/gpl-3.0.html
+ * DRIVER_Picoscope6000ESeries is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This software is provided WITHOUT WARRANTY of any kind.
+ * DRIVER_Picoscope6000ESeries is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -262,6 +269,8 @@ write_mbbo (struct mbboRecord *pmbbo)
     int channel_index; 
     uint32_t timebase = 0; 
     double sample_interval, sample_rate = 0; 
+    char log_message[LOG_MESSAGE_LENGTH] = {0};
+    uint32_t result = 0; 
 
     struct PicoscopeMbbioData *vdp = (struct PicoscopeMbbioData *)pmbbo->dpvt;
     int returnState = 0; 
@@ -271,18 +280,20 @@ write_mbbo (struct mbboRecord *pmbbo)
 
         case SET_RESOLUTION: 
             int16_t resolution = (int)pmbbo->rval; 
-            uint32_t result = set_resolution(resolution, vdp->mp->handle); 
+            result = set_resolution(vdp->mp, resolution); 
             if (result !=0) {
-                log_message(vdp->mp, pmbbo->name, "Error setting device resolution.", result);
+                update_log_pvs(vdp->mp, "Failed to set resolution", result);
                 break;
-            }
+            } 
+        
             vdp->mp->resolution = resolution; 
-            
             // Sampling resolution affects max and min trigger thresholds, process threshold PVs
             // to ensure thresholds are still within the limits at the new resolution.  
             for(size_t i = 0; i < sizeof(vdp->mp->pTriggerThreshold)/ sizeof(vdp->mp->pTriggerThreshold[0]); i++){ 
                 dbProcess((struct dbCommon *) vdp->mp->pTriggerThreshold[i]);            
             }
+        
+            update_log_pvs(vdp->mp, NULL, result);
             break;  
 
         case SET_COUPLING:    
@@ -299,16 +310,17 @@ write_mbbo (struct mbboRecord *pmbbo)
             uint32_t channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == 1) {
                 result = set_channel_on(
+                    vdp->mp,
                     vdp->mp->channel_configs[channel_index], 
-                    vdp->mp->handle, 
                     &vdp->mp->channel_status
                 );                
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
-                    log_message(vdp->mp, pmbbo->name, "Error setting coupling.", result);
+                    snprintf(log_message, sizeof(log_message), "Error setting coupling to %d", (int)pmbbo->rval);
                     vdp->mp->channel_configs[channel_index].coupling = previous_coupling;
                 }
             }
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break;
 
         case SET_RANGE:
@@ -326,13 +338,13 @@ write_mbbo (struct mbboRecord *pmbbo)
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == 1){
                 result = set_channel_on(
+                    vdp->mp,
                     vdp->mp->channel_configs[channel_index], 
-                    vdp->mp->handle, 
                     &vdp->mp->channel_status
                 );     
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
-                    log_message(vdp->mp, pmbbo->name, "Error setting voltage range.", result);
+                    snprintf(log_message, sizeof(log_message), "Error setting voltage range to %d", (int)pmbbo->rval);
                     vdp->mp->channel_configs[channel_index].range = previous_range;
                 }
             }
@@ -341,6 +353,8 @@ write_mbbo (struct mbboRecord *pmbbo)
             for(size_t i = 0; i < sizeof(vdp->mp->pTriggerThreshold)/ sizeof(vdp->mp->pTriggerThreshold[0]); i++){ 
                 dbProcess((struct dbCommon *) vdp->mp->pTriggerThreshold[i]);            
             }
+            
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break;
 
         
@@ -355,16 +369,18 @@ write_mbbo (struct mbboRecord *pmbbo)
             channel_status = get_channel_status(vdp->mp->channel_configs[channel_index].channel, vdp->mp->channel_status); 
             if (channel_status == 1) {
                 result = set_channel_on(
+                    vdp->mp, 
                     vdp->mp->channel_configs[channel_index], 
-                    vdp->mp->handle, 
                     &vdp->mp->channel_status
                 );                
                 // If channel is not succesfully set on, return to previous value 
                 if (result != 0) {
-                    log_message(vdp->mp, pmbbo->name, "Error setting bandwidth.", result);
+                    snprintf(log_message, sizeof(log_message), "Error setting bandwidth to %d", (int)pmbbo->rval);
                     vdp->mp->channel_configs[channel_index].bandwidth = previous_bandwidth;
                 }
             }
+
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break;
 
         case SET_TIME_PER_DIVISION: 
@@ -379,14 +395,15 @@ write_mbbo (struct mbboRecord *pmbbo)
             ); 
             
             if (result != 0) {
-                log_message(vdp->mp, pmbbo->name, "Error setting time per division.", result);
-                vdp->mp->sample_config.timebase_configs.time_per_division = previous_time_per_division; 
-                break; 
+                snprintf(log_message, sizeof(log_message), "Error setting time per division to %d", (int)pmbbo->rval);
+                vdp->mp->sample_config.timebase_configs.time_per_division = previous_time_per_division;  
+            } else {
+                vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+                vdp->mp->sample_config.timebase_configs.timebase = timebase;
+                vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
             }
 
-            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
-            vdp->mp->sample_config.timebase_configs.timebase = timebase;
-            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break; 
 
         case SET_TIME_PER_DIVISION_UNIT:
@@ -444,14 +461,15 @@ write_mbbo (struct mbboRecord *pmbbo)
             ); 
 
             if (result != 0) {
-                log_message(vdp->mp, pmbbo->name, "Error setting time per division unit.", result);
+                snprintf(log_message, sizeof(log_message), "Error setting time per division unit to %d", (int)pmbbo->rval);
                 vdp->mp->sample_config.timebase_configs.time_per_division_unit = previous_time_per_division_unit; 
-                break; 
+            } else { 
+                vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
+                vdp->mp->sample_config.timebase_configs.timebase = timebase;
+                vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
             }
 
-            vdp->mp->sample_config.timebase_configs.sample_interval_secs = sample_interval;
-            vdp->mp->sample_config.timebase_configs.timebase = timebase;
-            vdp->mp->sample_config.timebase_configs.sample_rate = sample_rate;  
+            update_log_pvs(vdp->mp, log_message[0] ? log_message : NULL, result);
             break; 
 
 
@@ -701,7 +719,7 @@ static long init_record_mbbi(struct mbbiRecord * pmbbi)
 
         case GET_RESOLUTION:
             int16_t resolution; 
-            get_resolution(&resolution, vdp->mp->handle);
+            get_resolution(vdp->mp, &resolution);
             pmbbi->val = resolution;  
             break; 
 
@@ -743,12 +761,13 @@ static long read_mbbi(struct mbbiRecord *pmbbi){
     {
         case GET_RESOLUTION: 
             int16_t resolution;
-            uint32_t result = get_resolution(&resolution, vdp->mp->handle);
+            uint32_t result = get_resolution(vdp->mp, &resolution);
             if (result != 0) {
-                log_message(vdp->mp, pmbbi->name, "Error getting device resolution.", result); 
-                break; 
-            }
-            pmbbi->rval = resolution;  
+                update_log_pvs(vdp->mp, "Error getting device resolution.", result);
+            } else {
+                pmbbi->rval = resolution; 
+                update_log_pvs(vdp->mp, NULL, result);
+            } 
             break; 
         
         case GET_COUPLING: 
